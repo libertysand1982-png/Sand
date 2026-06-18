@@ -21,31 +21,41 @@ FONT_SMALL = ("Courier New", 10)
 FONT_BTN = ("Times New Roman", 12, "bold")
 
 ASCII_PORTRAITS = {
-    "Guerrier": r"""  ___
- /o o\
- | ▼ |
-/|===|\
- | | |""",
-    "Mage": r"""  ___
- (* *)
-  \_/
-  /|\
- / | \""",
-    "Rôdeur": r"""  /\
- /oo\
- |>>|
-/ /\ \
-|/  \|""",
-    "Clerc": r"""  ✝
- /^^\
-(o  o)
- \==/
- |  |""",
-    "Voleur": r"""  ___
- (>_<)
-  |||
- /   \
-|     |""",
+    "Guerrier": (
+        "   ___   \n"
+        "  /o o\\ \n"
+        "  | = |  \n"
+        " /|===|\\ \n"
+        "  | | |  "
+    ),
+    "Mage": (
+        "   ___   \n"
+        "  (* *)  \n"
+        "   \\_/  \n"
+        "   /|\\  \n"
+        "  / | \\ "
+    ),
+    "Rodeur": (
+        "   /\\    \n"
+        "  /oo\\   \n"
+        "  |>>|   \n"
+        " / /\\ \\  \n"
+        " |/  \\|  "
+    ),
+    "Clerc": (
+        "   +++   \n"
+        "  /^^\\   \n"
+        " (o  o)  \n"
+        "  \\==/   \n"
+        "   |  |  "
+    ),
+    "Voleur": (
+        "   ___   \n"
+        "  (>_<)  \n"
+        "   |||   \n"
+        "  /   \\  \n"
+        " |     | "
+    ),
 }
 
 class GameScreen(tk.Frame):
@@ -103,7 +113,7 @@ class GameScreen(tk.Frame):
         right.pack(side="right", fill="y", padx=(8, 0))
         right.pack_propagate(False)
 
-        portrait = ASCII_PORTRAITS.get(char.char_class, "")
+        portrait = ASCII_PORTRAITS.get(char.char_class, ASCII_PORTRAITS.get("Guerrier", ""))
         tk.Label(right, text=portrait, font=("Courier New", 11), bg=BG2, fg=PARCHMENT,
                 justify="center", relief="groove", bd=2, padx=10, pady=8).pack(fill="x", pady=(0, 8))
 
