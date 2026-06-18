@@ -12,6 +12,10 @@ class GameState:
         self.last_skill_check = None  # (success, roll, total, description)
         self.inventory_items = {}  # name -> quantity
         self.flags = {}  # story flags
+        self.active_quests = []          # list of quest_id strings
+        self.completed_quests = []       # list of quest_id strings
+        self.kill_counts = {}            # monster_id -> int
+        self.visited_locations = []      # list of location_id strings
 
     def current_node(self):
         return STORY.get(self.current_node_id, STORY["start"])

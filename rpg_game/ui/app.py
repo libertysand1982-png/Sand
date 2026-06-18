@@ -4,6 +4,7 @@ from engine.game import GameState
 from ui.screens.character_creation import CharacterCreationScreen
 from ui.screens.game_screen import GameScreen
 from ui.screens.combat_screen import CombatScreen
+from ui.screens.world_map import WorldMapScreen
 from data.monsters import MONSTERS
 
 BG = "#0d0b08"
@@ -16,8 +17,8 @@ class RPGApp:
     def __init__(self, root):
         self.root = root
         self.root.title("⚔ La Forêt de Brume — Un Livre Dont Vous Êtes le Héros ⚔")
-        self.root.geometry("900x700")
-        self.root.minsize(800, 600)
+        self.root.geometry("1100x700")
+        self.root.minsize(900, 650)
         self.root.config(bg=BG)
         self.game_state = None
         self.current_screen = None
@@ -67,26 +68,70 @@ class RPGApp:
     def _load_game(self, save):
         self._clear()
         self.game_state = save
-        self._start_game()
+        # Ensure new fields exist on old saves
+        if not hasattr(save, "active_quests"):
+            save.active_quests = []
+        if not hasattr(save, "completed_quests"):
+            save.completed_quests = []
+        if not hasattr(save, "kill_counts"):
+            save.kill_counts = {}
+        if not hasattr(save, "visited_locations"):
+            save.visited_locations = []
+        self._show_world_map()
 
     def _start_game(self):
+        """Called after character creation — go to world map."""
+        self._show_world_map()
+
+    def _show_world_map(self):
         self._clear()
-        screen = GameScreen(self.root, self.game_state, self._start_combat, self._show_main_menu)
+        screen = WorldMapScreen(
+            self.root, self.game_state,
+            on_combat=self._start_combat,
+            on_story=self._enter_story,
+            on_rest=self._do_rest,
+            on_menu=self._show_main_menu
+        )
         screen.pack(fill="both", expand=True)
         self.current_screen = screen
+
+    def _enter_story(self, node_id):
+        """Enter story/narrative mode starting at a given node."""
+        self._clear()
+        self.game_state.go_to(node_id)
+        screen = GameScreen(
+            self.root, self.game_state,
+            on_combat=self._start_combat,
+            on_restart=self._show_world_map
+        )
+        screen.pack(fill="both", expand=True)
+        self.current_screen = screen
+
+    def _do_rest(self):
+        """Handle rest callback from world map."""
+        self._show_world_map()
 
     def _start_combat(self, monster_id, win_node, lose_node):
         self._clear()
         monster_data = MONSTERS.get(monster_id, MONSTERS["gobelin"])
         screen = CombatScreen(
             self.root, self.game_state, monster_data,
-            on_victory=lambda: self._after_combat(win_node),
-            on_defeat=lambda: self._after_combat(lose_node),
-            on_fled=lambda: self._after_combat(win_node)
+            on_victory=lambda: self._after_combat(win_node, victory=True, monster_id=monster_id),
+            on_defeat=lambda: self._after_combat(lose_node, victory=False, monster_id=monster_id),
+            on_fled=lambda: self._after_combat(win_node, victory=False, monster_id=monster_id)
         )
         screen.pack(fill="both", expand=True)
         self.current_screen = screen
 
-    def _after_combat(self, next_node):
-        self.game_state.go_to(next_node)
-        self._start_game()
+    def _after_combat(self, next_node, victory=False, monster_id=None):
+        # Track kill count
+        if victory and monster_id:
+            kc = self.game_state.kill_counts
+            kc[monster_id] = kc.get(monster_id, 0) + 1
+
+        # Return to world map or story node
+        if next_node == "__world_map__" or next_node is None:
+            self._show_world_map()
+        else:
+            self.game_state.go_to(next_node)
+            self._enter_story(next_node)
