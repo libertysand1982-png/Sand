@@ -171,7 +171,8 @@ class CharacterCreationScreen(tk.Frame):
         r = self.selected_race.get()
         self.race_desc.config(text=RACES[r]["description"])
         self._update_stat_display()
-        self._update_summary()
+        if hasattr(self, "summary_label"):
+            self._update_summary()
 
     def _on_class_change(self):
         c = self.selected_class.get()
@@ -179,7 +180,8 @@ class CharacterCreationScreen(tk.Frame):
         pts = CLASSES[c]["skill_points"] + modifier(self.base_stats.get("INTELLIGENCE", 10))
         self.skill_points_remaining.set(max(2, pts))
         self._update_skill_pts_label()
-        self._update_summary()
+        if hasattr(self, "summary_label"):
+            self._update_summary()
 
     def _roll_stats(self):
         stats = ["FORCE", "DEXTÉRITÉ", "CONSTITUTION", "INTELLIGENCE", "SAGESSE", "CHARISME"]
