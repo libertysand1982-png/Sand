@@ -18,6 +18,8 @@ class GameState:
         self.visited_locations = []      # list of location_id strings
         self.revealed_cells = set()      # set of (x, y) tuples — fog of war
         self.reveal_radius = 4           # default vision radius
+        self.tutorial_done = False
+        self.shown_hints = set()
 
     def current_node(self):
         return STORY.get(self.current_node_id, STORY["start"])

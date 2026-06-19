@@ -107,5 +107,36 @@ MONSTERS = {
             "Drain de Vie (soigne la Liche de la moitié des dégâts)",
             "Invocation de Squelettes (1/combat)"
         ]
+    },
+    "demon_gardien": {
+        "name": "Démon Gardien",
+        "hp": 28,
+        "ac": 14,
+        "attack_bonus": 4,
+        "damage": "2d6+2",
+        "dex_mod": 2,
+        "xp": 300,
+        "loot": [("Cendre démoniaque", 1), ("Pièces d'or", 15)],
+        "description": "Une créature cornue aux ailes membraneuses, surgissant du portail infernal dans un nuage de soufre.",
+        "ascii": "  /\\ /\\\n (>o o<)\n  |===|\n _/ | \\_",
+        "abilities": ["Résistance au feu", "Griffe brûlante (1d4 feu bonus)"]
+    },
+    "seigneur_demon": {
+        "name": "Seigneur Démon",
+        "hp": 90,
+        "ac": 16,
+        "attack_bonus": 7,
+        "damage": "3d8+5",
+        "dex_mod": 1,
+        "xp": 2500,
+        "loot": [("Cœur de Démon", 1), ("Armure Infernale", 1), ("Trident des Enfers", 1)],
+        "description": "Une entité colossale aux cornes torsadées, la peau rouge sang zébrée de runes noires. Ses yeux brûlent d'une flamme éternelle et sa présence fait trembler la terre.",
+        "ascii": "  /\\ /\\\n(>X X<)\n  )|(  \n_/ | \\_",
+        "abilities": [
+            "Immunité au feu",
+            "Aura de Terreur (jet SAG DD15 ou -2 jets)",
+            "Frappe Infernale (2d6 feu bonus 1/tour)",
+            "Régénération Démoniaque (+5 PV/tour si > 10 PV)"
+        ]
     }
 }

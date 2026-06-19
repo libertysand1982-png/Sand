@@ -227,6 +227,7 @@ STORY = {
         "title": "VICTOIRE — L'Ombre Dissipée",
         "text": """Valdris s'effondre avec un cri qui fait trembler les murs de pierre. Son corps se désintègre en cendres violettes qui se dissipent dans l'air.\n\nSimultanément, une lumière dorée explose de la boîte de cristal — le phylactère brisé libère les âmes captives. Dans la cellule, vous entendez Pieter et Thomas s'éveiller avec des cris de confusion.\n\nLa forêt, dehors, commence à changer. La brume se lève. Les arbres retrouvent leur couleur naturelle. Des oiseaux, timidement, reprennent leur chant.\n\nVous sortez du donjon avec les survivants. Agnès pleure de joie. Pieter et Thomas sont désorientés mais en vie.\n\nÀ votre retour à Piedval, Bertrand tient sa promesse — et double même la somme: 400 pièces d'or. Un festin est organisé en votre honneur.\n\n*Vous avez sauvé le village de Piedval.*\n*Valdris l'Ombre est définitivement vaincu.*\n*+500 XP — +400 pièces d'or*\n\n═══════════════════════════\n★  VICTOIRE — FIN NORMALE  ★\n═══════════════════════════\n\nMerci d'avoir joué !""",
         "choices": [
+            {"text": "⚔ Chapitre II — Les Terres Maudites (niveau 5 requis)", "next": "chapitre2_intro", "skill_check": None},
             {"text": "Rejouer une nouvelle aventure", "next": "start", "skill_check": None},
         ]
     },
@@ -446,6 +447,298 @@ En cas d'échec: Le coffre ne cède pas. Vos mains sont meurtries.""",
         "choices": [
             {"text": "[Succès] Prendre le butin et fuir rapidement", "next": "start", "skill_check": None},
             {"text": "[Échec] Repartir bredouille", "next": "start", "skill_check": None},
+        ]
+    },
+
+    # ═══════════════════════════════════════════════════
+    # CHAPITRE II — LES TERRES MAUDITES
+    # ═══════════════════════════════════════════════════
+
+    "chapitre2_intro": {
+        "id": "chapitre2_intro",
+        "title": "CHAPITRE II — Les Terres Maudites",
+        "text": """Trois semaines après la chute de Valdris, l'Archimage Sorel vous convoque en urgence à l'Académie d'Arcane. Son visage, habituellement impassible, trahit une inquiétude rare.
+
+"Ce que nous pensions être une simple anomalie... c'est bien pire." Il déroule une carte sur sa table. "Au nord-ouest, dans les terres autrefois habitées, quelque chose s'est éveillé. Un portail démoniaque. Des éclaireurs ont rapporté des colonnes de fumée noire et des créatures ailées survolant la région."
+
+Il pose un cristal rouge pulsant devant vous.
+
+"J'ai analysé les émanations. Ce portail est maintenu ouvert par trois Pierres d'Ancrage plantées dans le sol à distance égale. Détruisez-les toutes les trois, et le portail se referme. Mais attention..."
+
+Il baisse la voix.
+
+"Il y a un Seigneur Démon de l'autre côté. S'il passe avant que vous n'ayez détruit les pierres, ce monde est condamné."
+
+*Nouvelle quête: Le Portail Infernal*
+*Objectif: Détruire les 3 Pierres d'Ancrage et vaincre le Seigneur Démon*""",
+        "choices": [
+            {"text": "Accepter la mission et partir pour les Terres Maudites", "next": "terres_maudites_arrive", "skill_check": None},
+            {"text": "[Arcanes DD13] Demander des détails sur les Pierres d'Ancrage", "next": "sorel_portail", "skill_check": "Arcanes", "difficulty": 13},
+            {"text": "Demander une récompense supplémentaire", "next": "preparation_ch2", "skill_check": None},
+        ]
+    },
+    "sorel_portail": {
+        "id": "sorel_portail",
+        "title": "Les Secrets du Portail",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: Votre connaissance des arcanes vous permet de comprendre instantanément. Les Pierres d'Ancrage sont des fragments de la Rune d'Ouverture — des reliques démoniaques forgées dans le feu de l'Enfer même. Elles ne peuvent être détruites que par un coup physique puissant sur leur surface, ou par un sort de Dissipation de Magie. Une fois les trois détruites, le portail se déstabilise et toute créature à moitié engagée dans le passage... est coupée en deux.
+
+En cas d'échec: L'explication de Sorel vous dépasse légèrement. Vous retenez l'essentiel: détruisez les pierres, fermez le portail.""",
+        "choices": [
+            {"text": "Partir en mission", "next": "terres_maudites_arrive", "skill_check": None},
+        ]
+    },
+    "preparation_ch2": {
+        "id": "preparation_ch2",
+        "title": "Préparatifs",
+        "text": """Sorel soupire mais acquiesce.
+
+"L'Académie vous accordera... 500 pièces d'or en avance, et 1000 supplémentaires si vous réussissez. Plus le droit d'accéder à notre bibliothèque de sorts pendant un mois."
+
+Il ajoute, plus sombre:
+
+"Si vous échouez, l'argent ne vous servira de toute façon plus à rien."
+
+Lyra, l'apprentie, vous prend à part discrètement.
+
+"Emportez des Potions de Soins. Beaucoup. Et si vous avez de l'Eau Bénite, les démons y sont particulièrement sensibles. Mon maître ne vous l'a pas dit, mais les Pierres d'Ancrage brillent en rouge — vous ne pouvez pas les rater."
+
+*+500 pièces d'or (avance)*""",
+        "choices": [
+            {"text": "Remercier Lyra et partir pour les Terres Maudites", "next": "terres_maudites_arrive", "skill_check": None},
+        ]
+    },
+    "terres_maudites_arrive": {
+        "id": "terres_maudites_arrive",
+        "title": "Les Terres Maudites",
+        "text": """Vous arrivez aux Terres Maudites au crépuscule — ce qui était autrefois une forêt verdoyante est maintenant une plaine calcinée. La terre est noire et fissurée, des flammes basses brûlent sans combustible apparent, et l'air pue le soufre et la cendre.
+
+Au loin, le portail: une déchirure dans la réalité, grande comme une maison, bordée de runes écarlates. À travers, on devine des formes qui bougent. Des rires graves et caverneux résonnent.
+
+Autour du portail, à distance régulière, trois rochers rougeoyants pulsent d'une lumière sinistre. Les Pierres d'Ancrage.
+
+Des démons gardiens patrouillent entre les pierres. Pas nombreux — quatre, peut-être cinq — mais chacun est aussi grand qu'un cheval et armé de griffes acérées.
+
+Le sol tremble légèrement. Depuis le portail, une voix grave gronde en langue infernale.""",
+        "choices": [
+            {"text": "[Discrétion DD14] Approcher la première pierre en secret", "next": "pierre_ancrage1", "skill_check": "Discrétion", "difficulty": 14},
+            {"text": "Affronter les démons gardiens de front", "next": "combat_demon1", "skill_check": None, "combat": True, "monster_id": "demon_gardien", "win_node": "pierre_ancrage1", "lose_node": "mort_ch2"},
+            {"text": "[Perception DD12] Observer le terrain et les démons", "next": "observer_demons", "skill_check": "Perception", "difficulty": 12},
+        ]
+    },
+    "observer_demons": {
+        "id": "observer_demons",
+        "title": "Observation Tactique",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: En observant attentivement, vous notez quelque chose d'important: les démons gardiens ont un angle mort — côté nord. Ils tournent le dos à la première pierre pendant exactement dix secondes à chaque rotation. De plus, leur peau semble sensible à la lumière directe du soleil — ils évitent systématiquement les zones éclairées. Avec cette information, approcher les pierres devrait être plus facile.
+
+En cas d'échec: Les démons patrouillent de manière imprévisible. Vous ne trouvez pas de schéma exploitable.""",
+        "choices": [
+            {"text": "[Succès] Exploiter l'angle mort pour s'approcher", "next": "pierre_ancrage1", "skill_check": None},
+            {"text": "[Échec] Tenter quand même", "next": "combat_demon1", "skill_check": None, "combat": True, "monster_id": "demon_gardien", "win_node": "pierre_ancrage1", "lose_node": "mort_ch2"},
+        ]
+    },
+    "combat_demon1": {
+        "id": "combat_demon1",
+        "title": "Démon Gardien",
+        "text": """Un démon vous fonce dessus, ses ailes membraneuses déployées, la gueule grande ouverte sur des rangées de dents noires!""",
+        "combat": True,
+        "monster_id": "demon_gardien",
+        "win_node": "pierre_ancrage1",
+        "lose_node": "mort_ch2",
+        "choices": []
+    },
+    "pierre_ancrage1": {
+        "id": "pierre_ancrage1",
+        "title": "Première Pierre d'Ancrage",
+        "text": """Vous atteignez la première Pierre d'Ancrage. De près, c'est impressionnant: un rocher de granit noir de la taille d'un homme, parcouru de veines de lave qui pulsent comme un cœur. Des runes démoniaques sont gravées profondément dans sa surface.
+
+La chaleur qui en émane est intense. La tenir suffit à faire rougir la peau.
+
+Comment la détruire?""",
+        "choices": [
+            {"text": "[Force DD15] La fracasser avec votre arme", "next": "pierre_detruite1", "skill_check": "Athlétisme", "difficulty": 15},
+            {"text": "[Arcanes DD13] Lancer un sort de Dissipation", "next": "pierre_detruite1", "skill_check": "Arcanes", "difficulty": 13},
+            {"text": "Frapper de toutes vos forces sans jet", "next": "pierre_tentative1", "skill_check": None},
+        ]
+    },
+    "pierre_tentative1": {
+        "id": "pierre_tentative1",
+        "title": "Coup Puissant",
+        "text": """Vous frappez la pierre de toutes vos forces. Des éclats volent, les runes craquellent... mais la pierre tient bon.
+
+Votre attaque prend -5 PV de dégâts de contrecoup (chaleur infernale).
+
+Cependant, vous avez affaibli la pierre. Un deuxième coup plus précis pourrait suffire.""",
+        "choices": [
+            {"text": "[Force DD10] Frapper à nouveau sur les fissures", "next": "pierre_detruite1", "skill_check": "Athlétisme", "difficulty": 10},
+        ]
+    },
+    "pierre_detruite1": {
+        "id": "pierre_detruite1",
+        "title": "Première Pierre Détruite",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: La pierre explose dans une gerbe d'éclats rougeoyants. Un hurlement démoniaque retentit depuis le portail — le Seigneur Démon a senti la perte. Le portail vacille légèrement.
+
+Une pierre sur trois. Vous regardez vers les deux autres.
+
+*+500 XP — 1/3 Pierres détruites*
+
+En cas d'échec: Votre tentative échoue. Mais la pierre est fissurée — réessayez avec plus de force ou un sort.""",
+        "choices": [
+            {"text": "[Succès] Avancer vers la deuxième pierre", "next": "infiltration_ch2", "skill_check": None},
+            {"text": "[Échec] Réessayer différemment", "next": "pierre_ancrage1", "skill_check": None},
+        ]
+    },
+    "infiltration_ch2": {
+        "id": "infiltration_ch2",
+        "title": "Vers la Deuxième Pierre",
+        "text": """L'explosion de la première pierre a alerté les démons. Ils convergent vers l'emplacement de la pierre détruite — vous avez quelques secondes pour vous repositionner.
+
+La deuxième pierre d'ancrage brille au loin, gardée par deux démons plus grands que les autres. L'un d'eux porte une armure de métal sombre.
+
+La troisième pierre, encore plus loin, est directement sous le portail.
+
+Le sol tremble à nouveau. Depuis l'ouverture dimensionnelle, une silhouette massive commence à s'approcher de ce côté du portail. Il vous reste peu de temps.""",
+        "choices": [
+            {"text": "Foncer sur la deuxième pierre", "next": "combat_demon2", "skill_check": None, "combat": True, "monster_id": "demon_gardien", "win_node": "pierre_ancrage2", "lose_node": "mort_ch2"},
+            {"text": "[Discrétion DD15] Passer en esquivant les démons", "next": "pierre_ancrage2", "skill_check": "Discrétion", "difficulty": 15},
+        ]
+    },
+    "pierre_ancrage2": {
+        "id": "pierre_ancrage2",
+        "title": "Deuxième Pierre d'Ancrage",
+        "text": """La deuxième pierre est plus grande que la première, et ses runes brillent plus intensément. Une chaleur oppressante l'entoure — et vous remarquez quelque chose de nouveau: des chaînes spectrales relient cette pierre au portail, comme des tendons qui maintiennent une porte ouverte.
+
+Si vous détruisez cette pierre, le portail commencera à se fermer. Ce qui signifie que tout ce qui est à moitié de l'autre côté...
+
+Vous entendez derrière vous le fracas d'un pas qui fait trembler la terre. Le Seigneur Démon emerge du portail.""",
+        "choices": [
+            {"text": "[Arcanes DD14] Dissiper les chaînes spectrales d'abord", "next": "sort_pierre2", "skill_check": "Arcanes", "difficulty": 14},
+            {"text": "[Force DD16] Tout casser d'un coup puissant", "next": "pierre_detruite2", "skill_check": "Athlétisme", "difficulty": 16},
+            {"text": "Frapper la pierre directement", "next": "pierre_detruite2", "skill_check": "Athlétisme", "difficulty": 14},
+        ]
+    },
+    "sort_pierre2": {
+        "id": "sort_pierre2",
+        "title": "Dissipation des Chaînes",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: Vos mains canalisent l'énergie arcanique. Les chaînes spectrales craquellent, s'effritent, et disparaissent dans un éclat de lumière blanche. La pierre, privée de son soutien dimensionnel, est maintenant vulnérable. Un simple coup suffira.
+
+En cas d'échec: Les chaînes résistent à votre sort. Il faudra les casser de force.""",
+        "choices": [
+            {"text": "[Succès] Détruire la pierre affaiblie", "next": "pierre_detruite2", "skill_check": "Athlétisme", "difficulty": 10},
+            {"text": "[Échec] Forcer la destruction quand même", "next": "pierre_detruite2", "skill_check": "Athlétisme", "difficulty": 16},
+        ]
+    },
+    "pierre_detruite2": {
+        "id": "pierre_detruite2",
+        "title": "Deuxième Pierre Détruite",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: La pierre explose avec une force double — les chaînes spectrales se brisent en une cascade d'étincelles bleues. Le portail rétrécit de moitié, et un rugissement de fureur démoniaque fait vibrer l'air.
+
+Mais le Seigneur Démon est maintenant complètement sorti du portail. Une masse de muscles rouges et de cornes noires, tenant un trident enflammé. Il vous fixe avec des yeux qui brûlent comme des braises.
+
+"Tu oses... MORTEL!" Sa voix est un tremblement de terre.
+
+*+800 XP — 2/3 Pierres détruites*
+
+En cas d'échec: La pierre résiste. Mais le Seigneur Démon approche — pas le temps de réessayer.""",
+        "choices": [
+            {"text": "[Succès] Courir vers la troisième pierre avant que le démon n'arrive", "next": "pierre_finale", "skill_check": None},
+            {"text": "[Échec / urgence] Affronter le Seigneur Démon", "next": "combat_final_ch2", "skill_check": None, "combat": True, "monster_id": "seigneur_demon", "win_node": "victoire_ch2", "lose_node": "mort_ch2"},
+        ]
+    },
+    "pierre_finale": {
+        "id": "pierre_finale",
+        "title": "La Troisième Pierre — Sous le Portail",
+        "text": """La troisième pierre est juste sous le portail qui se referme. Elle vibre intensément, comme si elle concentrait toute l'énergie restante. Des flammes démoniaques l'entourent.
+
+Derrière vous, le sol tremble sous les pas du Seigneur Démon.
+
+Vous n'avez qu'une chance. Destruction totale ou combat immédiat — il faut choisir maintenant.
+
+Le portail gronde. La pierre pulse comme un cœur affolé.""",
+        "choices": [
+            {"text": "[Force DD17] Plonger dans les flammes et détruire la pierre de force brute", "next": "pierre_detruite3", "skill_check": "Athlétisme", "difficulty": 17},
+            {"text": "[Arcanes DD15] Lancer le sort le plus puissant de votre arsenal", "next": "pierre_detruite3", "skill_check": "Arcanes", "difficulty": 15},
+            {"text": "Ignorer la pierre et affronter le Seigneur Démon d'abord", "next": "combat_final_ch2", "skill_check": None, "combat": True, "monster_id": "seigneur_demon", "win_node": "victoire_ch2", "lose_node": "mort_ch2"},
+        ]
+    },
+    "pierre_detruite3": {
+        "id": "pierre_detruite3",
+        "title": "La Dernière Pierre",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: Vous plongez à travers les flammes — la douleur est intense mais supportable — et frappez la pierre de toute votre puissance. Elle explose dans un fracas assourdissant.
+
+Le portail se referme instantanément dans un flash de lumière aveuglante. Un hurlement de rage démoniaque résonne depuis l'autre dimension, de plus en plus loin.
+
+Mais le Seigneur Démon est toujours là. Coincé de ce côté. Furieux.
+
+En cas d'échec: Les flammes vous repoussent. Vous perdez 15 PV et devez faire face au Seigneur Démon sans avoir détruit la dernière pierre.""",
+        "choices": [
+            {"text": "[Succès] Affronter le Seigneur Démon piégé dans notre monde", "next": "combat_final_ch2", "skill_check": None, "combat": True, "monster_id": "seigneur_demon", "win_node": "victoire_ch2", "lose_node": "mort_ch2"},
+            {"text": "[Échec] Combattre malgré les blessures", "next": "combat_final_ch2", "skill_check": None, "combat": True, "monster_id": "seigneur_demon", "win_node": "victoire_ch2", "lose_node": "mort_ch2"},
+        ]
+    },
+    "combat_final_ch2": {
+        "id": "combat_final_ch2",
+        "title": "Combat Final — Seigneur Démon",
+        "text": """Le Seigneur Démon lève son trident enflammé. "Je ne peux peut-être plus appeler mes frères... mais je peux encore te réduire en cendres, MORTEL!"\n\nSon aura de terreur fait trembler la terre. Ses yeux brûlent d'une haine millénaire.""",
+        "combat": True,
+        "monster_id": "seigneur_demon",
+        "win_node": "victoire_ch2",
+        "lose_node": "mort_ch2",
+        "choices": []
+    },
+    "victoire_ch2": {
+        "id": "victoire_ch2",
+        "title": "VICTOIRE — Le Portail Fermé",
+        "text": """Le Seigneur Démon s'effondre avec un hurlement qui résonne dans toutes les dimensions. Son corps colossal se consume de l'intérieur — des flammes bleues le dévorent, laissant bientôt une statue de cendre qui s'effrite dans le vent.
+
+Le portail est fermé. Les Terres Maudites, privées de leur source d'énergie démoniaque, commencent lentement à reprendre vie. Un brin d'herbe pousse déjà dans la cendre noire.
+
+De retour à l'Académie, Sorel vous accueille avec une révérence qui ne lui ressemble pas.
+
+"Ce que vous avez accompli... dépasse toutes mes attentes. Non seulement vous avez vaincu Valdris, mais vous avez fermé une Porte des Enfers. Il n'y en a eu que trois dans l'histoire connue du monde. Et les deux premières... n'ont pas été fermées à temps."
+
+Il vous remet un parchemin scellé d'un sceau doré.
+
+"Votre nom sera inscrit dans les Annales de l'Académie. Et si jamais une quatrième porte s'ouvre... nous saurons qui appeler."
+
+*+3000 XP — +1000 pièces d'or*
+*Le monde est sauvé.*
+
+═══════════════════════════════════
+🔥  VICTOIRE — FIN HÉROÏQUE  🔥
+═══════════════════════════════════
+
+Merci d'avoir joué à La Forêt de Brume — Chapitre I & II !""",
+        "choices": [
+            {"text": "Rejouer depuis le début", "next": "start", "skill_check": None},
+        ]
+    },
+    "mort_ch2": {
+        "id": "mort_ch2",
+        "title": "MORT — Le Monde Sombre",
+        "text": """Vous tombez sur la terre calcinée des Terres Maudites. Autour de vous, le sol tremble sous les pas du Seigneur Démon.
+
+Dans votre dernier souffle, vous voyez le portail s'élargir. Des silhouettes démoniaques se déversent dans le monde des mortels. Des villes brûlent à l'horizon.
+
+Vous avez échoué... mais l'espoir n'est jamais totalement perdu. Un autre héros se lèvera peut-être.
+
+═══════════════════════════════════════
+💀  MORT — LE MONDE EST PERDU  💀
+═══════════════════════════════════════""",
+        "choices": [
+            {"text": "Réessayer le Chapitre II", "next": "chapitre2_intro", "skill_check": None},
+            {"text": "Recommencer depuis le début", "next": "start", "skill_check": None},
         ]
     },
 }

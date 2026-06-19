@@ -121,6 +121,12 @@ class RPGApp:
     def _show_world_map(self):
         self._clear()
         sound_manager.play_music("village")
+        # Show tutorial on first play
+        if self.game_state and not getattr(self.game_state, "tutorial_done", False):
+            from ui.screens.tutorial import TutorialOverlay
+            def _on_tutorial_done():
+                self.game_state.tutorial_done = True
+            self.root.after(300, lambda: TutorialOverlay(self.root, _on_tutorial_done))
         screen = WorldMapScreen(
             self.root, self.game_state,
             on_combat=self._start_combat,
@@ -148,9 +154,12 @@ class RPGApp:
         self._show_world_map()
 
     def _start_combat(self, monster_id, win_node, lose_node):
+        from engine.combat import scale_monster
         self._clear()
         sound_manager.play_music("combat")
-        monster_data = MONSTERS.get(monster_id, MONSTERS["gobelin"])
+        raw_monster = MONSTERS.get(monster_id, MONSTERS["gobelin"])
+        player_level = self.game_state.character.level if self.game_state else 1
+        monster_data = scale_monster(raw_monster, player_level)
         screen = CombatScreen(
             self.root, self.game_state, monster_data,
             on_victory=lambda: self._after_combat(win_node, victory=True, monster_id=monster_id),

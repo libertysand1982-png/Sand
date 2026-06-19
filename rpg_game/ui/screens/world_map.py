@@ -119,6 +119,11 @@ class WorldMapScreen(tk.Frame):
         self.xp_label.pack(side="left", padx=8)
         self.gold_label = tk.Label(top, text="", font=FONT_SMALL, bg=BG2, fg="#ffcc44")
         self.gold_label.pack(side="left", padx=8)
+        self.hp_warn_label = tk.Label(top, text="", font=("Times New Roman", 11, "bold"),
+                                       bg=BG2, fg=RED_BRIGHT)
+        self.hp_warn_label.pack(side="left", padx=4)
+        self._hp_blink_state = False
+        self._hp_blink_job = None
 
         if self.on_menu:
             tk.Button(top, text="Menu", font=FONT_SMALL, bg=BG2, fg=PARCHMENT,
@@ -711,12 +716,35 @@ class WorldMapScreen(tk.Frame):
         loc = LOCATIONS.get(loc_id, {})
         loc_type = loc.get("type", "")
 
+        # Level gate check for dangerous zones
+        min_level = loc.get("min_level", 1)
+        player_level = self.game_state.character.level
+        if loc_type in ("dungeon", "cave", "ruins") and player_level < min_level:
+            self._show_level_gate_warning(loc, min_level)
+            return
+
         if loc_type in ("village", "town", "fort", "temple"):
             self._show_location_screen(loc_id)
         elif loc_type in ("dungeon", "cave", "ruins"):
             self._confirm_explore(loc_id)
         else:
             self._show_location_screen(loc_id)
+
+    def _show_level_gate_warning(self, loc, min_level):
+        self._hide_location_overlay()
+        overlay = tk.Frame(self, bg=BG)
+        overlay.place(relx=0.2, rely=0.3, relwidth=0.6, relheight=0.4)
+        self._location_overlay = overlay
+
+        tk.Label(overlay, text=loc["name"], font=FONT_TITLE, bg=BG, fg=loc.get("color", RED_BRIGHT)).pack(pady=10)
+        tk.Label(overlay, text=f"⚠  Niveau {min_level} requis",
+                 font=("Times New Roman", 16, "bold"), bg=BG, fg=RED_BRIGHT).pack()
+        tk.Label(overlay, text=f"Votre niveau actuel : {self.game_state.character.level}\n\nCette zone est trop dangereuse pour vous.\nGagnez de l'expérience et revenez plus fort.",
+                 font=FONT_NORMAL, bg=BG2, fg=PARCHMENT_LIGHT, wraplength=360, justify="center",
+                 padx=14, pady=10).pack(fill="x", padx=12, pady=8)
+        tk.Button(overlay, text="Reculer prudemment", font=FONT_BTN, bg=BG2, fg=PARCHMENT,
+                  relief="flat", padx=16, pady=8, cursor="hand2",
+                  command=self._hide_location_overlay).pack()
 
     def _show_location_screen(self, loc_id):
         """Overlay the LocationScreen on top of the map."""
@@ -809,6 +837,25 @@ class WorldMapScreen(tk.Frame):
         self.hp_label.config(text=f"PV: {char.hp}/{char.max_hp}", fg=hp_color)
         self.xp_label.config(text=f"XP: {char.xp}  Niv.{char.level}")
         self.gold_label.config(text=f"Or: {char.gold} po")
+        if hp_ratio < 0.3:
+            if self._hp_blink_job is None:
+                self._blink_hp_warning()
+        else:
+            if self._hp_blink_job is not None:
+                self.after_cancel(self._hp_blink_job)
+                self._hp_blink_job = None
+            self.hp_warn_label.config(text="")
+
+    def _blink_hp_warning(self):
+        self._hp_blink_state = not self._hp_blink_state
+        self.hp_warn_label.config(text="❤ PV CRITIQUES!" if self._hp_blink_state else "")
+        char = self.game_state.character
+        hp_ratio = char.hp / max(1, char.max_hp)
+        if hp_ratio < 0.3:
+            self._hp_blink_job = self.after(600, self._blink_hp_warning)
+        else:
+            self._hp_blink_job = None
+            self.hp_warn_label.config(text="")
 
     def _refresh_quests(self):
         for w in self.quest_frame.winfo_children():

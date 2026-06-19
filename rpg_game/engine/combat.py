@@ -1,6 +1,15 @@
 import random
 from engine.dice import roll, roll_multiple, roll_with_modifier, modifier
 
+
+def scale_monster(monster, player_level):
+    """Return a copy of monster with HP scaled by player level."""
+    scaled = dict(monster)
+    base_hp = monster["hp"]
+    if player_level > 3:
+        scaled["hp"] = int(base_hp * (1 + (player_level - 3) * 0.15))
+    return scaled
+
 def parse_damage(damage_str):
     """Parse '2d6+3' -> lance les dés"""
     import re
