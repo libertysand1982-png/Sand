@@ -4,6 +4,7 @@ import random
 from data.world import (MAP_GRID, LOCATIONS, NPCS, SHOPS, QUESTS,
                          TERRAIN_COLORS, TERRAIN_NAMES, TERRAIN_ENCOUNTERS)
 from ui.screens.location_screen import LocationScreen
+from engine.sound import sound_manager
 
 try:
     from ui.art import get_location_image, image_to_tk as _art_image_to_tk
@@ -66,9 +67,24 @@ class WorldMapScreen(tk.Frame):
         # Current location popup state
         self._location_overlay = None
 
+        # Footstep sound every N steps
+        self._step_sound_counter = 0
+        self._step_sound_every = random.randint(2, 3)
+
+        # Ensure fog-of-war fields exist (backward-compat with old saves)
+        if not hasattr(self.game_state, 'revealed_cells'):
+            self.game_state.revealed_cells = set()
+        if not hasattr(self.game_state, 'reveal_radius'):
+            self.game_state.reveal_radius = 4
+
         self._build()
+
+        # Initial reveal around starting position
+        self.game_state.reveal_around(self.hero_x, self.hero_y, 5)
+
         self._center_camera()
         self._draw_map()
+        self._draw_fog()
         self._draw_hero()
         self._start_blink()
 
@@ -104,6 +120,21 @@ class WorldMapScreen(tk.Frame):
         tk.Button(top, text="Sauver", font=FONT_SMALL, bg=DARK_GOLD, fg=BG,
                   relief="flat", padx=8, pady=3, cursor="hand2",
                   command=self._save).pack(side="right", padx=4)
+
+        # Sound toggle buttons
+        self._sfx_btn = tk.Button(top, text="🔊", font=FONT_SMALL, bg=BG2, fg=PARCHMENT,
+                                   relief="flat", padx=6, pady=3, cursor="hand2",
+                                   command=self._toggle_sfx)
+        self._sfx_btn.pack(side="right", padx=2)
+        self._music_btn = tk.Button(top, text="🎵", font=FONT_SMALL, bg=BG2, fg=PARCHMENT,
+                                     relief="flat", padx=6, pady=3, cursor="hand2",
+                                     command=self._toggle_music)
+        self._music_btn.pack(side="right", padx=2)
+
+        # Explored percentage label
+        self.explored_var = tk.StringVar(value="Exploré: 0%")
+        tk.Label(top, textvariable=self.explored_var, font=FONT_TINY,
+                 bg=BG2, fg=DARK_GOLD).pack(side="right", padx=8)
 
         self._update_top_bar()
 
@@ -154,6 +185,13 @@ class WorldMapScreen(tk.Frame):
                                    highlightthickness=1, highlightbackground="#333")
             color_box.pack(side="left", padx=(0, 6))
             tk.Label(row, text=name, font=FONT_TINY, bg=BG2, fg=PARCHMENT_LIGHT).pack(side="left")
+        # Fog of war legend entry
+        fog_row = tk.Frame(legend_frame, bg=BG2)
+        fog_row.pack(fill="x", pady=1)
+        fog_box = tk.Canvas(fog_row, width=14, height=14, bg="#111111",
+                             highlightthickness=1, highlightbackground="#333")
+        fog_box.pack(side="left", padx=(0, 6))
+        tk.Label(fog_row, text="Inexploré", font=FONT_TINY, bg=BG2, fg=PARCHMENT_LIGHT).pack(side="left")
 
         tk.Label(right, text="━" * 22, font=FONT_TINY, bg=BG2, fg=DARK_GOLD).pack(pady=2)
 
@@ -247,9 +285,12 @@ class WorldMapScreen(tk.Frame):
                 darker = self._darken(color)
                 self.canvas.create_rectangle(x0, y0, x1, y1, fill="", outline=darker, tags="grid")
 
-        # Draw locations
+        # Draw locations — only if their cell is revealed
+        revealed = getattr(self.game_state, 'revealed_cells', set())
         for loc_id, loc in LOCATIONS.items():
             gx, gy = loc["x"], loc["y"]
+            if (gx, gy) not in revealed:
+                continue
             col = gx - self.cam_x
             row = gy - self.cam_y
             if 0 <= col < cols_visible and 0 <= row < rows_visible:
@@ -267,6 +308,47 @@ class WorldMapScreen(tk.Frame):
                 icon = loc.get("icon", "?")
                 self.canvas.create_text(cx, cy, text=icon, font=("Courier New", 9, "bold"),
                                          fill="#0d0b08", tags="location")
+
+    def _draw_fog(self):
+        """Draw fog of war over unrevealed cells using merged horizontal spans."""
+        self.canvas.delete("fog")
+        revealed = getattr(self.game_state, 'revealed_cells', set())
+        cols_visible = CANVAS_W // CELL
+        rows_visible = CANVAS_H // CELL
+
+        for row in range(rows_visible + 1):
+            gy = self.cam_y + row
+            if gy >= MAP_H:
+                break
+            # Merge consecutive hidden cells in this row into horizontal spans
+            span_start = None
+            for col in range(cols_visible + 2):
+                gx = self.cam_x + col
+                hidden = (gx >= MAP_W) or ((gx, gy) not in revealed)
+                in_viewport = col <= cols_visible
+
+                if hidden and in_viewport and gx < MAP_W:
+                    if span_start is None:
+                        span_start = col
+                else:
+                    if span_start is not None:
+                        # Draw one rectangle spanning span_start..col-1
+                        sx0 = span_start * CELL
+                        sy0 = row * CELL
+                        sx1 = col * CELL
+                        sy1 = sy0 + CELL
+                        self.canvas.create_rectangle(
+                            sx0, sy0, sx1, sy1,
+                            fill="#111111", outline="",
+                            tags="fog"
+                        )
+                        span_start = None
+
+        # Update explored % label
+        total = MAP_W * MAP_H
+        pct = int(len(revealed) * 100 / total)
+        if hasattr(self, 'explored_var'):
+            self.explored_var.set(f"Exploré: {pct}%")
 
     def _draw_hero(self):
         """Draw (or redraw) the hero marker."""
@@ -359,9 +441,21 @@ class WorldMapScreen(tk.Frame):
         self.hero_y = ny
         self.steps_since_encounter += 1
 
+        # Fog of war reveal based on terrain
+        _fow_radius = {0: 4, 1: 2, 2: 3, 3: 4, 4: 5, 5: 4}.get(terrain, 4)
+        self.game_state.reveal_around(self.hero_x, self.hero_y, _fow_radius)
+
+        # Footstep sound every 2-3 steps
+        self._step_sound_counter += 1
+        if self._step_sound_counter >= self._step_sound_every:
+            self._step_sound_counter = 0
+            self._step_sound_every = random.randint(2, 3)
+            sound_manager.play_sfx("step")
+
         # Update camera if hero near edge
         self._center_camera()
         self._draw_map()
+        self._draw_fog()
         self._draw_hero()
 
         # Update status bar
@@ -437,6 +531,7 @@ class WorldMapScreen(tk.Frame):
         self._enter_location(loc_id)
 
     def _enter_location(self, loc_id):
+        sound_manager.play_sfx("door")
         loc = LOCATIONS.get(loc_id, {})
         loc_type = loc.get("type", "")
 
@@ -522,6 +617,14 @@ class WorldMapScreen(tk.Frame):
     # ─────────────────────────────────────────────
     # UI HELPERS
     # ─────────────────────────────────────────────
+
+    def _toggle_sfx(self):
+        sound_manager.toggle_sfx()
+        self._sfx_btn.config(fg=PARCHMENT if sound_manager.enabled else "#555533")
+
+    def _toggle_music(self):
+        sound_manager.toggle_music()
+        self._music_btn.config(fg=PARCHMENT if sound_manager.music_enabled else "#555533")
 
     def _update_top_bar(self):
         char = self.game_state.character

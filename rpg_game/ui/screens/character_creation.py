@@ -3,6 +3,7 @@ from tkinter import ttk, font
 import random
 from engine.character import Character, RACES, CLASSES, SKILLS_LIST, XP_TABLE
 from engine.dice import ability_roll, modifier
+from engine.sound import sound_manager
 
 BG = "#0d0b08"
 BG2 = "#1a1408"
@@ -185,6 +186,7 @@ class CharacterCreationScreen(tk.Frame):
             self._update_summary()
 
     def _roll_stats(self):
+        sound_manager.play_sfx("coin")
         stats = ["FORCE", "DEXTÉRITÉ", "CONSTITUTION", "INTELLIGENCE", "SAGESSE", "CHARISME"]
         for s in stats:
             val, _ = ability_roll()

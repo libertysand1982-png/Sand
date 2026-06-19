@@ -16,6 +16,8 @@ class GameState:
         self.completed_quests = []       # list of quest_id strings
         self.kill_counts = {}            # monster_id -> int
         self.visited_locations = []      # list of location_id strings
+        self.revealed_cells = set()      # set of (x, y) tuples — fog of war
+        self.reveal_radius = 4           # default vision radius
 
     def current_node(self):
         return STORY.get(self.current_node_id, STORY["start"])
@@ -26,6 +28,16 @@ class GameState:
         if node_id not in self.character.visited_nodes:
             self.character.visited_nodes.append(node_id)
         return node
+
+    def reveal_around(self, x, y, radius=None):
+        """Reveal all cells within radius of (x, y) — circular reveal."""
+        r = radius if radius is not None else self.reveal_radius
+        for dx in range(-r, r + 1):
+            for dy in range(-r, r + 1):
+                if dx * dx + dy * dy <= r * r:
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < 40 and 0 <= ny < 30:
+                        self.revealed_cells.add((nx, ny))
 
     def get_monster(self, monster_id):
         return dict(MONSTERS.get(monster_id, MONSTERS["gobelin"]))

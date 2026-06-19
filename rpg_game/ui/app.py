@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from engine.game import GameState
+from engine.sound import sound_manager
 from ui.screens.character_creation import CharacterCreationScreen
 from ui.screens.game_screen import GameScreen
 from ui.screens.combat_screen import CombatScreen
@@ -22,6 +23,7 @@ class RPGApp:
         self.root.config(bg=BG)
         self.game_state = None
         self.current_screen = None
+        sound_manager.init()
         self._show_main_menu()
 
     def _clear(self):
@@ -55,6 +57,35 @@ class RPGApp:
         tk.Button(frame, text="❌  QUITTER", command=self.root.quit,
                  **{**btn_style, "bg": "#222222"}).pack(pady=6)
 
+        # Sound toggle buttons
+        sound_frame = tk.Frame(frame, bg=BG)
+        sound_frame.pack(pady=4)
+
+        self._sfx_btn_var = tk.StringVar(value="🔊 Son: ON")
+        self._music_btn_var = tk.StringVar(value="🎵 Musique: ON")
+
+        def _toggle_sfx():
+            sound_manager.toggle_sfx()
+            self._sfx_btn_var.set("🔊 Son: ON" if sound_manager.enabled else "🔊 Son: OFF")
+
+        def _toggle_music():
+            sound_manager.toggle_music()
+            self._music_btn_var.set("🎵 Musique: ON" if sound_manager.music_enabled else "🎵 Musique: OFF")
+
+        small_btn = {"font": ("Times New Roman", 11), "bg": "#222222", "fg": PARCHMENT,
+                     "relief": "flat", "padx": 12, "pady=4": None, "cursor": "hand2",
+                     "activebackground": "#333333", "activeforeground": PARCHMENT}
+        tk.Button(sound_frame, textvariable=self._sfx_btn_var,
+                  font=("Times New Roman", 11), bg="#222222", fg=PARCHMENT,
+                  relief="flat", padx=12, pady=4, cursor="hand2",
+                  activebackground="#333333", command=_toggle_sfx).pack(side="left", padx=6)
+        tk.Button(sound_frame, textvariable=self._music_btn_var,
+                  font=("Times New Roman", 11), bg="#222222", fg=PARCHMENT,
+                  relief="flat", padx=12, pady=4, cursor="hand2",
+                  activebackground="#333333", command=_toggle_music).pack(side="left", padx=6)
+
+        sound_manager.play_music("menu")
+
         tk.Label(frame, text="\nSystème de règles D&D 5e simplifié | Héroic Fantasy Classique",
                 font=("Courier New", 9), bg=BG, fg="#3a2a0a").pack(side="bottom", pady=8)
 
@@ -77,6 +108,10 @@ class RPGApp:
             save.kill_counts = {}
         if not hasattr(save, "visited_locations"):
             save.visited_locations = []
+        if not hasattr(save, "revealed_cells"):
+            save.revealed_cells = set()
+        if not hasattr(save, "reveal_radius"):
+            save.reveal_radius = 4
         self._show_world_map()
 
     def _start_game(self):
@@ -85,6 +120,7 @@ class RPGApp:
 
     def _show_world_map(self):
         self._clear()
+        sound_manager.play_music("village")
         screen = WorldMapScreen(
             self.root, self.game_state,
             on_combat=self._start_combat,
@@ -113,6 +149,7 @@ class RPGApp:
 
     def _start_combat(self, monster_id, win_node, lose_node):
         self._clear()
+        sound_manager.play_music("combat")
         monster_data = MONSTERS.get(monster_id, MONSTERS["gobelin"])
         screen = CombatScreen(
             self.root, self.game_state, monster_data,

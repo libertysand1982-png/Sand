@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from engine.combat import CombatEngine
+from engine.sound import sound_manager
 
 try:
     from ui.art import get_monster_portrait, image_to_tk
@@ -185,6 +186,7 @@ class CombatScreen(tk.Frame):
             self.mp_label.config(text=f"{char.mp} / {char.max_mp}")
 
     def _roll_initiative(self):
+        sound_manager.play_sfx("roar")
         p_init, p_desc = self.engine.player_initiative()
         e_init, e_desc = self.engine.enemy_initiative()
         self._add_log("═══ DÉBUT DU COMBAT ═══")
@@ -197,6 +199,7 @@ class CombatScreen(tk.Frame):
             self._enemy_goes_first()
 
     def _enemy_goes_first(self):
+        sound_manager.play_sfx("step")  # enemy attack sound
         self.engine.enemy_turn()
         for msg in self.engine.log[-3:]:
             self._add_log(msg)
@@ -205,6 +208,7 @@ class CombatScreen(tk.Frame):
         self._check_end()
 
     def _attack(self):
+        sound_manager.play_sfx("sword")
         self.engine.player_attack()
         self._flush_log()
         self._update_bars()
@@ -215,6 +219,7 @@ class CombatScreen(tk.Frame):
         self._check_end()
 
     def _cast_spell(self):
+        sound_manager.play_sfx("spell")
         char = self.game_state.character
         if char.mp <= 0:
             self._add_log("✨ Plus de mana!")
@@ -285,6 +290,7 @@ class CombatScreen(tk.Frame):
         if not self.engine.combat_over:
             return
         if self.engine.player_won:
+            sound_manager.play_sfx("victory")
             monster = self.engine.monster
             xp = monster.get("xp", 50)
             leveled = self.game_state.character.gain_xp(xp)
@@ -296,14 +302,17 @@ class CombatScreen(tk.Frame):
                     if "Pièces" in item:
                         self.game_state.character.gold += qty
                         loot_str += f"\n  💰 +{qty} pièces d'or"
+                        sound_manager.play_sfx("coin")
                     else:
                         self.game_state.inventory_items[item] = self.game_state.inventory_items.get(item, 0) + qty
                         loot_str += f"\n  🎒 {item} x{qty}"
             self._add_log(f"\n★ Victoire! +{xp} XP{loot_str}")
             if leveled:
+                sound_manager.play_sfx("level_up")
                 self._add_log(f"🌟 NIVEAU SUPÉRIEUR! Vous êtes maintenant niveau {self.game_state.character.level}!")
             self.after(2000, self.on_victory)
         else:
+            sound_manager.play_sfx("defeat")
             if self.engine.turn == 0 or "fuite" in self.engine.log[-1].lower() if self.engine.log else False:
                 self.after(1500, self.on_fled)
             else:
