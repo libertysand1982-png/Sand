@@ -409,74 +409,74 @@ SHOPS = {
     "marche_piedval": {
         "name": "Marché de Piedval",
         "items": [
-            {"name": "Potion de Soins", "price": 25, "effect": "heal", "value": "2d4+2", "description": "Restaure 2d4+2 PV"},
-            {"name": "Torche", "price": 2, "effect": None, "description": "Éclaire dans l'obscurité"},
-            {"name": "Rations de voyage", "price": 5, "effect": "rest", "value": 2, "description": "+2 PV lors d'un repos"},
-            {"name": "Corde (15m)", "price": 8, "effect": None, "description": "Utile pour escalader"},
-            {"name": "Antidote", "price": 30, "effect": "cure_poison", "description": "Soigne l'empoisonnement"},
+            {"name": "Potion de Soins", "price": 25, "effect": "heal", "value": "2d4+2", "description": "Restaure 2d4+2 PV", "slot": None},
+            {"name": "Torche", "price": 2, "effect": None, "description": "Éclaire dans l'obscurité", "slot": None},
+            {"name": "Rations de voyage", "price": 5, "effect": "rest", "value": 2, "description": "+2 PV lors d'un repos", "slot": None},
+            {"name": "Corde (15m)", "price": 8, "effect": None, "description": "Utile pour escalader", "slot": None},
+            {"name": "Antidote", "price": 30, "effect": "cure_poison", "description": "Soigne l'empoisonnement", "slot": None},
         ]
     },
     "forge_piedval": {
         "name": "Forge de Durgan",
         "items": [
-            {"name": "Épée Courte", "price": 80, "effect": "weapon", "damage": "1d6", "description": "Dégâts: 1d6"},
-            {"name": "Hache de Guerre", "price": 120, "effect": "weapon", "damage": "1d8+1", "description": "Dégâts: 1d8+1"},
-            {"name": "Arc Long", "price": 100, "effect": "weapon", "damage": "1d8", "description": "Dégâts: 1d8 (distance)"},
-            {"name": "Armure de Cuir", "price": 60, "effect": "armor", "ac_bonus": 2, "description": "+2 CA"},
-            {"name": "Cotte de Mailles", "price": 200, "effect": "armor", "ac_bonus": 4, "description": "+4 CA"},
-            {"name": "Bouclier", "price": 50, "effect": "armor", "ac_bonus": 2, "description": "+2 CA"},
+            {"name": "Épée Courte", "price": 80, "effect": "weapon", "damage": "1d6", "type": "melee", "ac_bonus": 0, "description": "Dégâts: 1d6", "slot": "weapon"},
+            {"name": "Hache de Guerre", "price": 120, "effect": "weapon", "damage": "1d8+1", "type": "melee", "ac_bonus": 0, "description": "Dégâts: 1d8+1", "slot": "weapon"},
+            {"name": "Arc Long", "price": 100, "effect": "weapon", "damage": "1d8", "type": "ranged", "ac_bonus": 0, "description": "Dégâts: 1d8 (distance)", "slot": "weapon"},
+            {"name": "Armure de Cuir", "price": 60, "effect": "armor", "ac_bonus": 2, "description": "+2 CA", "slot": "armor"},
+            {"name": "Cotte de Mailles", "price": 200, "effect": "armor", "ac_bonus": 4, "description": "+4 CA", "slot": "armor"},
+            {"name": "Bouclier", "price": 50, "effect": "armor", "ac_bonus": 2, "description": "+2 CA", "slot": "armor"},
         ]
     },
     "marche_bourg": {
         "name": "Marché de Bourg-Amont",
         "items": [
-            {"name": "Potion de Soins", "price": 30, "effect": "heal", "value": "2d4+2", "description": "Restaure 2d4+2 PV"},
-            {"name": "Grande Potion de Soins", "price": 80, "effect": "heal", "value": "4d4+4", "description": "Restaure 4d4+4 PV"},
-            {"name": "Parchemin de Missile Magique", "price": 60, "effect": "spell", "spell": "Missile Magique", "description": "Lance Missile Magique (3d4)"},
-            {"name": "Baguette de Détection", "price": 150, "effect": None, "description": "Détecte les pièges et secrets"},
-            {"name": "Anneau de Protection +1", "price": 300, "effect": "armor", "ac_bonus": 1, "description": "+1 CA permanent"},
-            {"name": "Potion de Force", "price": 100, "effect": "buff", "stat": "FORCE", "value": 4, "description": "+4 FORCE pendant 1h"},
+            {"name": "Potion de Soins", "price": 30, "effect": "heal", "value": "2d4+2", "description": "Restaure 2d4+2 PV", "slot": None},
+            {"name": "Grande Potion de Soins", "price": 80, "effect": "heal", "value": "4d4+4", "description": "Restaure 4d4+4 PV", "slot": None},
+            {"name": "Parchemin de Missile Magique", "price": 60, "effect": "spell", "spell": "Missile Magique", "description": "Lance Missile Magique (3d4)", "slot": None},
+            {"name": "Baguette de Détection", "price": 150, "effect": None, "description": "Détecte les pièges et secrets", "slot": None},
+            {"name": "Anneau de Protection +1", "price": 300, "effect": "armor", "ac_bonus": 1, "description": "+1 CA permanent", "slot": "ring"},
+            {"name": "Potion de Force", "price": 100, "effect": "buff", "stat": "FORCE", "value": 4, "description": "+4 FORCE pendant 1h", "slot": None},
         ]
     },
     "armurerie_fort": {
         "name": "Armurerie du Fort Gris",
         "items": [
-            {"name": "Épée Longue +1", "price": 250, "effect": "weapon", "damage": "1d8+1", "description": "Dégâts: 1d8+1 (magique)"},
-            {"name": "Armure de Plates", "price": 500, "effect": "armor", "ac_bonus": 6, "description": "+6 CA"},
-            {"name": "Heaume de Fer", "price": 80, "effect": "armor", "ac_bonus": 1, "description": "+1 CA"},
-            {"name": "Potion de Soins", "price": 25, "effect": "heal", "value": "2d4+2", "description": "Restaure 2d4+2 PV"},
-            {"name": "Flèches (20)", "price": 15, "effect": None, "description": "Munitions pour arc"},
+            {"name": "Épée Longue +1", "price": 250, "effect": "weapon", "damage": "1d8+1", "type": "melee", "ac_bonus": 0, "description": "Dégâts: 1d8+1 (magique)", "slot": "weapon"},
+            {"name": "Armure de Plates", "price": 500, "effect": "armor", "ac_bonus": 6, "description": "+6 CA", "slot": "armor"},
+            {"name": "Heaume de Fer", "price": 80, "effect": "armor", "ac_bonus": 1, "description": "+1 CA", "slot": "helmet"},
+            {"name": "Potion de Soins", "price": 25, "effect": "heal", "value": "2d4+2", "description": "Restaure 2d4+2 PV", "slot": None},
+            {"name": "Flèches (20)", "price": 15, "effect": None, "description": "Munitions pour arc", "slot": None},
         ]
     },
     "boutique_arcane": {
         "name": "Boutique Arcanique",
         "items": [
-            {"name": "Parchemin de Boule de Feu", "price": 120, "effect": "spell", "description": "Lance Boule de Feu (6d6 dégâts)"},
-            {"name": "Parchemin d'Invisibilité", "price": 100, "effect": "buff", "description": "+4 Discrétion pendant 1 combat"},
-            {"name": "Pierre de Mana", "price": 200, "effect": "restore_mp", "value": 5, "description": "Restaure 5 points de mana"},
-            {"name": "Grimoire des Arcanes vol.1", "price": 350, "effect": "learn_spell", "description": "+1 sort disponible en combat"},
-            {"name": "Potion de Sagesse", "price": 80, "effect": "buff", "stat": "SAGESSE", "value": 3, "description": "+3 SAG pendant 1h"},
+            {"name": "Parchemin de Boule de Feu", "price": 120, "effect": "spell", "description": "Lance Boule de Feu (6d6 dégâts)", "slot": None},
+            {"name": "Parchemin d'Invisibilité", "price": 100, "effect": "buff", "description": "+4 Discrétion pendant 1 combat", "slot": None},
+            {"name": "Pierre de Mana", "price": 200, "effect": "restore_mp", "value": 5, "description": "Restaure 5 points de mana", "slot": None},
+            {"name": "Grimoire des Arcanes vol.1", "price": 350, "effect": "learn_spell", "description": "+1 sort disponible en combat", "slot": None},
+            {"name": "Potion de Sagesse", "price": 80, "effect": "buff", "stat": "SAGESSE", "value": 3, "description": "+3 SAG pendant 1h", "slot": None},
         ]
     },
     "marche_port": {
         "name": "Marché de Port-Calme",
         "items": [
-            {"name": "Potion de Soins", "price": 22, "effect": "heal", "value": "2d4+2", "description": "Restaure 2d4+2 PV"},
-            {"name": "Filet de pêche", "price": 10, "effect": None, "description": "Peut capturer certaines créatures"},
-            {"name": "Huile de lampe", "price": 3, "effect": None, "description": "Alimente une lanterne 6 heures"},
-            {"name": "Potion de Respiration Aquatique", "price": 75, "effect": "buff", "description": "Respirer sous l'eau 1 heure"},
-            {"name": "Harpon Béni", "price": 180, "effect": "weapon", "damage": "1d8+2", "description": "+2d6 vs créatures aquatiques"},
+            {"name": "Potion de Soins", "price": 22, "effect": "heal", "value": "2d4+2", "description": "Restaure 2d4+2 PV", "slot": None},
+            {"name": "Filet de pêche", "price": 10, "effect": None, "description": "Peut capturer certaines créatures", "slot": None},
+            {"name": "Huile de lampe", "price": 3, "effect": None, "description": "Alimente une lanterne 6 heures", "slot": None},
+            {"name": "Potion de Respiration Aquatique", "price": 75, "effect": "buff", "description": "Respirer sous l'eau 1 heure", "slot": None},
+            {"name": "Harpon Béni", "price": 180, "effect": "weapon", "damage": "1d8+2", "type": "melee", "ac_bonus": 0, "description": "+2d6 vs créatures aquatiques", "slot": "weapon"},
         ]
     },
     "boutique_temple": {
         "name": "Boutique du Temple du Soleil",
         "items": [
-            {"name": "Potion de Soins", "price": 20, "effect": "heal", "value": "2d4+2", "description": "Restaure 2d4+2 PV"},
-            {"name": "Potion de Soins Majeures", "price": 60, "effect": "heal", "value": "4d6+4", "description": "Restaure 4d6+4 PV"},
-            {"name": "Eau Bénite", "price": 25, "effect": "weapon_buff", "description": "+2d6 dégâts sacrés vs morts-vivants"},
-            {"name": "Symbole Sacré", "price": 40, "effect": None, "description": "Requis pour certains sorts de clerc"},
-            {"name": "Résurrection (parchemin)", "price": 500, "effect": "revive", "description": "Ressuscite le héros une fois"},
-            {"name": "Bénédiction Divine", "price": 150, "effect": "buff", "description": "+2 à tous les jets pendant 1 heure"},
+            {"name": "Potion de Soins", "price": 20, "effect": "heal", "value": "2d4+2", "description": "Restaure 2d4+2 PV", "slot": None},
+            {"name": "Potion de Soins Majeures", "price": 60, "effect": "heal", "value": "4d6+4", "description": "Restaure 4d6+4 PV", "slot": None},
+            {"name": "Eau Bénite", "price": 25, "effect": "weapon_buff", "description": "+2d6 dégâts sacrés vs morts-vivants", "slot": None},
+            {"name": "Symbole Sacré", "price": 40, "effect": None, "description": "Requis pour certains sorts de clerc", "slot": None},
+            {"name": "Résurrection (parchemin)", "price": 500, "effect": "revive", "description": "Ressuscite le héros une fois", "slot": None},
+            {"name": "Bénédiction Divine", "price": 150, "effect": "buff", "description": "+2 à tous les jets pendant 1 heure", "slot": None},
         ]
     }
 }

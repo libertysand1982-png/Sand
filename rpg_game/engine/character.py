@@ -132,6 +132,14 @@ class Character:
         self.inventory = []
         self.equipped_weapon = {"name": "Dague", "damage": "1d4", "type": "melee"}
 
+        # Equipment slots
+        self.equipment = {
+            "weapon": None,    # {"name": str, "damage": str, "type": str, "ac_bonus": 0}
+            "armor": None,     # {"name": str, "ac_bonus": int}
+            "ring": None,      # {"name": str, "ac_bonus": int}
+            "helmet": None,    # {"name": str, "ac_bonus": int}
+        }
+
         # Status
         self.status_effects = []
 
@@ -195,13 +203,54 @@ class Character:
         success = total >= difficulty
         return success, result, total, f"Jet de {skill_name}: {desc} + {self.stat_modifier(stat)} (mod) + {self.skills.get(skill_name,0)} (rang) = {total} vs DD {difficulty} → {'SUCCÈS' if success else 'ÉCHEC'}"
 
+    def equip(self, slot, item):
+        """Equip item to slot, return old item or None."""
+        old = self.equipment.get(slot)
+        self.equipment[slot] = item
+        self.recalculate_combat_stats()
+        return old
+
+    def unequip(self, slot):
+        """Remove item from slot, return it."""
+        item = self.equipment.get(slot)
+        self.equipment[slot] = None
+        self.recalculate_combat_stats()
+        return item
+
+    def recalculate_combat_stats(self):
+        """Recalculate AC and attack based on equipment."""
+        cls = CLASSES[self.char_class]
+        stats = self.final_stats()
+
+        # Base AC from class
+        base_ac = cls["armor"] + modifier(stats["DEXTÉRITÉ"])
+        # Add equipment bonuses
+        for slot, item in self.equipment.items():
+            if item and "ac_bonus" in item:
+                base_ac += item["ac_bonus"]
+        self.armor_class = base_ac
+
+        # Weapon from equipment slot overrides default
+        if self.equipment.get("weapon"):
+            self.equipped_weapon = self.equipment["weapon"]
+
+        # Attack bonus
+        self.attack_bonus = cls["attack_bonus"] + modifier(stats["FORCE"])
+
     def gain_xp(self, amount):
         self.xp += amount
+        old_level = self.level
         if self.level < len(XP_TABLE) - 1 and self.xp >= XP_TABLE[self.level]:
             self.level += 1
-            self.calculate_derived()
-            return True
-        return False
+            # Update max_hp but let LevelUpScreen handle stat allocation
+            from engine.dice import roll
+            cls = CLASSES[self.char_class]
+            hp_gain, _ = roll(cls["hp_die"])
+            con_mod = modifier(self.final_stats()["CONSTITUTION"])
+            self.max_hp += max(1, hp_gain + con_mod)
+            self.hp = min(self.hp + max(1, hp_gain + con_mod), self.max_hp)
+            return True, old_level
+        return False, old_level
 
     def xp_to_next(self):
         if self.level >= len(XP_TABLE) - 1:
