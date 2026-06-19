@@ -3,6 +3,12 @@ from data.world import LOCATIONS, NPCS, SHOPS
 from ui.screens.dialogue import DialogueScreen
 from ui.screens.shop import ShopScreen
 
+try:
+    from ui.art import get_location_image, image_to_tk
+    _ART_AVAILABLE = True
+except Exception:
+    _ART_AVAILABLE = False
+
 BG = "#0d0b08"
 BG2 = "#1a1408"
 PARCHMENT = "#c9a84c"
@@ -49,6 +55,18 @@ class LocationScreen(tk.Frame):
 
     def _build(self):
         loc = self.location
+        loc_type = loc.get("type", "default")
+
+        # Location illustration image
+        if _ART_AVAILABLE:
+            try:
+                pil_img = get_location_image(loc_type)
+                self._loc_img = image_to_tk(pil_img)
+                if self._loc_img:
+                    img_label = tk.Label(self, image=self._loc_img, bg=BG, bd=0)
+                    img_label.pack(fill="x")
+            except Exception:
+                self._loc_img = None
 
         # Top banner
         banner = tk.Frame(self, bg=BG2, pady=10)

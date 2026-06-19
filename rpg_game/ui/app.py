@@ -118,7 +118,8 @@ class RPGApp:
             self.root, self.game_state, monster_data,
             on_victory=lambda: self._after_combat(win_node, victory=True, monster_id=monster_id),
             on_defeat=lambda: self._after_combat(lose_node, victory=False, monster_id=monster_id),
-            on_fled=lambda: self._after_combat(win_node, victory=False, monster_id=monster_id)
+            on_fled=lambda: self._after_combat(win_node, victory=False, monster_id=monster_id),
+            monster_id=monster_id
         )
         screen.pack(fill="both", expand=True)
         self.current_screen = screen

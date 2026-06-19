@@ -2,6 +2,12 @@ import tkinter as tk
 from tkinter import ttk
 from engine.combat import CombatEngine
 
+try:
+    from ui.art import get_monster_portrait, image_to_tk
+    _ART_AVAILABLE = True
+except Exception:
+    _ART_AVAILABLE = False
+
 BG = "#0d0b08"
 BG2 = "#1a1408"
 PARCHMENT = "#c9a84c"
@@ -17,13 +23,21 @@ FONT_SMALL = ("Courier New", 10)
 FONT_BTN = ("Times New Roman", 12, "bold")
 
 class CombatScreen(tk.Frame):
-    def __init__(self, master, game_state, monster_data, on_victory, on_defeat, on_fled=None):
+    def __init__(self, master, game_state, monster_data, on_victory, on_defeat, on_fled=None,
+                 monster_id=None):
         super().__init__(master, bg=BG)
         self.game_state = game_state
         self.on_victory = on_victory
         self.on_defeat = on_defeat
         self.on_fled = on_fled or on_defeat
         self.engine = CombatEngine(game_state.character, monster_data)
+        # Derive monster_id from parameter or from monster name
+        if monster_id is None:
+            monster_id = monster_data.get("id", "")
+            if not monster_id:
+                monster_id = monster_data.get("name", "").lower().replace(" ", "_")
+        self._monster_id = monster_id
+        self._monster_img_ref = None
         self._build()
         self._roll_initiative()
 
@@ -39,11 +53,26 @@ class CombatScreen(tk.Frame):
         tk.Label(top, text=monster.get("description", ""), font=FONT_SMALL,
                  bg=BG2, fg=PARCHMENT_LIGHT, wraplength=600).pack()
 
-        # ASCII art + HP bar
+        # Monster portrait + HP bar
         art_frame = tk.Frame(top, bg=BG2)
         art_frame.pack()
-        tk.Label(art_frame, text=monster.get("ascii", ""), font=("Courier New", 12),
-                 bg=BG2, fg=RED_BRIGHT, justify="left").pack(side="left", padx=20)
+
+        # Try to show Pillow portrait; fall back to ASCII art
+        portrait_shown = False
+        if _ART_AVAILABLE:
+            try:
+                pil_img = get_monster_portrait(self._monster_id)
+                tk_img = image_to_tk(pil_img)
+                if tk_img:
+                    self._monster_img_ref = tk_img
+                    tk.Label(art_frame, image=tk_img, bg=BG2, bd=0).pack(side="left", padx=12)
+                    portrait_shown = True
+            except Exception:
+                pass
+
+        if not portrait_shown:
+            tk.Label(art_frame, text=monster.get("ascii", ""), font=("Courier New", 12),
+                     bg=BG2, fg=RED_BRIGHT, justify="left").pack(side="left", padx=20)
 
         hp_frame = tk.Frame(art_frame, bg=BG2)
         hp_frame.pack(side="left", padx=20)

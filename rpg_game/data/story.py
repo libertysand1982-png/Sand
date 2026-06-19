@@ -237,5 +237,215 @@ STORY = {
         "choices": [
             {"text": "Recommencer l'aventure", "next": "start", "skill_check": None},
         ]
-    }
+    },
+    "academie_intro": {
+        "id": "academie_intro",
+        "title": "L'Académie d'Arcane",
+        "text": """La tour de pierre grise s'élève sur cinq étages au milieu d'une clairière. Des runes bleues pulsent sur ses murs extérieurs. L'air autour sent l'ozone et quelque chose d'indéfinissable — comme si la réalité elle-même était légèrement différente ici.
+
+L'archimage Sorel vous reçoit dans son bureau encombré de grimoires. Un homme d'âge indéfini, aux yeux gris comme la pierre, qui parle avec une précision chirurgicale.
+
+"Un grimoire a été volé de notre bibliothèque il y a trois siècles. Le Grimoire des Morts, écrit par Valdris lui-même avant sa transformation. Il contient le rituel complet de création d'une Liche — et surtout, la méthode pour la détruire définitivement. Je crois qu'il se trouve toujours dans les ruines de Valdrigard."
+
+Il marque une pause.
+
+"Ramenez-le moi. En échange, je vous enseignerai un sort que peu de vivants connaissent." """,
+        "choices": [
+            {"text": "Accepter la mission de l'archimage", "next": "start", "skill_check": None},
+            {"text": "[Arcanes DD14] Demander à voir d'autres grimoires sur Valdris", "next": "academie_recherche", "skill_check": "Arcanes", "difficulty": 14},
+        ]
+    },
+    "academie_recherche": {
+        "id": "academie_recherche",
+        "title": "Recherches à l'Académie",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: Dans les archives de l'académie, vous trouvez des notes marginales fascinantes. Valdris avait une fille — Seraphine — qui a fondé le Temple du Soleil pour contrer les œuvres de son père. Elle a peut-être laissé des indices sur comment le vaincre. De plus, vous découvrez que le phylactère de Valdris n'est pas seulement détruire — il doit être détruit avec de l'Eau Bénite.
+
+En cas d'échec: Les archives sont trop complexes pour vous. Vous repartez sans information supplémentaire.""",
+        "choices": [
+            {"text": "Partir avec ces informations précieuses", "next": "start", "skill_check": None},
+        ]
+    },
+    "port_intro": {
+        "id": "port_intro",
+        "title": "Port-Calme — Village de Pêcheurs",
+        "text": """Port-Calme est un modeste village de pêcheurs au bord du grand fleuve. Normalement paisible, il est maintenant habité par la peur. Des filets déchirés sèchent sur les quais. Trois bateaux coulés sont visibles, à moitié immergés près de la rive.
+
+La capitaine Ondine, une femme robuste aux bras couverts de cicatrices, vous montre les dégâts.
+
+"Ça a commencé il y a un mois. La nuit, quelque chose attaque les bateaux. On n'a retrouvé aucun corps. Juste des planches brisées et des ancres tordues comme si c'était de la cire."
+
+Elle vous tend un collier en os de poisson.
+
+"La vieille Baba Morvaine prétend que ça vient d'une créature contrôlée par quelqu'un. Pas d'une bête sauvage. Allez la voir avant de vous aventurer sur le fleuve." """,
+        "choices": [
+            {"text": "Aller voir Baba Morvaine", "next": "baba_morvaine", "skill_check": None},
+            {"text": "[Perception DD13] Examiner les dégâts sur les bateaux", "next": "bateaux_examines", "skill_check": "Perception", "difficulty": 13},
+        ]
+    },
+    "baba_morvaine": {
+        "id": "baba_morvaine",
+        "title": "Baba Morvaine",
+        "text": """La vieille femme vit dans une cabane au bord du fleuve, entourée d'herbes séchées et de bocaux de substances indéfinissables. Elle vous attendait.
+
+"Je te voyais venir depuis hier. Assieds-toi."
+
+Elle dépose devant vous un bocal d'herbes verdâtres.
+
+"La créature n'est pas naturelle. Quelqu'un la guide. Quelqu'un qui vit sous l'eau depuis longtemps — un ancien noyé revenu. Il porte un anneau de contrôle. Détruis l'anneau, la créature est libre. Elle partira d'elle-même."
+
+Elle vous tend le bocal.
+
+"Cette herbe, brûlée sur l'eau, révèle ce qui est invisible. Tu trouveras l'entrée sous le vieux moulin à eau au nord du village."
+
+*Vous obtenez: Herbes de Révélation*""",
+        "choices": [
+            {"text": "Remercier Baba Morvaine et explorer le fleuve", "next": "start", "skill_check": None},
+        ]
+    },
+    "bateaux_examines": {
+        "id": "bateaux_examines",
+        "title": "Les Bateaux Endommagés",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: Les marques sur les bois brisés sont régulières, presque géométriques. Pas des griffes d'animal — des impacts calculés, comme si la créature avait reçu des instructions précises sur où frapper pour couler le bateau le plus vite. Et dans la vase du fond, partiellement dissimulé: un symbole gravé. Un symbole nécromantique que vous reconnaissez — le même que ceux des ruines de Valdrigard.
+
+En cas d'échec: Vous ne voyez que des dégâts standard, impossible de déterminer la cause précise.""",
+        "choices": [
+            {"text": "Rapporter à la capitaine Ondine", "next": "start", "skill_check": None},
+        ]
+    },
+    "mine_intro": {
+        "id": "mine_intro",
+        "title": "Mine Abandonnée — Repaire de Bandits",
+        "text": """L'entrée de l'ancienne mine est dissimulée sous des ronces et des planches clouées. Mais les marques de passage sont récentes — boue piétinée, mégots de torches.
+
+À l'intérieur, des voix. Une douzaine au moins. Des bandits armés jusqu'aux dents ont fait de cet endroit leur forteresse souterraine.
+
+Au fond de la mine principale, sur un trône improvisé de caisses empilées, trône Korr le Trancheur — un colosse d'un mètre quatre-vingt-dix portant deux haches croisées dans le dos. À ses côtés, attachée à un pilier: une jeune femme aux vêtements de noble. La fille du seigneur Aldrath, sans doute.
+
+Korr vous repère et sourit. Ce n'est pas un sourire aimable.
+
+"Un aventurier tout seul. Quelle chance pour nous." """,
+        "choices": [
+            {"text": "[Discrétion DD15] Tenter de libérer l'otage sans combattre", "next": "mine_furtif", "skill_check": "Discrétion", "difficulty": 15},
+            {"text": "Affronter Korr et ses hommes", "next": "start", "skill_check": None, "combat": True, "monster_id": "bandit", "win_node": "mine_victoire", "lose_node": "mort"},
+            {"text": "[Persuasion DD16] Proposer une rançon à Korr", "next": "mine_negociation", "skill_check": "Persuasion", "difficulty": 16},
+        ]
+    },
+    "mine_furtif": {
+        "id": "mine_furtif",
+        "title": "Infiltration de la Mine",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: Vous vous glissez dans les ombres avec une aisance remarquable, évitant les patrouilles, déjouant les gardes. Vous atteignez l'otage, coupez ses liens, et ressortez par un tunnel secondaire que les bandits ont négligé de surveiller. Elle s'appelle Elise. Elle tremble mais est indemne. Korr ne découvrira votre passage que bien après votre départ.
+
+En cas d'échec: Un garde vous repère! L'alarme est donnée!""",
+        "choices": [
+            {"text": "[Succès] Partir avec Elise vers Piedval", "next": "mine_victoire", "skill_check": None},
+            {"text": "[Échec] Combattre pour s'échapper", "next": "start", "skill_check": None, "combat": True, "monster_id": "bandit", "win_node": "mine_victoire", "lose_node": "mort"},
+        ]
+    },
+    "mine_negociation": {
+        "id": "mine_negociation",
+        "title": "Négocier avec Korr",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: Korr réfléchit. Votre offre — une somme en or et l'assurance que vous ne révélerez pas leur position aux autorités — l'intéresse. Il crache par terre et fait signe à ses hommes de libérer l'otage. "Allez. Et j'espère ne plus vous revoir."
+
+En cas d'échec: "Une rançon? Tu me prends pour un idiot?" Korr dégaine ses haches.""",
+        "choices": [
+            {"text": "[Succès] Partir avec l'otage", "next": "mine_victoire", "skill_check": None},
+            {"text": "[Échec] Combattre", "next": "start", "skill_check": None, "combat": True, "monster_id": "bandit", "win_node": "mine_victoire", "lose_node": "mort"},
+        ]
+    },
+    "mine_victoire": {
+        "id": "mine_victoire",
+        "title": "Elise Libérée",
+        "text": """Elise Aldrath retrouve ses esprits une fois à l'air libre. Une jeune femme d'une vingtaine d'années, les yeux clairs, qui vous remercie avec une dignité touchante malgré ses vêtements déchirés.
+
+"Mon père vous récompensera. Il n'a plus grand-chose, mais il vous offre l'Épée d'Aldrath — une lame qui se transmet dans notre famille depuis deux cents ans."
+
+De retour à Piedval, le vieux seigneur vous embrasse avec des larmes dans les yeux et vous remet une magnifique épée longue à la garde ornée d'un aigle gravé.
+
+*Épée d'Aldrath obtenue: 1d10+2, +1d4 dégâts sacrés*
+*+600 XP — Quête accomplie*""",
+        "choices": [
+            {"text": "Reprendre l'aventure", "next": "start", "skill_check": None},
+        ]
+    },
+    "necropole_intro": {
+        "id": "necropole_intro",
+        "title": "La Nécropole Ancienne",
+        "text": """La Nécropole s'étend sur plusieurs hectares: rangées de tombes brisées, mausolées effondrés, monuments funèbres à demi-effacés. Des noms illisibles sur des pierres mangées par la mousse.
+
+La nuit est tombée sans que vous vous en rendiez compte. Une brume naturelle — vraiment naturelle, celle-ci — rampe entre les tombes.
+
+Et puis vous les voyez. Des silhouettes qui bougent. Des squelettes armés d'épées rouillées, des zombies traînant les pieds. Pas beaucoup — cinq, peut-être six. Mais il y en a sûrement plus.
+
+Au fond de la nécropole, une crypte centrale plus imposante. Une lumière violette filtre sous sa porte de pierre.""",
+        "choices": [
+            {"text": "[Discrétion DD12] Atteindre la crypte centrale sans combattre", "next": "crypte_centrale", "skill_check": "Discrétion", "difficulty": 12},
+            {"text": "Affronter les morts-vivants", "next": "start", "skill_check": None, "combat": True, "monster_id": "squelette", "win_node": "crypte_centrale", "lose_node": "mort"},
+            {"text": "[Religion DD13] Invoquer la lumière divine pour les disperser", "next": "dispersion_divine", "skill_check": "Religion", "difficulty": 13},
+        ]
+    },
+    "dispersion_divine": {
+        "id": "dispersion_divine",
+        "title": "Renvoi des Morts-Vivants",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: Vous levez votre symbole sacré (ou improvisez un geste de foi) et criez une prière. Une lumière dorée émane de vos mains. Les morts-vivants reculent, leurs os craquant sous la pression divine. Ils battent en retraite dans les ombres. Le chemin vers la crypte centrale est libre.
+
+En cas d'échec: Rien ne se passe. Ou pire — les morts-vivants semblent attirés par votre tentative.""",
+        "choices": [
+            {"text": "[Succès] Avancer vers la crypte centrale", "next": "crypte_centrale", "skill_check": None},
+            {"text": "[Échec] Combattre", "next": "start", "skill_check": None, "combat": True, "monster_id": "squelette", "win_node": "crypte_centrale", "lose_node": "mort"},
+        ]
+    },
+    "crypte_centrale": {
+        "id": "crypte_centrale",
+        "title": "La Crypte Centrale",
+        "text": """L'intérieur de la crypte est étonnamment bien préservé. Des fresques sur les murs montrent des scènes de bataille — une armée de morts-vivants marchant contre des villes vivantes. Pas une décoration: une prophétie, peut-être.
+
+Au centre, dans un sarcophage ouvert: rien. Mais sur le couvercle, une inscription en vieux commun que vous déchiffrez laborieusement:
+
+"Ici reposait Valdris-Premier, fondateur de la lignée des nécromanciens. Son secret le plus précieux est dans la boîte de cristal — et la boîte ne peut être détruite que par le feu de son propre sang."
+
+À côté du sarcophage: un coffre de fer. Fermé à clé.
+
+*+200 XP pour avoir atteint la crypte centrale*""",
+        "choices": [
+            {"text": "[Crochetage DD14] Crocheter le coffre", "next": "coffre_ouvert", "skill_check": "Vol à la Tire", "difficulty": 14},
+            {"text": "[Force DD16] Forcer le coffre", "next": "coffre_force", "skill_check": "Athlétisme", "difficulty": 16},
+            {"text": "Repartir avec les informations sur Valdris", "next": "start", "skill_check": None},
+        ]
+    },
+    "coffre_ouvert": {
+        "id": "coffre_ouvert",
+        "title": "Le Coffre Ouvert",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: Le mécanisme cède sous vos doigts experts. À l'intérieur: 150 pièces d'or anciennes, un anneau d'argent gravé de runes (Anneau de Protection +2, +2 CA), et un parchemin qui confirme que le feu d'une torche bénie peut détruire le phylactère de Valdris.
+
+En cas d'échec: Le mécanisme résiste. Vous n'arrivez pas à l'ouvrir.""",
+        "choices": [
+            {"text": "[Succès] Prendre le contenu et repartir", "next": "start", "skill_check": None},
+            {"text": "[Échec] Repartir sans le coffre", "next": "start", "skill_check": None},
+        ]
+    },
+    "coffre_force": {
+        "id": "coffre_force",
+        "title": "Force Brute",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: Vos muscles bandés, vous arrachez littéralement le couvercle du coffre dans un fracas métallique. Dedans: 150 pièces d'or, un anneau de protection et un parchemin important. Le bruit a cependant réveillé des morts-vivants supplémentaires.
+
+En cas d'échec: Le coffre ne cède pas. Vos mains sont meurtries.""",
+        "choices": [
+            {"text": "[Succès] Prendre le butin et fuir rapidement", "next": "start", "skill_check": None},
+            {"text": "[Échec] Repartir bredouille", "next": "start", "skill_check": None},
+        ]
+    },
 }

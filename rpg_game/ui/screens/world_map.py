@@ -5,6 +5,12 @@ from data.world import (MAP_GRID, LOCATIONS, NPCS, SHOPS, QUESTS,
                          TERRAIN_COLORS, TERRAIN_NAMES, TERRAIN_ENCOUNTERS)
 from ui.screens.location_screen import LocationScreen
 
+try:
+    from ui.art import get_location_image, image_to_tk as _art_image_to_tk
+    _ART_AVAILABLE = True
+except Exception:
+    _ART_AVAILABLE = False
+
 BG = "#0d0b08"
 BG2 = "#1a1408"
 PARCHMENT = "#c9a84c"
@@ -154,6 +160,11 @@ class WorldMapScreen(tk.Frame):
         # Location info
         tk.Label(right, text="LIEU ACTUEL", font=("Courier New", 9, "bold"),
                  bg=BG2, fg=DARK_GOLD).pack(pady=(4, 2))
+
+        # Thumbnail image for location
+        self._loc_thumb_label = tk.Label(right, bg=BG2, bd=0)
+        self._loc_thumb_label.pack(pady=(2, 0))
+        self._loc_thumb_ref = None
 
         self.loc_name_var = tk.StringVar(value="—")
         tk.Label(right, textvariable=self.loc_name_var, font=FONT_SMALL, bg=BG2,
@@ -373,6 +384,19 @@ class WorldMapScreen(tk.Frame):
             self.loc_desc_var.set(loc.get("description", ""))
             self.enter_btn.config(state="normal", bg=RED)
             self._current_location_id = loc_id
+            # Show location thumbnail
+            if _ART_AVAILABLE:
+                try:
+                    from PIL import Image
+                    pil_img = get_location_image(loc.get("type", "default"))
+                    if pil_img:
+                        thumb = pil_img.resize((174, 60), Image.LANCZOS)
+                        tk_thumb = _art_image_to_tk(thumb)
+                        if tk_thumb:
+                            self._loc_thumb_ref = tk_thumb
+                            self._loc_thumb_label.config(image=tk_thumb)
+                except Exception:
+                    self._loc_thumb_label.config(image="")
             # Auto-show hint
             self._flash_msg(f"Vous arrivez à {loc['name']} — Appuyez sur [Espace] pour entrer")
         else:
@@ -380,6 +404,8 @@ class WorldMapScreen(tk.Frame):
             self.loc_desc_var.set("")
             self.enter_btn.config(state="disabled", bg="#333")
             self._current_location_id = None
+            self._loc_thumb_label.config(image="")
+            self._loc_thumb_ref = None
 
     def _check_random_encounter(self, terrain):
         """Trigger a random combat encounter in dangerous terrain."""

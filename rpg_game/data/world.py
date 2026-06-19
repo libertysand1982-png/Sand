@@ -73,7 +73,7 @@ LOCATIONS = {
         "icon": "V",
         "color": "#f0c060",
         "description": "Un village paisible au croisement de plusieurs routes commerciales.",
-        "npcs": ["bertrand", "roderic", "madeleine", "forgeron"],
+        "npcs": ["bertrand", "roderic", "madeleine", "forgeron", "noble_ruine"],
         "shop": "marche_piedval",
         "entry_node": "start"
     },
@@ -97,7 +97,7 @@ LOCATIONS = {
         "icon": "T",
         "color": "#f0c060",
         "description": "Une ville marchande prospère sur les rives du fleuve. Centre commercial de la région.",
-        "npcs": ["capitaine_valdor", "marchande_elara", "erudit_tomas"],
+        "npcs": ["capitaine_valdor", "marchande_elara", "erudit_tomas", "bandit_repenti"],
         "shop": "marche_bourg",
         "entry_node": None
     },
@@ -108,7 +108,7 @@ LOCATIONS = {
         "icon": "F",
         "color": "#aaaaaa",
         "description": "Un vieux fort militaire aux murs de pierre grise. Les gardes recrutent des aventuriers.",
-        "npcs": ["commandant_brax"],
+        "npcs": ["commandant_brax", "ermite_montagne"],
         "shop": "armurerie_fort",
         "entry_node": None
     },
@@ -160,6 +160,54 @@ LOCATIONS = {
         "monster_encounters": ["araignee_geante", "loup"],
         "xp_reward": 300,
         "gold_reward": 100
+    },
+    "academie_arcane": {
+        "x": 35, "y": 5,
+        "type": "town",
+        "name": "Académie d'Arcane",
+        "icon": "A",
+        "color": "#8844ff",
+        "description": "Une tour magique isolée où des mages étudient les arts arcanes. On dit qu'un grimoire interdit s'y cache.",
+        "npcs": ["archimage_sorel", "apprenti_lyra"],
+        "shop": "boutique_arcane",
+        "entry_node": None
+    },
+    "village_peche": {
+        "x": 38, "y": 18,
+        "type": "village",
+        "name": "Port-Calme",
+        "icon": "P",
+        "color": "#44aaff",
+        "description": "Un petit village de pêcheurs au bord du fleuve. Des créatures aquatiques auraient attaqué des bateaux.",
+        "npcs": ["capitaine_marin", "vieille_sorciere"],
+        "shop": "marche_port",
+        "entry_node": None
+    },
+    "necropole": {
+        "x": 18, "y": 4,
+        "type": "ruins",
+        "name": "Nécropole Ancienne",
+        "icon": "N",
+        "color": "#663366",
+        "description": "Un vaste cimetière ancien envahi par la végétation morte. Des morts-vivants y errent la nuit.",
+        "entry_node": None,
+        "monster_encounters": ["squelette", "zombie_garde"],
+        "boss": "squelette",
+        "xp_reward": 350,
+        "gold_reward": 180
+    },
+    "mine_abandonnee": {
+        "x": 4, "y": 24,
+        "type": "cave",
+        "name": "Mine Abandonnée",
+        "icon": "X",
+        "color": "#886633",
+        "description": "Une ancienne mine d'or désaffectée. Des bandits l'ont transformée en repaire.",
+        "entry_node": None,
+        "monster_encounters": ["bandit", "gobelin"],
+        "boss": "bandit",
+        "xp_reward": 280,
+        "gold_reward": 250
     },
 }
 
@@ -270,7 +318,91 @@ NPCS = {
             "Les forces des ténèbres s'agitent. Soyez prudent dans la Forêt de Brume."
         ],
         "quest": None
-    }
+    },
+    "archimage_sorel": {
+        "name": "Archimage Sorel",
+        "portrait": "S",
+        "color": "#8844ff",
+        "dialogue": [
+            "L'étude des arcanes n'est pas pour les esprits faibles, aventurier.",
+            "Je recherche un grimoire volé il y a trois siècles. Il contient des formules... dangereuses.",
+            "Si vous pouviez récupérer ce grimoire dans les ruines de Valdrigard, je vous récompenserai généreusement."
+        ],
+        "quest": "quete_grimoire",
+        "quest_reward_gold": 400,
+        "quest_reward_xp": 500
+    },
+    "apprenti_lyra": {
+        "name": "Lyra l'Apprentie",
+        "portrait": "L",
+        "color": "#cc88ff",
+        "dialogue": [
+            "Je m'entraîne depuis deux ans mais le maître ne m'enseigne rien d'utile !",
+            "Vous voulez apprendre un sort ? Je peux vous apprendre Missile Magique pour 50 pièces...",
+            "Entre nous, j'ai vu le maître parler à une ombre la nuit dernière. C'était inquiétant."
+        ],
+        "quest": None,
+        "shop": "boutique_arcane"
+    },
+    "capitaine_marin": {
+        "name": "Capitaine Ondine",
+        "portrait": "O",
+        "color": "#44aaff",
+        "dialogue": [
+            "Trois bateaux coulés ce mois-ci ! Ce n'est pas naturel.",
+            "Les pêcheurs parlent d'une créature dans les profondeurs. Grande comme une maison.",
+            "Je paie bien quiconque découvre ce qui rôde dans notre fleuve."
+        ],
+        "quest": "quete_creature",
+        "quest_reward_gold": 250,
+        "quest_reward_xp": 350
+    },
+    "vieille_sorciere": {
+        "name": "Baba Morvaine",
+        "portrait": "B",
+        "color": "#66aa44",
+        "dialogue": [
+            "Je vois dans tes yeux... tu cherches quelque chose que tu n'as pas encore trouvé.",
+            "La créature du fleuve obéit à quelqu'un. Quelqu'un qui vit sous l'eau depuis longtemps.",
+            "Prends cette herbe. Elle protège contre les sorts de charme. Tu en auras besoin."
+        ],
+        "quest": None
+    },
+    "ermite_montagne": {
+        "name": "Aldric l'Ermite",
+        "portrait": "A",
+        "color": "#aaaaaa",
+        "dialogue": [
+            "Je vis ici depuis trente ans. Seul avec les pierres et le vent.",
+            "J'ai connu Valdris, tu sais. Avant qu'il devienne ce monstre. Un homme brillant. Puis la folie l'a pris.",
+            "Son vrai point faible : il est lié à son phylactère. Détruis-le AVANT de le combattre, sinon il revient."
+        ],
+        "quest": None
+    },
+    "bandit_repenti": {
+        "name": "Garrek le Repenti",
+        "portrait": "G",
+        "color": "#cc8844",
+        "dialogue": [
+            "J'ai quitté la bande il y a un mois. Je veux recommencer à zéro.",
+            "Leur repaire... c'est la mine abandonnée au sud-ouest. Le chef s'appelle Korr le Trancheur.",
+            "Faites attention, ils sont une vingtaine. Et Korr ne fait pas de prisonniers."
+        ],
+        "quest": None
+    },
+    "noble_ruine": {
+        "name": "Seigneur Aldrath",
+        "portrait": "N",
+        "color": "#ccaa44",
+        "dialogue": [
+            "Mon domaine a été pillé par des bandits. Je n'ai plus rien.",
+            "Ma fille a été enlevée et emmenée vers le fort des bandits à l'ouest.",
+            "Je n'ai plus d'or... mais j'ai encore un titre et une épée ancestrale à offrir."
+        ],
+        "quest": "quete_delivrance",
+        "quest_reward_gold": 50,
+        "quest_reward_xp": 600
+    },
 }
 
 SHOPS = {
@@ -316,6 +448,26 @@ SHOPS = {
             {"name": "Flèches (20)", "price": 15, "effect": None, "description": "Munitions pour arc"},
         ]
     },
+    "boutique_arcane": {
+        "name": "Boutique Arcanique",
+        "items": [
+            {"name": "Parchemin de Boule de Feu", "price": 120, "effect": "spell", "description": "Lance Boule de Feu (6d6 dégâts)"},
+            {"name": "Parchemin d'Invisibilité", "price": 100, "effect": "buff", "description": "+4 Discrétion pendant 1 combat"},
+            {"name": "Pierre de Mana", "price": 200, "effect": "restore_mp", "value": 5, "description": "Restaure 5 points de mana"},
+            {"name": "Grimoire des Arcanes vol.1", "price": 350, "effect": "learn_spell", "description": "+1 sort disponible en combat"},
+            {"name": "Potion de Sagesse", "price": 80, "effect": "buff", "stat": "SAGESSE", "value": 3, "description": "+3 SAG pendant 1h"},
+        ]
+    },
+    "marche_port": {
+        "name": "Marché de Port-Calme",
+        "items": [
+            {"name": "Potion de Soins", "price": 22, "effect": "heal", "value": "2d4+2", "description": "Restaure 2d4+2 PV"},
+            {"name": "Filet de pêche", "price": 10, "effect": None, "description": "Peut capturer certaines créatures"},
+            {"name": "Huile de lampe", "price": 3, "effect": None, "description": "Alimente une lanterne 6 heures"},
+            {"name": "Potion de Respiration Aquatique", "price": 75, "effect": "buff", "description": "Respirer sous l'eau 1 heure"},
+            {"name": "Harpon Béni", "price": 180, "effect": "weapon", "damage": "1d8+2", "description": "+2d6 vs créatures aquatiques"},
+        ]
+    },
     "boutique_temple": {
         "name": "Boutique du Temple du Soleil",
         "items": [
@@ -356,7 +508,43 @@ QUESTS = {
         "reward_gold": 300,
         "reward_xp": 300,
         "completed_by": "ogre_killed"
-    }
+    },
+    "quete_grimoire": {
+        "name": "Le Grimoire Interdit",
+        "giver": "archimage_sorel",
+        "description": "Récupérer le grimoire ancien dans les ruines de Valdrigard.",
+        "objective": "Trouver le Grimoire des Morts dans les ruines",
+        "reward_gold": 400,
+        "reward_xp": 500,
+        "completed_by": "liche_killed"
+    },
+    "quete_creature": {
+        "name": "La Créature du Fleuve",
+        "giver": "capitaine_marin",
+        "description": "Découvrir ce qui coule les bateaux dans le fleuve.",
+        "objective": "Investiguer les attaques sur le fleuve",
+        "reward_gold": 250,
+        "reward_xp": 350,
+        "completed_by": "creature_killed"
+    },
+    "quete_delivrance": {
+        "name": "La Fille du Seigneur",
+        "giver": "noble_ruine",
+        "description": "Délivrer la fille du seigneur Aldrath des bandits.",
+        "objective": "Vaincre Korr le Trancheur et libérer l'otage",
+        "reward_gold": 50,
+        "reward_xp": 600,
+        "completed_by": "bandit_kills_3"
+    },
+    "quete_ermite": {
+        "name": "Secrets de l'Ermite",
+        "giver": "ermite_montagne",
+        "description": "L'ermite connaît le vrai moyen de vaincre Valdris définitivement.",
+        "objective": "Parler à Aldric l'Ermite puis vaincre Valdris",
+        "reward_gold": 0,
+        "reward_xp": 800,
+        "completed_by": "liche_killed"
+    },
 }
 
 # Terrain info
