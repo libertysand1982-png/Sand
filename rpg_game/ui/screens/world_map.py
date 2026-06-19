@@ -71,6 +71,14 @@ class WorldMapScreen(tk.Frame):
         self._step_sound_counter = 0
         self._step_sound_every = random.randint(2, 3)
 
+        # Joystick / tap-to-move state
+        self._move_held = False
+        self._held_dx = 0
+        self._held_dy = 0
+        self._hold_job = None
+        self._walking = False
+        self._walk_job = None
+
         # Ensure fog-of-war fields exist (backward-compat with old saves)
         if not hasattr(self.game_state, 'revealed_cells'):
             self.game_state.revealed_cells = set()
@@ -121,6 +129,10 @@ class WorldMapScreen(tk.Frame):
                   relief="flat", padx=8, pady=3, cursor="hand2",
                   command=self._save).pack(side="right", padx=4)
 
+        tk.Button(top, text="⚔ Équip.", font=FONT_SMALL, bg=BG2, fg=PARCHMENT,
+                  relief="flat", padx=8, pady=3, cursor="hand2",
+                  command=self._show_equipment).pack(side="right", padx=4)
+
         # Sound toggle buttons
         self._sfx_btn = tk.Button(top, text="🔊", font=FONT_SMALL, bg=BG2, fg=PARCHMENT,
                                    relief="flat", padx=6, pady=3, cursor="hand2",
@@ -160,6 +172,7 @@ class WorldMapScreen(tk.Frame):
         self.canvas = tk.Canvas(canvas_frame, width=CANVAS_W, height=CANVAS_H,
                                  bg="#0a0a0a", highlightthickness=0)
         self.canvas.pack()
+        self.canvas.bind("<Button-1>", self._on_canvas_click)
 
         tk.Label(canvas_row, text="→E", font=FONT_TINY, bg=BG, fg=DARK_GOLD).pack(side="left")
 
@@ -227,25 +240,58 @@ class WorldMapScreen(tk.Frame):
         self.quest_frame.pack(fill="x", padx=4)
         self._refresh_quests()
 
-        # ── Bottom status bar ─────────────────────
-        bottom = tk.Frame(self, bg="#111108", pady=3)
-        bottom.pack(fill="x", side="bottom")
+        # ── Bottom area: joystick + status + interact ─
+        bottom_outer = tk.Frame(self, bg="#111108")
+        bottom_outer.pack(fill="x", side="bottom")
+
+        # Status bar row
+        status_bar = tk.Frame(bottom_outer, bg="#111108", pady=3)
+        status_bar.pack(fill="x")
 
         self.terrain_var = tk.StringVar(value="Terrain: —")
-        tk.Label(bottom, textvariable=self.terrain_var, font=FONT_TINY, bg="#111108",
+        tk.Label(status_bar, textvariable=self.terrain_var, font=FONT_TINY, bg="#111108",
                  fg=PARCHMENT_LIGHT).pack(side="left", padx=10)
 
         self.pos_var = tk.StringVar(value="")
-        tk.Label(bottom, textvariable=self.pos_var, font=FONT_TINY, bg="#111108",
+        tk.Label(status_bar, textvariable=self.pos_var, font=FONT_TINY, bg="#111108",
                  fg=DARK_GOLD).pack(side="left", padx=10)
 
-        tk.Label(bottom, text="[Flèches/WASD] Déplacer   [Espace/Entrée] Entrer",
+        tk.Label(status_bar, text="[Flèches/WASD] Déplacer   [Espace/Entrée] Entrer",
                  font=FONT_TINY, bg="#111108", fg="#555533").pack(side="right", padx=10)
 
         self.msg_var = tk.StringVar()
-        self.msg_label = tk.Label(self, textvariable=self.msg_var, font=FONT_SMALL,
-                                   bg=BG, fg=GREEN_BRIGHT)
-        self.msg_label.pack(side="bottom", pady=2)
+        tk.Label(status_bar, textvariable=self.msg_var, font=FONT_SMALL,
+                 bg="#111108", fg=GREEN_BRIGHT).pack(side="left", padx=20)
+
+        # Joystick row
+        joy_row = tk.Frame(bottom_outer, bg="#111108", pady=4)
+        joy_row.pack(fill="x")
+
+        # Left: D-pad
+        joy_frame = tk.Frame(joy_row, bg="#111108")
+        joy_frame.pack(side="left", padx=16)
+        self._build_joystick(joy_frame)
+
+        # Center: terrain/status info
+        center_info = tk.Frame(joy_row, bg="#111108")
+        center_info.pack(side="left", fill="x", expand=True, padx=10)
+        tk.Label(center_info, text="Cliquez sur la carte pour vous déplacer",
+                 font=FONT_TINY, bg="#111108", fg="#555533").pack(anchor="w")
+        tk.Label(center_info, text="Maintenez un bouton directionnel pour avancer",
+                 font=FONT_TINY, bg="#111108", fg="#555533").pack(anchor="w")
+
+        # Right: Interact / Enter button
+        self._interact_btn = tk.Button(joy_row, text="Entrer",
+                                        font=("Times New Roman", 13, "bold"),
+                                        bg=RED, fg=PARCHMENT, relief="flat",
+                                        padx=16, pady=10, cursor="hand2",
+                                        activebackground=RED_BRIGHT,
+                                        command=self._enter_current_location,
+                                        state="disabled")
+        self._interact_btn.pack(side="right", padx=16)
+        self._interact_name_var = tk.StringVar(value="")
+        tk.Label(joy_row, textvariable=self._interact_name_var,
+                 font=FONT_TINY, bg="#111108", fg=PARCHMENT_LIGHT).pack(side="right", padx=4)
 
     # ─────────────────────────────────────────────
     # MAP DRAWING
@@ -377,6 +423,126 @@ class WorldMapScreen(tk.Frame):
         self.canvas.create_text(cx, cy, text="H", font=("Courier New", 8, "bold"),
                                  fill="#0d0b08", tags="hero")
 
+    def _build_joystick(self, parent):
+        """Build virtual D-pad for touch/mouse control."""
+        btn_style = {
+            "font": ("Courier New", 16, "bold"),
+            "bg": "#2a2a1a",
+            "fg": PARCHMENT,
+            "relief": "flat",
+            "bd": 1,
+            "cursor": "hand2",
+            "activebackground": "#4a4a2a",
+        }
+        size = 55
+
+        # Row 0: up
+        r0 = tk.Frame(parent, bg="#111108")
+        r0.pack()
+        up_btn = tk.Button(r0, text="▲", width=3, height=2, **btn_style)
+        up_btn.pack()
+        up_btn.bind("<ButtonPress-1>", lambda e: self._start_hold_move(0, -1))
+        up_btn.bind("<ButtonRelease-1>", lambda e: self._stop_hold_move())
+
+        # Row 1: left / center / right
+        r1 = tk.Frame(parent, bg="#111108")
+        r1.pack()
+        left_btn = tk.Button(r1, text="◀", width=3, height=2, **btn_style)
+        left_btn.pack(side="left")
+        left_btn.bind("<ButtonPress-1>", lambda e: self._start_hold_move(-1, 0))
+        left_btn.bind("<ButtonRelease-1>", lambda e: self._stop_hold_move())
+
+        center_btn = tk.Button(r1, text="·", width=3, height=2, **btn_style,
+                                state="disabled", disabledforeground="#555533")
+        center_btn.pack(side="left")
+
+        right_btn = tk.Button(r1, text="▶", width=3, height=2, **btn_style)
+        right_btn.pack(side="left")
+        right_btn.bind("<ButtonPress-1>", lambda e: self._start_hold_move(1, 0))
+        right_btn.bind("<ButtonRelease-1>", lambda e: self._stop_hold_move())
+
+        # Row 2: down
+        r2 = tk.Frame(parent, bg="#111108")
+        r2.pack()
+        down_btn = tk.Button(r2, text="▼", width=3, height=2, **btn_style)
+        down_btn.pack()
+        down_btn.bind("<ButtonPress-1>", lambda e: self._start_hold_move(0, 1))
+        down_btn.bind("<ButtonRelease-1>", lambda e: self._stop_hold_move())
+
+    def _start_hold_move(self, dx, dy):
+        """Start continuous movement when button held."""
+        self._stop_hold_move()
+        self._move_held = True
+        self._held_dx = dx
+        self._held_dy = dy
+        self._do_hold_move()
+
+    def _do_hold_move(self):
+        if self._move_held:
+            self._try_move(self._held_dx, self._held_dy)
+            self._hold_job = self.after(150, self._do_hold_move)
+
+    def _stop_hold_move(self):
+        self._move_held = False
+        if self._hold_job:
+            self.after_cancel(self._hold_job)
+            self._hold_job = None
+
+    def _on_canvas_click(self, event):
+        """Move hero toward clicked cell via BFS pathfinding."""
+        self._cancel_walk()
+        gx = event.x // CELL + self.cam_x
+        gy = event.y // CELL + self.cam_y
+        # Clamp
+        gx = max(0, min(gx, MAP_W - 1))
+        gy = max(0, min(gy, MAP_H - 1))
+        if gx == self.hero_x and gy == self.hero_y:
+            return
+        path = self._find_path(self.hero_x, self.hero_y, gx, gy)
+        if path:
+            self._walking = True
+            self._walk_path(path)
+
+    def _find_path(self, sx, sy, tx, ty, max_steps=20):
+        """Simple BFS pathfinding avoiding water and mountains."""
+        from collections import deque
+        queue = deque([(sx, sy, [])])
+        visited = {(sx, sy)}
+        while queue:
+            x, y, path = queue.popleft()
+            if x == tx and y == ty:
+                return path
+            if len(path) >= max_steps:
+                continue
+            for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+                nx, ny = x + dx, y + dy
+                if (nx, ny) not in visited and 0 <= nx < MAP_W and 0 <= ny < MAP_H:
+                    terrain = MAP_GRID[ny][nx]
+                    if terrain not in (2, 3):
+                        visited.add((nx, ny))
+                        queue.append((nx, ny, path + [(dx, dy)]))
+        return []
+
+    def _walk_path(self, path):
+        """Walk along path one step at a time."""
+        if not self._walking or not path:
+            self._walking = False
+            return
+        dx, dy = path[0]
+        self._try_move(dx, dy)
+        self._walk_job = self.after(150, lambda: self._walk_path(path[1:]))
+
+    def _cancel_walk(self, event=None):
+        """Cancel path walking."""
+        self._walking = False
+        if self._walk_job:
+            self.after_cancel(self._walk_job)
+            self._walk_job = None
+
+    def _show_equipment(self):
+        from ui.screens.equipment_screen import EquipmentScreen
+        EquipmentScreen(self, self.game_state, on_close=self._update_top_bar)
+
     def _darken(self, hex_color):
         """Return a slightly darker version of a hex color."""
         try:
@@ -417,6 +583,7 @@ class WorldMapScreen(tk.Frame):
             return
 
         if dx != 0 or dy != 0:
+            self._cancel_walk()
             self._try_move(dx, dy)
 
     def _try_move(self, dx, dy):
@@ -491,6 +658,11 @@ class WorldMapScreen(tk.Frame):
                             self._loc_thumb_label.config(image=tk_thumb)
                 except Exception:
                     self._loc_thumb_label.config(image="")
+            # Update bottom interact button
+            if hasattr(self, '_interact_btn'):
+                self._interact_btn.config(state="normal", bg=RED,
+                                           text=f"Entrer dans {loc['name']}")
+                self._interact_name_var.set("")
             # Auto-show hint
             self._flash_msg(f"Vous arrivez à {loc['name']} — Appuyez sur [Espace] pour entrer")
         else:
@@ -500,6 +672,10 @@ class WorldMapScreen(tk.Frame):
             self._current_location_id = None
             self._loc_thumb_label.config(image="")
             self._loc_thumb_ref = None
+            # Update bottom interact button
+            if hasattr(self, '_interact_btn'):
+                self._interact_btn.config(state="disabled", bg="#333", text="Entrer")
+                self._interact_name_var.set("")
 
     def _check_random_encounter(self, terrain):
         """Trigger a random combat encounter in dangerous terrain."""
@@ -660,4 +836,6 @@ class WorldMapScreen(tk.Frame):
     def destroy(self):
         if self._blink_job:
             self.after_cancel(self._blink_job)
+        self._stop_hold_move()
+        self._cancel_walk()
         super().destroy()

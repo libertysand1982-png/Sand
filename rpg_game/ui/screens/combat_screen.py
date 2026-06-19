@@ -274,6 +274,10 @@ class CombatScreen(tk.Frame):
             self._update_bars()
             self._check_end()
 
+    def _show_levelup(self, old_level):
+        from ui.screens.levelup_screen import LevelUpScreen
+        LevelUpScreen(self, self.game_state, old_level, on_close=self.on_victory)
+
     def _examine(self):
         m = self.engine.monster
         self._add_log(f"👁 {m['name']}: PV {m['current_hp']}/{m['hp']}, CA {m['ac']}")
@@ -293,7 +297,7 @@ class CombatScreen(tk.Frame):
             sound_manager.play_sfx("victory")
             monster = self.engine.monster
             xp = monster.get("xp", 50)
-            leveled = self.game_state.character.gain_xp(xp)
+            leveled, old_level = self.game_state.character.gain_xp(xp)
             loot = monster.get("loot", [])
             loot_str = ""
             for item, qty in loot:
@@ -310,7 +314,9 @@ class CombatScreen(tk.Frame):
             if leveled:
                 sound_manager.play_sfx("level_up")
                 self._add_log(f"🌟 NIVEAU SUPÉRIEUR! Vous êtes maintenant niveau {self.game_state.character.level}!")
-            self.after(2000, self.on_victory)
+                self.after(2000, lambda: self._show_levelup(old_level))
+            else:
+                self.after(2000, self.on_victory)
         else:
             sound_manager.play_sfx("defeat")
             if self.engine.turn == 0 or "fuite" in self.engine.log[-1].lower() if self.engine.log else False:

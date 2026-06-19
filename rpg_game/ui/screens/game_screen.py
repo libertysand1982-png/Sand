@@ -86,6 +86,8 @@ class GameScreen(tk.Frame):
                  command=self._save, relief="flat", cursor="hand2").pack(side="right", padx=6)
         tk.Button(top, text="📖 Journal", font=FONT_SMALL, bg=BG2, fg=PARCHMENT,
                  command=self._show_journal, relief="flat", cursor="hand2").pack(side="right", padx=6)
+        tk.Button(top, text="⚔ Équip.", font=FONT_SMALL, bg=BG2, fg=PARCHMENT,
+                 command=self._show_equipment, relief="flat", cursor="hand2").pack(side="right", padx=6)
 
         self._update_top_bar()
 
@@ -218,6 +220,10 @@ class GameScreen(tk.Frame):
             return
 
         self._show_node()
+
+    def _show_equipment(self):
+        from ui.screens.equipment_screen import EquipmentScreen
+        EquipmentScreen(self, self.game_state, on_close=self._update_top_bar)
 
     def _save(self):
         self.game_state.save()

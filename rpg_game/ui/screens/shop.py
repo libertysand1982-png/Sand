@@ -158,13 +158,76 @@ class ShopScreen(tk.Frame):
 
         char.gold -= item["price"]
         item_name = item["name"]
-        inv = self.game_state.inventory_items
-        inv[item_name] = inv.get(item_name, 0) + 1
+        slot = item.get("slot")
 
-        self.status_var.set(f"Acheté : {item_name} !")
-        self._refresh_gold()
-        self._render_buy_tab()
-        self.after(3000, lambda: self.status_var.set(""))
+        if slot:
+            # Ask the player if they want to equip now
+            self._ask_equip_now(item, item_name, slot)
+        else:
+            inv = self.game_state.inventory_items
+            inv[item_name] = inv.get(item_name, 0) + 1
+            self.status_var.set(f"Acheté : {item_name} !")
+            self._refresh_gold()
+            self._render_buy_tab()
+            self.after(3000, lambda: self.status_var.set(""))
+
+    def _ask_equip_now(self, item, item_name, slot):
+        """Show a small dialog asking whether to equip the purchased item now."""
+        from ui.screens.equipment_screen import SLOT_LABELS
+        dialog = tk.Toplevel(self)
+        dialog.title("Équiper ?")
+        dialog.config(bg="#0d0b08")
+        dialog.resizable(False, False)
+
+        pw = self.winfo_rootx()
+        py = self.winfo_rooty()
+        dw, dh = 340, 160
+        sx = pw + (self.winfo_width() - dw) // 2
+        sy = py + (self.winfo_height() - dh) // 2
+        dialog.geometry(f"{dw}x{dh}+{sx}+{sy}")
+        dialog.grab_set()
+        dialog.focus_set()
+
+        slot_label = SLOT_LABELS.get(slot, slot)
+        tk.Label(dialog, text=f"Acheté : {item_name}",
+                 font=("Times New Roman", 13, "bold"), bg="#0d0b08", fg="#c9a84c").pack(pady=(12, 4))
+        tk.Label(dialog, text=f"Équiper maintenant en slot [{slot_label}] ?",
+                 font=("Courier New", 10), bg="#0d0b08", fg="#e8d5a3").pack(pady=2)
+
+        btn_frame = tk.Frame(dialog, bg="#0d0b08")
+        btn_frame.pack(pady=12)
+
+        def do_equip():
+            char = self.game_state.character
+            item_dict = dict(item)
+            old = char.equip(slot, item_dict)
+            if old:
+                inv = self.game_state.inventory_items
+                old_name = old["name"]
+                inv[old_name] = inv.get(old_name, 0) + 1
+            self.status_var.set(f"Équipé : {item_name} !")
+            self._refresh_gold()
+            self._render_buy_tab()
+            dialog.grab_release()
+            dialog.destroy()
+            self.after(3000, lambda: self.status_var.set(""))
+
+        def do_inventory():
+            inv = self.game_state.inventory_items
+            inv[item_name] = inv.get(item_name, 0) + 1
+            self.status_var.set(f"Acheté : {item_name} (inventaire)")
+            self._refresh_gold()
+            self._render_buy_tab()
+            dialog.grab_release()
+            dialog.destroy()
+            self.after(3000, lambda: self.status_var.set(""))
+
+        tk.Button(btn_frame, text="Oui, équiper", font=("Times New Roman", 11, "bold"),
+                  bg="#2a6a2a", fg="#e8d5a3", relief="flat", padx=12, pady=5,
+                  cursor="hand2", command=do_equip).pack(side="left", padx=8)
+        tk.Button(btn_frame, text="Non, inventaire", font=("Times New Roman", 11, "bold"),
+                  bg="#7a6030", fg="#0d0b08", relief="flat", padx=12, pady=5,
+                  cursor="hand2", command=do_inventory).pack(side="left", padx=8)
 
     def _render_sell_tab(self):
         self._clear_items()
