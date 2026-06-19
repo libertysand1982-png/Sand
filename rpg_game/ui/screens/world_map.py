@@ -359,6 +359,11 @@ class WorldMapScreen(tk.Frame):
                 icon = loc.get("icon", "?")
                 self.canvas.create_text(cx, cy, text=icon, font=("Courier New", 9, "bold"),
                                          fill="#0d0b08", tags="location")
+                # Completion checkmark
+                if loc_id in getattr(self.game_state, 'visited_locations', []):
+                    self.canvas.create_text(cx + r - 2, cy - r + 2, text="✓",
+                                             font=("Courier New", 7, "bold"),
+                                             fill="#44ff44", tags="location")
 
     def _draw_fog(self):
         """Draw fog of war over unrevealed cells using merged horizontal spans."""
@@ -785,8 +790,18 @@ class WorldMapScreen(tk.Frame):
             tk.Label(overlay, text=f"Récompenses potentielles: {', '.join(rewards)}",
                      font=FONT_SMALL, bg=BG, fg="#ffcc44").pack(pady=4)
 
+        # Emergency merchant if player has < 2 potions
+        potions = self.game_state.inventory_items.get("Potion de Soins", 0)
+        if potions < 2:
+            tk.Label(overlay, text=f"⚠ Vous n'avez que {potions} potion(s)!",
+                     font=FONT_SMALL, bg=BG, fg="#ffaa00").pack(pady=2)
+            tk.Button(overlay, text=f"💊 Acheter une Potion (25 po)",
+                      font=FONT_SMALL, bg="#334422", fg=PARCHMENT,
+                      relief="flat", padx=10, pady=4, cursor="hand2",
+                      command=lambda: self._buy_emergency_potion(overlay)).pack(pady=2)
+
         btn_frame = tk.Frame(overlay, bg=BG)
-        btn_frame.pack(pady=12)
+        btn_frame.pack(pady=8)
 
         tk.Button(btn_frame, text="Explorer !", font=FONT_BTN, bg=RED, fg=PARCHMENT,
                   relief="flat", padx=16, pady=8, cursor="hand2",
@@ -796,6 +811,22 @@ class WorldMapScreen(tk.Frame):
         tk.Button(btn_frame, text="Reculer", font=FONT_BTN, bg=BG2, fg=PARCHMENT,
                   relief="flat", padx=16, pady=8, cursor="hand2",
                   command=self._hide_location_overlay).pack(side="left", padx=8)
+
+    def _buy_emergency_potion(self, overlay):
+        char = self.game_state.character
+        if char.gold < 25:
+            # show message in overlay
+            for w in overlay.winfo_children():
+                if isinstance(w, tk.Label) and "Vous n'avez" in str(w.cget("text")):
+                    w.config(text="Pas assez d'or! (25 po requis)", fg=RED_BRIGHT)
+            return
+        char.gold -= 25
+        inv = self.game_state.inventory_items
+        inv["Potion de Soins"] = inv.get("Potion de Soins", 0) + 1
+        self._update_top_bar()
+        for w in overlay.winfo_children():
+            if isinstance(w, tk.Label) and "Vous n'avez" in str(w.cget("text")):
+                w.config(text=f"✓ Acheté! ({inv['Potion de Soins']} potion(s))", fg="#44cc44")
 
     def _start_exploration(self, loc_id):
         """Begin exploring a dungeon/cave/ruins."""

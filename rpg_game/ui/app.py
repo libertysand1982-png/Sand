@@ -121,6 +121,12 @@ class RPGApp:
     def _show_world_map(self):
         self._clear()
         sound_manager.play_music("village")
+        # Autosave on return to world map
+        if self.game_state:
+            try:
+                self.game_state.save()
+            except Exception:
+                pass
         # Show tutorial on first play
         if self.game_state and not getattr(self.game_state, "tutorial_done", False):
             from ui.screens.tutorial import TutorialOverlay
@@ -140,6 +146,12 @@ class RPGApp:
     def _enter_story(self, node_id):
         """Enter story/narrative mode starting at a given node."""
         self._clear()
+        # Play dungeon music for dungeon/cave/ruins nodes
+        dungeon_keywords = ("foret", "crypte", "valdrigard", "caverne", "marais", "necropole",
+                            "donjon", "lisiere", "ruines", "chapitre2", "terres_maudites",
+                            "pierre_", "demon", "portail", "combat_")
+        if any(k in node_id for k in dungeon_keywords):
+            sound_manager.play_music("dungeon")
         self.game_state.go_to(node_id)
         screen = GameScreen(
             self.root, self.game_state,
@@ -176,9 +188,56 @@ class RPGApp:
             kc = self.game_state.kill_counts
             kc[monster_id] = kc.get(monster_id, 0) + 1
 
+        # Autosave after every combat
+        if self.game_state:
+            try:
+                self.game_state.save()
+            except Exception:
+                pass
+
         # Return to world map or story node
         if next_node == "__world_map__" or next_node is None:
             self._show_world_map()
         else:
-            self.game_state.go_to(next_node)
-            self._enter_story(next_node)
+            node = self.game_state.go_to(next_node)
+            if node.get("id") in ("mort", "mort_ch2"):
+                self._show_death_screen(next_node)
+            else:
+                self._enter_story(next_node)
+
+    def _show_death_screen(self, node_id):
+        """Show death screen with reload option."""
+        self._clear()
+        frame = tk.Frame(self.root, bg=BG)
+        frame.pack(fill="both", expand=True)
+        self.current_screen = frame
+
+        tk.Label(frame, text="\n", bg=BG).pack()
+        tk.Label(frame, text="💀", font=("Times New Roman", 64), bg=BG, fg=RED).pack()
+        tk.Label(frame, text="VOUS ÊTES MORT", font=("Times New Roman", 28, "bold"),
+                 bg=BG, fg=RED).pack(pady=6)
+        tk.Label(frame, text="─" * 40, font=("Courier New", 9), bg=BG, fg="#3a2a0a").pack(pady=4)
+
+        node = self.game_state.current_node()
+        tk.Label(frame, text=node.get("text", "")[:300] + "...",
+                 font=("Times New Roman", 12), bg=BG, fg="#7a5030",
+                 wraplength=600, justify="center").pack(padx=40, pady=8)
+
+        btn_style = {"font": ("Times New Roman", 14, "bold"), "relief": "flat",
+                     "padx": 28, "pady": 10, "cursor": "hand2"}
+
+        save = GameState.load()
+        if save:
+            tk.Button(frame, text="📖  RECHARGER LA SAUVEGARDE",
+                      bg="#334422", fg=PARCHMENT,
+                      activebackground=PARCHMENT, activeforeground=BG,
+                      command=lambda: self._load_game(save), **btn_style).pack(pady=8)
+
+        tk.Button(frame, text="⚔  NOUVELLE PARTIE",
+                  bg=RED, fg=PARCHMENT,
+                  activebackground=PARCHMENT, activeforeground=BG,
+                  command=self._new_game, **btn_style).pack(pady=4)
+        tk.Button(frame, text="🏠  MENU PRINCIPAL",
+                  bg="#222222", fg=PARCHMENT,
+                  activebackground=PARCHMENT, activeforeground=BG,
+                  command=self._show_main_menu, **btn_style).pack(pady=4)

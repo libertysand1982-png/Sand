@@ -231,23 +231,74 @@ class GameScreen(tk.Frame):
         self.after(2000, lambda: self.dice_result_label.config(text=""))
 
     def _show_journal(self):
+        from data.world import QUESTS
         win = tk.Toplevel(self)
         win.title("Journal d'Aventure")
         win.config(bg=BG)
-        win.geometry("500x400")
+        win.geometry("560x500")
+        win.grab_set()
         tk.Label(win, text="📖 JOURNAL D'AVENTURE", font=FONT_TITLE, bg=BG, fg=PARCHMENT).pack(pady=8)
         char = self.game_state.character
-        txt = tk.Text(win, font=FONT_SMALL, bg=BG2, fg=PARCHMENT_LIGHT, wrap="word", padx=10, pady=10)
+        txt = tk.Text(win, font=FONT_SMALL, bg=BG2, fg=PARCHMENT_LIGHT, wrap="word", padx=12, pady=10)
+        scroll = tk.Scrollbar(win, command=txt.yview)
+        txt.configure(yscrollcommand=scroll.set)
+        scroll.pack(side="right", fill="y")
         txt.pack(fill="both", expand=True, padx=10, pady=10)
-        txt.insert("end", f"Héros: {char.name}\n")
-        txt.insert("end", f"Race: {char.race}  Classe: {char.char_class}  Niveau: {char.level}\n")
-        txt.insert("end", f"XP: {char.xp}  Or: {char.gold} pièces\n\n")
-        txt.insert("end", "Lieux visités:\n")
-        for node_id in char.visited_nodes:
-            node = STORY.get(node_id, {})
-            txt.insert("end", f"  • {node.get('title', node_id)}\n")
+
+        txt.tag_config("header", foreground=PARCHMENT, font=("Times New Roman", 13, "bold"))
+        txt.tag_config("quest_active", foreground="#88cc44")
+        txt.tag_config("quest_done", foreground="#7a6030")
+        txt.tag_config("item", foreground=PARCHMENT_LIGHT)
+
+        txt.insert("end", f"═══ {char.name.upper()} ═══\n", "header")
+        txt.insert("end", f"Race: {char.race}  •  Classe: {char.char_class}  •  Niveau: {char.level}\n")
+        txt.insert("end", f"XP: {char.xp}  •  Or: {char.gold} pièces\n\n")
+
+        # Active quests
+        txt.insert("end", "QUÊTES ACTIVES\n", "header")
+        if self.game_state.active_quests:
+            for qid in self.game_state.active_quests:
+                q = QUESTS.get(qid, {})
+                txt.insert("end", f"  ◆ {q.get('name', qid)}\n", "quest_active")
+                txt.insert("end", f"    Objectif: {q.get('objective', '?')}\n", "item")
+                # Show kill progress for kill-based quests
+                if q.get("completed_by", "").startswith("bandit_kills"):
+                    kills = self.game_state.kill_counts.get("bandit", 0)
+                    txt.insert("end", f"    Progression: {min(kills,3)}/3 bandits\n", "item")
+        else:
+            txt.insert("end", "  Aucune quête active.\n")
+
+        # Completed quests
+        txt.insert("end", "\nQUÊTES TERMINÉES\n", "header")
+        if self.game_state.completed_quests:
+            for qid in self.game_state.completed_quests:
+                q = QUESTS.get(qid, {})
+                txt.insert("end", f"  ✓ {q.get('name', qid)}\n", "quest_done")
+        else:
+            txt.insert("end", "  Aucune.\n")
+
+        # Inventory
+        txt.insert("end", "\nINVENTAIRE\n", "header")
         if self.game_state.inventory_items:
-            txt.insert("end", "\nInventaire:\n")
             for item, qty in self.game_state.inventory_items.items():
-                txt.insert("end", f"  • {item} x{qty}\n")
+                if qty > 0:
+                    txt.insert("end", f"  • {item} × {qty}\n", "item")
+        else:
+            txt.insert("end", "  Inventaire vide.\n")
+
+        # Bestiary
+        if self.game_state.kill_counts:
+            txt.insert("end", "\nBESTIAIRE\n", "header")
+            for mid, cnt in self.game_state.kill_counts.items():
+                txt.insert("end", f"  ☠ {mid}: {cnt} tué(s)\n", "item")
+
+        # Visited locations
+        txt.insert("end", "\nLIEUX VISITÉS\n", "header")
+        for node_id in char.visited_nodes[-10:]:
+            node = STORY.get(node_id, {})
+            txt.insert("end", f"  • {node.get('title', node_id)}\n", "item")
+
         txt.config(state="disabled")
+        tk.Button(win, text="Fermer", font=FONT_SMALL, bg=BG2, fg=PARCHMENT,
+                  relief="flat", padx=12, pady=4, cursor="hand2",
+                  command=win.destroy).pack(pady=6)

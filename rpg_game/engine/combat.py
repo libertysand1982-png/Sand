@@ -33,6 +33,47 @@ class CombatEngine:
         self.player_defending = False
         self.combat_over = False
         self.player_won = False
+        self.status_effects = {}  # name -> {duration: int, value: int}
+
+    def add_status(self, name, duration, value):
+        """Add or refresh a status effect."""
+        self.status_effects[name] = {"duration": duration, "value": value}
+
+    def apply_status_effects(self):
+        """Apply active status effects at start of player turn. Returns summary string."""
+        if not self.status_effects:
+            return ""
+        parts = []
+        to_remove = []
+        for name, data in list(self.status_effects.items()):
+            if name == "poison":
+                dmg = data["value"]
+                self.character.hp -= dmg
+                parts.append(f"☠ Poison: -{dmg} PV")
+                data["duration"] -= 1
+                if data["duration"] <= 0:
+                    to_remove.append(name)
+            elif name == "burning":
+                dmg = data["value"]
+                self.character.hp -= dmg
+                parts.append(f"🔥 Brûlure: -{dmg} PV")
+                data["duration"] -= 1
+                if data["duration"] <= 0:
+                    to_remove.append(name)
+            elif name == "fear":
+                parts.append(f"😨 Peur: -2 aux attaques ({data['duration']} tour(s))")
+                data["duration"] -= 1
+                if data["duration"] <= 0:
+                    to_remove.append(name)
+        for name in to_remove:
+            del self.status_effects[name]
+        # Check if player died from status damage
+        if self.character.hp <= 0:
+            self.character.hp = 0
+            self.combat_over = True
+            self.player_won = False
+            parts.append("💀 Vous êtes tombé au combat...")
+        return "  ".join(parts)
 
     def add_log(self, msg):
         self.log.append(msg)
@@ -56,7 +97,8 @@ class CombatEngine:
             self.add_log(f"⚔️ FUMBLE! Votre attaque rate lamentablement!")
             return
 
-        total_atk = atk_roll + self.character.attack_bonus
+        fear_penalty = -2 if "fear" in self.status_effects else 0
+        total_atk = atk_roll + self.character.attack_bonus + fear_penalty
         monster_ac = self.monster["ac"]
 
         if atk_roll == 20:
@@ -72,9 +114,11 @@ class CombatEngine:
             dmg, dmg_desc = parse_damage(weapon["damage"])
             total_dmg = max(1, dmg + str_mod)
             self.monster["current_hp"] -= total_dmg
-            self.add_log(f"⚔️ Attaque: d20→{atk_roll}+{self.character.attack_bonus}={total_atk} vs CA {monster_ac} → TOUCHÉ! {dmg_desc}+{str_mod} = {total_dmg} dégâts")
+            fear_str = f"{fear_penalty}" if fear_penalty else ""
+            self.add_log(f"⚔️ Attaque: d20→{atk_roll}+{self.character.attack_bonus}{fear_str}={total_atk} vs CA {monster_ac} → TOUCHÉ! {dmg_desc}+{str_mod} = {total_dmg} dégâts")
         else:
-            self.add_log(f"⚔️ Attaque: d20→{atk_roll}+{self.character.attack_bonus}={total_atk} vs CA {monster_ac} → RATÉ!")
+            fear_str = f"{fear_penalty}" if fear_penalty else ""
+            self.add_log(f"⚔️ Attaque: d20→{atk_roll}+{self.character.attack_bonus}{fear_str}={total_atk} vs CA {monster_ac} → RATÉ!")
 
         if self.monster["current_hp"] <= 0:
             self.monster["current_hp"] = 0
@@ -143,20 +187,46 @@ class CombatEngine:
         monster_ac_bonus = 4 if self.player_defending else 0
         player_ac = self.character.armor_class + monster_ac_bonus
 
+        # Apply fear penalty to player's effective AC (fear reduces attack, modeled here as
+        # the monster's attack bonus effectively being unpenalized — fear affects player atk not AC;
+        # fear is applied to player attack rolls in player_attack via atk_bonus adjustment below)
         atk_roll, _ = roll(20)
         total_atk = atk_roll + self.monster.get("attack_bonus", 0)
+        hit = False
 
         if atk_roll == 20:
             dmg, dmg_desc = parse_damage(self.monster.get("damage", "1d6"))
             dmg *= 2
             self.character.hp -= dmg
             self.add_log(f"👹 {self.monster['name']} COUP CRITIQUE! {dmg} dégâts!")
+            hit = True
         elif total_atk >= player_ac:
             dmg, dmg_desc = parse_damage(self.monster.get("damage", "1d6"))
             self.character.hp -= dmg
             self.add_log(f"👹 {self.monster['name']}: d20→{atk_roll}+{self.monster.get('attack_bonus',0)}={total_atk} vs CA {player_ac} → TOUCHÉ! {dmg} dégâts!")
+            hit = True
         else:
             self.add_log(f"👹 {self.monster['name']}: d20→{atk_roll}={total_atk} vs CA {player_ac} → RATÉ!")
+
+        # Apply monster-specific status effects on hit
+        if hit:
+            monster_id = self.monster.get("id", "")
+            monster_name = self.monster.get("name", "").lower()
+            abilities = self.monster.get("abilities", [])
+            abilities_str = " ".join(abilities).lower()
+
+            if "araignee_geante" in monster_id or "araignée" in monster_name or "venin" in abilities_str:
+                if random.random() < 0.30:
+                    self.add_status("poison", 3, 2)
+                    self.add_log("🕷 Venin! Vous êtes empoisonné (3 tours, -2 PV/tour)")
+            elif "seigneur_demon" in monster_id or "démon" in monster_name or "flamme" in abilities_str:
+                if random.random() < 0.40:
+                    self.add_status("burning", 2, 4)
+                    self.add_log("🔥 Flammes! Vous êtes en feu (2 tours, -4 PV/tour)")
+            elif "ogre" in monster_id or "ogre" in monster_name:
+                if atk_roll >= 18 and random.random() < 0.30:
+                    self.add_status("fear", 2, 2)
+                    self.add_log("😨 Terreur! Vous êtes effrayé (-2 aux attaques, 2 tours)")
 
         self.player_defending = False
 

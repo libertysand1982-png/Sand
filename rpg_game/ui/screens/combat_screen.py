@@ -185,6 +185,12 @@ class CombatScreen(tk.Frame):
         if self.mp_label:
             self.mp_label.config(text=f"{char.mp} / {char.max_mp}")
 
+        if self.engine.status_effects:
+            effects_txt = "  ".join(f"{k}({v['duration']})" for k, v in self.engine.status_effects.items())
+            self.status_label.config(text=f"Effets: {effects_txt}")
+        else:
+            self.status_label.config(text="")
+
     def _roll_initiative(self):
         sound_manager.play_sfx("roar")
         p_init, p_desc = self.engine.player_initiative()
@@ -207,7 +213,20 @@ class CombatScreen(tk.Frame):
         self._update_bars()
         self._check_end()
 
+    def _apply_status_effects_ui(self):
+        """Apply status effects at start of player turn and log results. Returns True if combat ended."""
+        status_msg = self.engine.apply_status_effects()
+        if status_msg:
+            self._add_log(status_msg)
+        self._update_bars()
+        if self.engine.combat_over:
+            self._check_end()
+            return True
+        return False
+
     def _attack(self):
+        if self._apply_status_effects_ui():
+            return
         sound_manager.play_sfx("sword")
         self.engine.player_attack()
         self._flush_log()
@@ -219,6 +238,8 @@ class CombatScreen(tk.Frame):
         self._check_end()
 
     def _cast_spell(self):
+        if self._apply_status_effects_ui():
+            return
         sound_manager.play_sfx("spell")
         char = self.game_state.character
         if char.mp <= 0:
@@ -234,6 +255,8 @@ class CombatScreen(tk.Frame):
         self._check_end()
 
     def _use_potion(self):
+        if self._apply_status_effects_ui():
+            return
         char = self.game_state.character
         # Check inventory for potion
         potions = self.game_state.inventory_items.get("Potion de Soins", 0)
@@ -254,6 +277,8 @@ class CombatScreen(tk.Frame):
         self._check_end()
 
     def _defend(self):
+        if self._apply_status_effects_ui():
+            return
         self.engine.player_defend()
         self._flush_log()
         self._update_bars()
