@@ -27,7 +27,7 @@ FONT_BTN = ("Times New Roman", 11, "bold")
 FONT_SMALL = ("Courier New", 10)
 FONT_TINY = ("Courier New", 8)
 
-CELL = 22          # pixels per cell — slightly larger for detail
+CELL = 24          # pixels per cell — slightly larger for detail
 MAP_W = 40         # cells wide
 MAP_H = 30         # cells tall
 CANVAS_W = 800     # canvas pixel width
@@ -56,6 +56,71 @@ LOC_TYPE_STYLE = {
 
 # Build a location lookup: (x,y) -> location_id
 _LOC_BY_COORD = {(loc["x"], loc["y"]): loc_id for loc_id, loc in LOCATIONS.items()}
+
+
+def _make_terrain_tiles(cell_size):
+    """Return a dict {terrain_code: PIL.Image} with pixel-art terrain tiles."""
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError:
+        return {}
+
+    tiles = {}
+    cs = cell_size
+
+    # 0 = grass
+    img = Image.new("RGB", (cs, cs), "#6ab830")
+    draw = ImageDraw.Draw(img)
+    rng = random.Random(0)
+    for _ in range(6):
+        px = rng.randint(0, cs - 1)
+        py = rng.randint(0, cs - 1)
+        col = rng.choice(["#4a9020", "#88d040", "#509828"])
+        draw.point((px, py), fill=col)
+    tiles[0] = img
+
+    # 1 = forest
+    img = Image.new("RGB", (cs, cs), "#2d6018")
+    draw = ImageDraw.Draw(img)
+    for tx, ty in ((cs // 4, cs // 3), (3 * cs // 4, cs // 3)):
+        draw.ellipse((tx - 5, ty - 5, tx + 5, ty + 4), fill="#4a9020")
+        draw.rectangle((tx - 1, ty + 3, tx + 1, ty + 6), fill="#6b4226")
+    tiles[1] = img
+
+    # 2 = mountain
+    img = Image.new("RGB", (cs, cs), "#8a8070")
+    draw = ImageDraw.Draw(img)
+    for ox in (cs // 4, 3 * cs // 4 - 2):
+        peak = [(ox, 3), (ox - 6, cs - 4), (ox + 6, cs - 4)]
+        draw.polygon(peak, fill="#a09888")
+        draw.polygon([(ox, 3), (ox - 3, 8), (ox + 3, 8)], fill="#ffffff")
+    tiles[2] = img
+
+    # 3 = water
+    img = Image.new("RGB", (cs, cs), "#2060a0")
+    draw = ImageDraw.Draw(img)
+    for ry in (cs // 5, cs // 2, 4 * cs // 5):
+        draw.arc((2, ry - 2, cs - 2, ry + 2), start=180, end=0, fill="#4a80c8", width=1)
+    tiles[3] = img
+
+    # 4 = road
+    img = Image.new("RGB", (cs, cs), "#c09050")
+    draw = ImageDraw.Draw(img)
+    mid = cs // 2
+    draw.line([(0, mid - 2), (cs, mid - 2)], fill="#8b6030", width=1)
+    draw.line([(0, mid + 2), (cs, mid + 2)], fill="#8b6030", width=1)
+    draw.line([(mid - 2, 0), (mid - 2, cs)], fill="#8b6030", width=1)
+    draw.line([(mid + 2, 0), (mid + 2, cs)], fill="#8b6030", width=1)
+    tiles[4] = img
+
+    # 5 = desert
+    img = Image.new("RGB", (cs, cs), "#d0a828")
+    draw = ImageDraw.Draw(img)
+    for dy in (cs // 3, 2 * cs // 3):
+        draw.line([(3, dy), (cs - 3, dy + 2)], fill="#b89018", width=1)
+    tiles[5] = img
+
+    return tiles
 
 
 class WorldMapScreen(tk.Frame):
@@ -100,6 +165,11 @@ class WorldMapScreen(tk.Frame):
         self._walking = False
         self._walk_job = None
 
+        # PIL terrain image state
+        self._map_pil_full = None
+        self._viewport_tk_ref = None
+
+        self._init_map_image()
         self._build()
 
         self._center_camera()
@@ -310,6 +380,51 @@ class WorldMapScreen(tk.Frame):
                  font=FONT_TINY, bg="#111108", fg=PARCHMENT_LIGHT).pack(side="right", padx=4)
 
     # ─────────────────────────────────────────────
+    # PIL TERRAIN IMAGE
+    # ─────────────────────────────────────────────
+
+    def _init_map_image(self):
+        """Build the full PIL terrain image (generated once, cropped per frame)."""
+        tiles = _make_terrain_tiles(CELL)
+        if not tiles:
+            self._map_pil_full = None
+            return
+        try:
+            from PIL import Image
+            full = Image.new("RGB", (MAP_W * CELL, MAP_H * CELL), "#0a0a0a")
+            rng = random.Random(42)
+            for gy in range(MAP_H):
+                for gx in range(MAP_W):
+                    terrain = MAP_GRID[gy][gx]
+                    tile = tiles.get(terrain, tiles.get(0))
+                    if tile is None:
+                        continue
+                    # Add per-cell texture variation by slightly shifting hue via pixel jitter
+                    seed = gx + gy * MAP_W
+                    # Use the base tile directly (deterministic tile already has texture)
+                    full.paste(tile, (gx * CELL, gy * CELL))
+            self._map_pil_full = full
+        except Exception:
+            self._map_pil_full = None
+
+    def _get_viewport_tk(self):
+        """Crop the current viewport from the full PIL image and return a PhotoImage."""
+        if self._map_pil_full is None:
+            return None
+        try:
+            from PIL import ImageTk
+            x0 = self.cam_x * CELL
+            y0 = self.cam_y * CELL
+            x1 = x0 + CANVAS_W
+            y1 = y0 + CANVAS_H
+            cropped = self._map_pil_full.crop((x0, y0, x1, y1))
+            tk_img = ImageTk.PhotoImage(cropped)
+            self._viewport_tk_ref = tk_img  # prevent GC
+            return tk_img
+        except Exception:
+            return None
+
+    # ─────────────────────────────────────────────
     # MAP DRAWING
     # ─────────────────────────────────────────────
 
@@ -326,55 +441,31 @@ class WorldMapScreen(tk.Frame):
         self._draw_hero()
 
     def _draw_map(self):
-        """Draw Alaloth-style illustrated fantasy map — no fog of war."""
+        """Draw K&C-style illustrated fantasy map with PIL terrain tiles."""
         self.canvas.delete("all")
 
         cols_visible = CANVAS_W // CELL + 2
         rows_visible = CANVAS_H // CELL + 2
 
-        # ── 1. Terrain base + decoration ─────────
-        for row in range(rows_visible):
-            gy = self.cam_y + row
-            if gy >= MAP_H:
-                break
-            for col in range(cols_visible):
-                gx = self.cam_x + col
-                if gx >= MAP_W:
+        # ── 1. PIL terrain image (fast crop) ─────
+        vp_img = self._get_viewport_tk()
+        if vp_img is not None:
+            self.canvas.create_image(0, 0, anchor="nw", image=vp_img, tags="terrain")
+        else:
+            # Fallback: solid-color rectangles
+            for row in range(rows_visible):
+                gy = self.cam_y + row
+                if gy >= MAP_H:
                     break
-                terrain = MAP_GRID[gy][gx]
-                style = TERRAIN_DRAW.get(terrain, TERRAIN_DRAW[0])
-                x0 = col * CELL
-                y0 = row * CELL
-                x1 = x0 + CELL
-                y1 = y0 + CELL
-                cx = x0 + CELL // 2
-                cy = y0 + CELL // 2
-
-                self.canvas.create_rectangle(x0, y0, x1, y1,
-                                              fill=style["fill"], outline="", tags="terrain")
-
-                # Terrain details
-                if terrain == 0:  # grass — subtle darker dots
-                    pass
-                elif terrain == 1:  # forest — tree canopy circles
-                    for dx, dy in ((-4, -3), (4, -3), (0, 4)):
-                        self.canvas.create_oval(cx+dx-3, cy+dy-3, cx+dx+3, cy+dy+3,
-                                                fill="#1a4a08", outline="", tags="terrain")
-                elif terrain == 2:  # mountain — twin peaks
-                    for ox in (-5, 2):
-                        pts = [cx+ox, cy-7, cx+ox-5, cy+6, cx+ox+5, cy+6]
-                        self.canvas.create_polygon(pts, fill="#c8c0b0",
-                                                    outline="#6a5a4a", width=1, tags="terrain")
-                elif terrain == 3:  # water — ripple ovals
-                    self.canvas.create_oval(cx-6, cy-2, cx+6, cy+2,
-                                            fill="#4a72b0", outline="", tags="terrain")
-                    self.canvas.create_oval(cx-4, cy+3, cx+4, cy+6,
-                                            fill="#4a72b0", outline="", tags="terrain")
-                elif terrain == 4:  # road — center stripe
-                    self.canvas.create_rectangle(x0, cy-2, x1, cy+2,
-                                                  fill="#e0c080", outline="", tags="terrain")
-                    self.canvas.create_rectangle(cx-2, y0, cx+2, y1,
-                                                  fill="#e0c080", outline="", tags="terrain")
+                for col in range(cols_visible):
+                    gx = self.cam_x + col
+                    if gx >= MAP_W:
+                        break
+                    terrain = MAP_GRID[gy][gx]
+                    style = TERRAIN_DRAW.get(terrain, TERRAIN_DRAW[0])
+                    x0, y0 = col * CELL, row * CELL
+                    self.canvas.create_rectangle(x0, y0, x0 + CELL, y0 + CELL,
+                                                  fill=style["fill"], outline="", tags="terrain")
 
         # ── 2. Roads between connected locations ─
         visited = getattr(self.game_state, 'visited_locations', [])
@@ -415,53 +506,114 @@ class WorldMapScreen(tk.Frame):
                     col * CELL + CELL // 2, row * CELL + CELL // 2,
                     text=rname, font=("Times New Roman", 9, "italic"),
                     fill=rcolor, tags="labels",
-                    angle=0
                 )
 
-        # ── 4. Location markers (always visible) ─
+        # ── 4. Location markers (K&C mini-buildings) ─
         for loc_id, loc in LOCATIONS.items():
             gx, gy = loc["x"], loc["y"]
             col = gx - self.cam_x
             row = gy - self.cam_y
             if not (-1 <= col < cols_visible and -1 <= row < rows_visible):
                 continue
-
             cx = col * CELL + CELL // 2
             cy = row * CELL + CELL // 2
-
             loc_type = loc.get("type", "village")
-            style = LOC_TYPE_STYLE.get(loc_type, LOC_TYPE_STYLE["village"])
-            icon = loc.get("icon", "?")
             name = loc.get("name", "")
-            r = 12
+            is_visited = loc_id in visited
+            self._draw_location_building(cx, cy, loc_type, loc_id, name, is_visited)
 
-            # Drop shadow
-            self.canvas.create_oval(cx-r+2, cy-r+2, cx+r+2, cy+r+2,
-                                     fill="#000000", outline="", tags="location")
-            # Outer ring (glow)
-            self.canvas.create_oval(cx-r-1, cy-r-1, cx+r+1, cy+r+1,
-                                     fill="#ffffff", outline="", tags="location")
-            # Main circle
-            self.canvas.create_oval(cx-r, cy-r, cx+r, cy+r,
-                                     fill=style["bg"], outline=style["border"],
-                                     width=2, tags="location")
-            # Icon
-            self.canvas.create_text(cx, cy, text=icon,
-                                     font=("Segoe UI Emoji", 10, "bold"),
-                                     fill=style["icon_color"], tags="location")
-            # Name label (with dark outline for readability)
-            for ox, oy in ((-1,0),(1,0),(0,-1),(0,1)):
-                self.canvas.create_text(cx+ox, cy+r+8+oy, text=name,
-                                         font=("Times New Roman", 8, "bold"),
-                                         fill="#000000", tags="location", anchor="n")
-            self.canvas.create_text(cx, cy+r+8, text=name,
+    def _draw_location_building(self, cx, cy, loc_type, loc_id, name, visited):
+        """Draw a K&C-style mini-building icon using canvas polygons."""
+        tag = "location"
+
+        if loc_type == "village":
+            # Two small houses: tan rectangle + red triangle roof + dark door
+            for ox in (-7, 5):
+                self.canvas.create_rectangle(cx+ox-4, cy-2, cx+ox+4, cy+5,
+                                              fill="#d4b483", outline="#7a5830", tags=tag)
+                self.canvas.create_polygon(cx+ox-5, cy-2, cx+ox, cy-8, cx+ox+5, cy-2,
+                                            fill="#aa3322", outline="#7a1a10", tags=tag)
+                self.canvas.create_rectangle(cx+ox-1, cy+1, cx+ox+1, cy+5,
+                                              fill="#3a2010", outline="", tags=tag)
+
+        elif loc_type == "town":
+            # Castle keep: gray rect + crenellations + red pennant
+            self.canvas.create_rectangle(cx-7, cy-4, cx+7, cy+7,
+                                          fill="#909090", outline="#505050", width=1, tags=tag)
+            for bx in (cx-6, cx-2, cx+2):
+                self.canvas.create_rectangle(bx, cy-7, bx+3, cy-4,
+                                              fill="#909090", outline="#505050", tags=tag)
+            self.canvas.create_line(cx+7, cy-4, cx+7, cy-10, fill="#888", width=1, tags=tag)
+            self.canvas.create_polygon(cx+7, cy-10, cx+12, cy-8, cx+7, cy-6,
+                                        fill="#cc3322", outline="", tags=tag)
+
+        elif loc_type == "dungeon":
+            # Dark stone archway + skull above
+            self.canvas.create_rectangle(cx-6, cy-3, cx+6, cy+6,
+                                          fill="#3a3030", outline="#1a1010", tags=tag)
+            self.canvas.create_arc(cx-5, cy-7, cx+5, cy+1, start=0, extent=180,
+                                    fill="#1a1010", outline="#555", style="chord", tags=tag)
+            self.canvas.create_oval(cx-3, cy-12, cx+3, cy-7,
+                                     fill="#e0d0c0", outline="#888", tags=tag)
+            self.canvas.create_text(cx, cy-9, text="x", font=("Courier New", 5, "bold"),
+                                     fill="#333", tags=tag)
+
+        elif loc_type == "fort":
+            # Square keep + two corner towers
+            self.canvas.create_rectangle(cx-6, cy-5, cx+6, cy+6,
+                                          fill="#808080", outline="#505050", tags=tag)
+            for tx, ty in ((cx-7, cy-6), (cx+4, cy-6)):
+                self.canvas.create_rectangle(tx, ty, tx+4, ty+8,
+                                              fill="#909898", outline="#505050", tags=tag)
+
+        elif loc_type == "ruins":
+            # 4-5 scattered gray/brown irregular rectangles at varying heights
+            for rx, ry, rw, rh, rc in (
+                (cx-8, cy-1, 4, 5, "#7a6a50"), (cx-3, cy-4, 3, 7, "#6a5a40"),
+                (cx+2, cy-2, 4, 4, "#7a6a50"), (cx+6, cy+1, 3, 3, "#5a4a30"),
+                (cx-6, cy+2, 3, 2, "#6a5a40"),
+            ):
+                self.canvas.create_rectangle(rx, ry, rx+rw, ry+rh,
+                                              fill=rc, outline="#3a2a18", tags=tag)
+
+        elif loc_type == "temple":
+            # White rectangle + golden pointed spire
+            self.canvas.create_rectangle(cx-5, cy-1, cx+5, cy+7,
+                                          fill="#f0f0e0", outline="#c0b090", tags=tag)
+            self.canvas.create_polygon(cx-4, cy-1, cx, cy-11, cx+4, cy-1,
+                                        fill="#d4a020", outline="#a07010", tags=tag)
+            for px in (cx-4, cx, cx+4):
+                self.canvas.create_line(px, cy-1, px, cy+7,
+                                         fill="#d0c0a0", width=1, tags=tag)
+
+        elif loc_type == "cave":
+            # Brown oval cave mouth + dark interior + rock dots
+            self.canvas.create_oval(cx-7, cy-4, cx+7, cy+6,
+                                     fill="#7a5a38", outline="#4a3018", tags=tag)
+            self.canvas.create_oval(cx-4, cy-1, cx+4, cy+5,
+                                     fill="#1a1008", outline="", tags=tag)
+            for rx, ry in ((cx-8, cy+2), (cx+6, cy+3), (cx-5, cy+5)):
+                self.canvas.create_oval(rx, ry, rx+3, ry+3,
+                                         fill="#8a6a48", outline="", tags=tag)
+
+        else:
+            # Generic: simple circle
+            self.canvas.create_oval(cx-6, cy-6, cx+6, cy+6,
+                                     fill="#c8a050", outline="#7a6030", tags=tag)
+
+        # Name label with dark outline
+        for ox, oy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            self.canvas.create_text(cx+ox, cy+12+oy, text=name,
                                      font=("Times New Roman", 8, "bold"),
-                                     fill="#f0e8c0", tags="location", anchor="n")
-            # Visited checkmark
-            if loc_id in visited:
-                self.canvas.create_text(cx+r-2, cy-r+4, text="✓",
-                                         font=("Courier New", 8, "bold"),
-                                         fill="#44ff44", tags="location")
+                                     fill="#000000", tags=tag, anchor="n")
+        self.canvas.create_text(cx, cy+12, text=name,
+                                 font=("Times New Roman", 8, "bold"),
+                                 fill="#f0e8c0", tags=tag, anchor="n")
+        # Visited checkmark
+        if visited:
+            self.canvas.create_text(cx+8, cy-8, text="✓",
+                                     font=("Courier New", 8, "bold"),
+                                     fill="#44ff44", tags=tag)
 
     def _draw_hero(self):
         """Draw (or redraw) the hero marker."""
