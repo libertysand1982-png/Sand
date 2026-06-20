@@ -66,6 +66,28 @@ class CharacterCreationScreen(tk.Frame):
                         insertbackground=PARCHMENT, width=22, relief="flat", bd=2)
         entry.pack(side="left", padx=12)
 
+        # Placeholder text
+        _placeholder = "Entrez votre nom..."
+        entry.insert(0, _placeholder)
+        entry.config(fg=DARK_GOLD)
+        def _on_focus_in(e):
+            if self.name_var.get() == _placeholder:
+                entry.delete(0, "end")
+                entry.config(fg=PARCHMENT_LIGHT)
+        def _on_focus_out(e):
+            if not self.name_var.get().strip():
+                entry.insert(0, _placeholder)
+                entry.config(fg=DARK_GOLD)
+        entry.bind("<FocusIn>", _on_focus_in)
+        entry.bind("<FocusOut>", _on_focus_out)
+        # Clear placeholder before reading value
+        _orig_start = self._start_game
+        def _patched_start():
+            if self.name_var.get() == _placeholder:
+                self.name_var.set("")
+            _orig_start()
+        self._start_game = _patched_start
+
         # === RACE + CLASSE ===
         rc_frame = tk.Frame(f, bg=BG)
         rc_frame.pack(fill="x", padx=30, pady=6)

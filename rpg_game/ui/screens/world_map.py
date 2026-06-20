@@ -321,6 +321,8 @@ class WorldMapScreen(tk.Frame):
         self._draw_map()
         self._draw_fog()
         self._draw_hero()
+        # Ensure hero glow is always above fog layer
+        self.canvas.tag_raise("hero", "fog")
 
     def _draw_map(self):
         """Draw terrain tiles and location markers onto canvas."""
@@ -436,14 +438,27 @@ class WorldMapScreen(tk.Frame):
         cy = row * CELL + CELL // 2
         r = CELL // 2 - 1
 
+        # Torch glow — concentric rings from outer (dark) to inner (bright)
+        for glow_r, glow_col in (
+            (r + 10, "#1a0c00"),
+            (r + 7,  "#2e1800"),
+            (r + 5,  "#4d2e00"),
+            (r + 3,  "#7a4e00"),
+        ):
+            self.canvas.create_oval(cx - glow_r, cy - glow_r, cx + glow_r, cy + glow_r,
+                                     fill=glow_col, outline="", tags="hero")
+
         # Shadow
         self.canvas.create_oval(cx - r + 1, cy - r + 1, cx + r + 1, cy + r + 1,
                                  fill="#000000", outline="", tags="hero")
         # Hero circle
         self.canvas.create_oval(cx - r, cy - r, cx + r, cy + r,
-                                 fill="#e8d5a3", outline="#ffffff", width=2, tags="hero")
+                                 fill="#e8d5a3", outline="#ffdd88", width=2, tags="hero")
         # H letter
-        self.canvas.create_text(cx, cy, text="H", font=("Courier New", 8, "bold"),
+        char_name = ""
+        if hasattr(self, "game_state") and self.game_state and self.game_state.character:
+            char_name = (self.game_state.character.name or "H")[0].upper()
+        self.canvas.create_text(cx, cy, text=char_name or "H", font=("Courier New", 8, "bold"),
                                  fill="#0d0b08", tags="hero")
 
     def _build_joystick(self, parent):
@@ -647,6 +662,7 @@ class WorldMapScreen(tk.Frame):
         self._draw_map()
         self._draw_fog()
         self._draw_hero()
+        self.canvas.tag_raise("hero", "fog")
 
         # Update status bar
         terrain_name = TERRAIN_NAMES.get(terrain, "Inconnu")

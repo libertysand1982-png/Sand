@@ -136,9 +136,15 @@ class RPGApp:
             from ui.screens.tutorial import TutorialOverlay
             def _on_tutorial_done():
                 self.game_state.tutorial_done = True
-                # Force redraw of the world map canvas after tutorial closes
-                if self.current_screen and hasattr(self.current_screen, "_redraw"):
-                    self.root.after(50, self.current_screen._redraw)
+                # Force redraw at multiple intervals — grab_set() can leave canvas black
+                def _force_redraw():
+                    if self.current_screen and hasattr(self.current_screen, "_redraw"):
+                        self.current_screen._redraw()
+                    if hasattr(self.current_screen, "canvas"):
+                        self.current_screen.canvas.update_idletasks()
+                        self.current_screen.focus_set()
+                for delay in (50, 150, 350, 600):
+                    self.root.after(delay, _force_redraw)
             self.root.after(500, lambda: TutorialOverlay(self.root, _on_tutorial_done))
         screen = WorldMapScreen(
             self.root, self.game_state,
