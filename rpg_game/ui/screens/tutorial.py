@@ -135,3 +135,9 @@ class TutorialOverlay(tk.Toplevel):
         self.grab_release()
         self.destroy()
         self.on_done()
+        # Force the parent window to repaint everything underneath
+        try:
+            self.master.update_idletasks()
+            self.master.update()
+        except Exception:
+            pass

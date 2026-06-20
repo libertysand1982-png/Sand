@@ -98,6 +98,8 @@ class WorldMapScreen(tk.Frame):
 
         self.focus_set()
         self.bind("<KeyPress>", self._on_key)
+        self.bind("<Visibility>", lambda e: self._redraw())
+        self.bind("<Map>", lambda e: self._redraw())
 
     # ─────────────────────────────────────────────
     # BUILD UI
@@ -313,6 +315,12 @@ class WorldMapScreen(tk.Frame):
         rows_visible = CANVAS_H // CELL
         self.cam_x = max(0, min(self.hero_x - cols_visible // 2, MAP_W - cols_visible))
         self.cam_y = max(0, min(self.hero_y - rows_visible // 2, MAP_H - rows_visible))
+
+    def _redraw(self):
+        """Full redraw — called after tutorial closes or window becomes visible."""
+        self._draw_map()
+        self._draw_fog()
+        self._draw_hero()
 
     def _draw_map(self):
         """Draw terrain tiles and location markers onto canvas."""

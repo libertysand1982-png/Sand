@@ -136,7 +136,10 @@ class RPGApp:
             from ui.screens.tutorial import TutorialOverlay
             def _on_tutorial_done():
                 self.game_state.tutorial_done = True
-            self.root.after(300, lambda: TutorialOverlay(self.root, _on_tutorial_done))
+                # Force redraw of the world map canvas after tutorial closes
+                if self.current_screen and hasattr(self.current_screen, "_redraw"):
+                    self.root.after(50, self.current_screen._redraw)
+            self.root.after(500, lambda: TutorialOverlay(self.root, _on_tutorial_done))
         screen = WorldMapScreen(
             self.root, self.game_state,
             on_combat=self._start_combat,
