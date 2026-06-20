@@ -125,6 +125,11 @@ class WorldMapScreen(tk.Frame):
         self._hp_blink_state = False
         self._hp_blink_job = None
 
+        self.fragment_var = tk.StringVar()
+        self.fragment_label = tk.Label(top, textvariable=self.fragment_var,
+                                        font=("Courier New", 9), bg=BG2, fg="#8b6914")
+        self.fragment_label.pack(side="left", padx=6)
+
         if self.on_menu:
             tk.Button(top, text="Menu", font=FONT_SMALL, bg=BG2, fg=PARCHMENT,
                       relief="flat", padx=8, pady=3, cursor="hand2",
@@ -876,6 +881,19 @@ class WorldMapScreen(tk.Frame):
                 self.after_cancel(self._hp_blink_job)
                 self._hp_blink_job = None
             self.hp_warn_label.config(text="")
+
+        # Fragment progress
+        frags = getattr(self.game_state, "artifact_fragments", [])
+        forged = getattr(self.game_state, "artifact_forged", None)
+        if forged:
+            self.fragment_var.set(f"⚒ {forged}")
+            self.fragment_label.config(fg="#f0c060")
+        elif frags:
+            dots = "✦" * len(frags) + "◇" * (7 - len(frags))
+            self.fragment_var.set(f"Fragments: {dots} {len(frags)}/7")
+            self.fragment_label.config(fg="#8b6914" if len(frags) < 7 else "#f0c060")
+        else:
+            self.fragment_var.set("")
 
     def _blink_hp_warning(self):
         self._hp_blink_state = not self._hp_blink_state

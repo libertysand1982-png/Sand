@@ -33,7 +33,7 @@ MONSTERS = {
         "damage": "1d8",
         "dex_mod": 0,
         "xp": 100,
-        "loot": [("Épée rouillée", 1), ("Pièces anciennes", 10)],
+        "loot": [("Épée rouillée", 1), ("Pièces anciennes", 10), ("Ossement Maudit", 1)],
         "description": "Un squelette animé par une magie nécromantique, brandissant une lame oxydée.",
         "ascii": """  ___\n (o_o)\n /|X|\\\n  | |""",
         "abilities": ["Immunité aux poisons"]
@@ -46,7 +46,7 @@ MONSTERS = {
         "damage": "1d8+2",
         "dex_mod": 3,
         "xp": 150,
-        "loot": [("Venin d'araignée", 1), ("Soie magique", 1)],
+        "loot": [("Venin d'araignée", 1), ("Soie magique", 1), ("Écaille d'Araignée Géante", 1)],
         "description": "Une araignée monstrueuse de la taille d'un cheval, couverte de poils noirs.",
         "ascii": """  /^^\\\n /o  o\\\n-\\====/-\n  |  |""",
         "abilities": ["Poison (CON save DD13, 1d6 dégâts/tour)", "Toile (immobilise)"]
@@ -59,7 +59,7 @@ MONSTERS = {
         "damage": "1d6+2",
         "dex_mod": 1,
         "xp": 100,
-        "loot": [("Pièces d'or", 20), ("Équipement de cuir", 1)],
+        "loot": [("Pièces d'or", 20), ("Équipement de cuir", 1), ("Pièce de Médaillon Brisé", 1)],
         "description": "Un homme à l'air menaçant, vêtu de cuir clouté, une épée courte à la ceinture.",
         "ascii": """ _____\n(>'-'<)\n )___( \n  | |""",
         "abilities": ["Frappe sournoise"]
@@ -72,7 +72,7 @@ MONSTERS = {
         "damage": "2d8+4",
         "dex_mod": -1,
         "xp": 450,
-        "loot": [("Massue enchantée", 1), ("Pièces d'or", 50), ("Pierre de force", 1)],
+        "loot": [("Massue enchantée", 1), ("Pièces d'or", 50), ("Pierre de force", 1), ("Pierre du Cœur", 1)],
         "description": "Un colosse de trois mètres à la peau verdâtre, portant un tronc d'arbre en guise de massue.",
         "ascii": """ _____\n(O   O)\n ) Y (\n/_| |_\\""",
         "abilities": ["Piétinement (save DEX DD14, 2d6 dégâts)", "Rugissement (peur)"]
@@ -85,7 +85,7 @@ MONSTERS = {
         "damage": "1d6+1",
         "dex_mod": -2,
         "xp": 200,
-        "loot": [("Armure déchirée", 1), ("Clé rouillée", 1)],
+        "loot": [("Armure déchirée", 1), ("Clé rouillée", 1), ("Fer Maudit", 1)],
         "description": "Un ancien garde royal, les yeux vides et la bouche béante, traînant les pieds dans son armure souillée.",
         "ascii": """ _____\n(X   X)\n |===|\n  / \\""",
         "abilities": ["Immunité aux poisons", "Résistance aux dégâts contondants"]
@@ -98,7 +98,7 @@ MONSTERS = {
         "damage": "4d6+3",
         "dex_mod": 3,
         "xp": 2000,
-        "loot": [("Pierre Philosophale brisée", 1), ("Grimoire des Morts", 1), ("Couronne de Nécromancien", 1)],
+        "loot": [("Pierre Philosophale brisée", 1), ("Grimoire des Morts", 1), ("Couronne de Nécromancien", 1), ("Éclat de Cristal Noir", 1)],
         "description": "Une silhouette desséchée en robes noires déchirées, les yeux brillant d'une lueur violette sinistre. Une puissance ancienne et malveillante émane de chaque os.",
         "ascii": "  /---\\\n | O O |\n  \\ ^ /\n /|===|\\\\",
         "abilities": [

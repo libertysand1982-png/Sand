@@ -319,6 +319,7 @@ class CombatScreen(tk.Frame):
         if not self.engine.combat_over:
             return
         if self.engine.player_won:
+            from ui.screens.artifact_forge import FRAGMENT_NAMES
             sound_manager.play_sfx("victory")
             monster = self.engine.monster
             xp = monster.get("xp", 50)
@@ -327,14 +328,26 @@ class CombatScreen(tk.Frame):
             loot_str = ""
             for item, qty in loot:
                 import random
-                if random.random() > 0.4:
+                is_fragment = item in FRAGMENT_NAMES
+                if is_fragment or random.random() > 0.4:
                     if "Pièces" in item:
                         self.game_state.character.gold += qty
                         loot_str += f"\n  💰 +{qty} pièces d'or"
                         sound_manager.play_sfx("coin")
+                    elif is_fragment:
+                        frags = getattr(self.game_state, "artifact_fragments", [])
+                        if item not in frags:
+                            frags.append(item)
+                            self.game_state.artifact_fragments = frags
+                            loot_str += f"\n  ✦ FRAGMENT: {item}! ({len(frags)}/7)"
                     else:
                         self.game_state.inventory_items[item] = self.game_state.inventory_items.get(item, 0) + qty
                         loot_str += f"\n  🎒 {item} x{qty}"
+            frags = getattr(self.game_state, "artifact_fragments", [])
+            if frags and len(frags) < 7:
+                loot_str += f"\n  (Fragments: {len(frags)}/7 — voir Durgan à Piedval)"
+            elif len(frags) == 7 and not getattr(self.game_state, "artifact_forged", None):
+                loot_str += "\n  ✦ TOUS LES FRAGMENTS RÉUNIS! Allez voir Durgan le Forgeron!"
             self._add_log(f"\n★ Victoire! +{xp} XP{loot_str}")
             if leveled:
                 sound_manager.play_sfx("level_up")

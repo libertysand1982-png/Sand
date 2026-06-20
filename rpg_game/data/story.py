@@ -53,6 +53,25 @@ STORY = {
             {"text": "[Perception DD11] Examiner la Pierre de Croisée", "next": "pierre_croisee", "skill_check": "Perception", "difficulty": 11},
             {"text": "Vous enfoncer sur le sentier principal", "next": "sentier_foret", "skill_check": None},
             {"text": "[Discrétion DD12] Approcher silencieusement du buisson", "next": "buisson", "skill_check": "Discrétion", "difficulty": 12},
+            {"text": "[Perception DD13] Chercher dans les racines du Grand Chêne", "next": "coeur_de_brume", "skill_check": "Perception", "difficulty": 13},
+        ]
+    },
+    "coeur_de_brume": {
+        "id": "coeur_de_brume",
+        "title": "Les Racines du Grand Chêne",
+        "text": """RÉSULTAT DU JET —
+
+En cas de succès: Au pied d'un chêne millénaire dont les racines émergent du sol comme des serres géantes, votre main touche quelque chose d'étrange — une pierre pulsante, tiède malgré le froid de la forêt. Elle est enveloppée de mousse dorée et bat doucement, comme un cœur.
+
+La brume autour de vous recule légèrement à son contact. Elle semble... ancienne. Et elle vous attendait.
+
+*✦ Fragment obtenu: Cœur de Brume*
+*Ce fragment irradie une énergie vitale mystérieuse.*
+*Apportez les 7 fragments à Durgan le Forgeron à Piedval.*
+
+En cas d'échec: Les racines du chêne ne vous révèlent rien d'inhabituel. Peut-être une autre fois.""",
+        "choices": [
+            {"text": "Continuer l'exploration de la forêt", "next": "lisiere_foret", "skill_check": None},
         ]
     },
     "pierre_croisee": {

@@ -112,6 +112,10 @@ class RPGApp:
             save.revealed_cells = set()
         if not hasattr(save, "reveal_radius"):
             save.reveal_radius = 4
+        if not hasattr(save, "artifact_fragments"):
+            save.artifact_fragments = []
+        if not hasattr(save, "artifact_forged"):
+            save.artifact_forged = None
         self._show_world_map()
 
     def _start_game(self):

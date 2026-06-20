@@ -280,7 +280,8 @@ NPCS = {
         "dialogue": [
             "Besoin d'armes ou d'armures ? Vous êtes au bon endroit.",
             "J'ai forgé cette lame moi-même. Elle tient le choc, je vous le garantis.",
-            "Revenez quand vous aurez de l'or, aventurier."
+            "On dit qu'un artefact ancien sommeille dans cette région... brisé en 7 fragments, dispersés sur les boss les plus dangereux.",
+            "Ramenez-moi les 7 Fragments des Maudits — je vous forgerai quelque chose d'extraordinaire. Une arme, une armure ou un bijou capable de vaincre n'importe quel mal."
         ],
         "quest": None,
         "shop": "forge_piedval"

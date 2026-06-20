@@ -102,6 +102,24 @@ class DialogueScreen(tk.Frame):
                 command=lambda: self.on_shop(npc_shop), **btn_style
             ).pack(side="left", padx=4)
 
+        # Artifact forge button — shown for Durgan when player has all 7 fragments
+        if self.npc_id == "forgeron":
+            from ui.screens.artifact_forge import FRAGMENT_NAMES
+            frags = getattr(self.game_state, "artifact_fragments", [])
+            already = getattr(self.game_state, "artifact_forged", None)
+            if len(frags) >= len(FRAGMENT_NAMES) and not already:
+                tk.Button(
+                    btn_frame, text="⚒ FORGER L'ARTEFACT",
+                    bg="#8b6914", fg="#f0c060",
+                    font=("Times New Roman", 12, "bold"),
+                    relief="flat", padx=10, pady=6, cursor="hand2",
+                    activebackground="#f0c060", activeforeground=BG,
+                    command=self._open_forge
+                ).pack(side="left", padx=4)
+            elif already:
+                tk.Label(btn_frame, text=f"⚒ {already} forgée",
+                         font=FONT_SMALL, bg=BG, fg="#88cc44").pack(side="left", padx=8)
+
         # Close button
         tk.Button(
             btn_frame, text="Au revoir", bg=RED, fg=PARCHMENT,
@@ -130,6 +148,9 @@ class DialogueScreen(tk.Frame):
         if quest_id not in self.game_state.active_quests:
             self.game_state.active_quests.append(quest_id)
             self.status_var.set("Quête acceptée !")
-            # Rebuild buttons to hide quest button
-            for w in self.winfo_children():
-                pass  # Simple status update is enough
+
+    def _open_forge(self):
+        from ui.screens.artifact_forge import ArtifactForgeScreen
+        def _on_forge_done(item_name):
+            self.status_var.set(f"✅ {item_name} forgé(e) et équipé(e) !")
+        ArtifactForgeScreen(self.winfo_toplevel(), self.game_state, _on_forge_done)

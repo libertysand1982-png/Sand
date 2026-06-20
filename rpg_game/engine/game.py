@@ -20,6 +20,8 @@ class GameState:
         self.reveal_radius = 4           # default vision radius
         self.tutorial_done = False
         self.shown_hints = set()
+        self.artifact_fragments = []   # fragment names collected
+        self.artifact_forged = None    # name of forged legendary item
 
     def current_node(self):
         return STORY.get(self.current_node_id, STORY["start"])

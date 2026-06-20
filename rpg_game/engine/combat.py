@@ -113,9 +113,20 @@ class CombatEngine:
         elif total_atk >= monster_ac:
             dmg, dmg_desc = parse_damage(weapon["damage"])
             total_dmg = max(1, dmg + str_mod)
+            # Legendary weapon undead bonus
+            undead_keywords = ["squelette", "zombie", "liche", "mort", "spectre", "fantôme", "démon", "demon"]
+            weapon_item = self.character.equipment.get("weapon") if hasattr(self.character, "equipment") else None
+            undead_bonus = 0
+            if weapon_item and weapon_item.get("vs_undead_bonus"):
+                if any(k in self.monster.get("name", "").lower() for k in undead_keywords):
+                    undead_bonus, _ = parse_damage(weapon_item["vs_undead_bonus"])
+                    total_dmg += undead_bonus
             self.monster["current_hp"] -= total_dmg
             fear_str = f"{fear_penalty}" if fear_penalty else ""
-            self.add_log(f"⚔️ Attaque: d20→{atk_roll}+{self.character.attack_bonus}{fear_str}={total_atk} vs CA {monster_ac} → TOUCHÉ! {dmg_desc}+{str_mod} = {total_dmg} dégâts")
+            log_msg = f"⚔️ Attaque: d20→{atk_roll}+{self.character.attack_bonus}{fear_str}={total_atk} vs CA {monster_ac} → TOUCHÉ! {dmg_desc}+{str_mod} = {total_dmg} dégâts"
+            if undead_bonus:
+                log_msg += f"\n   ✨ Lumière Sacrée: +{undead_bonus} dégâts sacrés!"
+            self.add_log(log_msg)
         else:
             fear_str = f"{fear_penalty}" if fear_penalty else ""
             self.add_log(f"⚔️ Attaque: d20→{atk_roll}+{self.character.attack_bonus}{fear_str}={total_atk} vs CA {monster_ac} → RATÉ!")
@@ -235,5 +246,14 @@ class CombatEngine:
             self.combat_over = True
             self.player_won = False
             self.add_log(f"💀 Vous êtes tombé au combat...")
+
+        # Anneau de la Vie — regeneration
+        if not self.combat_over:
+            ring = self.character.equipment.get("ring") if hasattr(self.character, "equipment") else None
+            if ring and ring.get("hp_bonus"):
+                regen = min(3, self.character.max_hp - self.character.hp)
+                if regen > 0:
+                    self.character.hp += regen
+                    self.add_log(f"💍 Anneau de la Vie: +{regen} PV régénérés")
 
         self.turn += 1
