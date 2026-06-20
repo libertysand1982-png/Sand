@@ -58,6 +58,7 @@ STORY = {
     },
     "coeur_de_brume": {
         "id": "coeur_de_brume",
+        "grants_fragment": "Cœur de Brume",
         "title": "Les Racines du Grand Chêne",
         "text": """RÉSULTAT DU JET —
 

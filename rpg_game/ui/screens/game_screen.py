@@ -208,10 +208,28 @@ class GameScreen(tk.Frame):
                 self._set_narration(full_text)
                 self._update_choices(node)
                 self.game_state.go_to(next_node)
+                # Grant fragment if applicable (success path only when skill check succeeded)
+                frag = STORY.get(next_node, {}).get("grants_fragment")
+                if frag and success:
+                    frags = getattr(self.game_state, "artifact_fragments", [])
+                    if frag not in frags:
+                        frags.append(frag)
+                        self.game_state.artifact_fragments = frags
+                        self.dice_result_label.config(
+                            text=f"✦ Fragment obtenu: {frag}! ({len(frags)}/7)",
+                            fg="#c9a84c"
+                        )
                 return
 
         self.game_state.go_to(next_node)
+        # Grant fragment for non-skill-check nodes
         node = self.game_state.current_node()
+        frag = node.get("grants_fragment")
+        if frag:
+            frags = getattr(self.game_state, "artifact_fragments", [])
+            if frag not in frags:
+                frags.append(frag)
+                self.game_state.artifact_fragments = frags
         if node.get("combat"):
             monster_id = node.get("monster_id", "gobelin")
             win_node = node.get("win_node", "start")
