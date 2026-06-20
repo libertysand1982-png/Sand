@@ -27,11 +27,32 @@ FONT_BTN = ("Times New Roman", 11, "bold")
 FONT_SMALL = ("Courier New", 10)
 FONT_TINY = ("Courier New", 8)
 
-CELL = 20          # pixels per cell
+CELL = 22          # pixels per cell — slightly larger for detail
 MAP_W = 40         # cells wide
 MAP_H = 30         # cells tall
 CANVAS_W = 800     # canvas pixel width
-CANVAS_H = 500     # canvas pixel height (shows 25 rows)
+CANVAS_H = 500     # canvas pixel height
+
+# Alaloth-style terrain palette — warm parchment cartography
+TERRAIN_DRAW = {
+    0: {"fill": "#6b9e3a"},           # grass — warm green
+    1: {"fill": "#2d6018"},           # forest — deep green
+    2: {"fill": "#8a7a6a"},           # mountain — stone
+    3: {"fill": "#2a5280"},           # water — deep blue
+    4: {"fill": "#c8a050"},           # road — golden path
+    5: {"fill": "#c8a030"},           # desert — sandy
+}
+
+# Location type → colors for the illustrated markers
+LOC_TYPE_STYLE = {
+    "village":  {"bg": "#e8c86a", "border": "#8a6020", "icon_color": "#3a2000"},
+    "town":     {"bg": "#f0a030", "border": "#704010", "icon_color": "#2a1000"},
+    "dungeon":  {"bg": "#6a1a1a", "border": "#3a0808", "icon_color": "#ffaaaa"},
+    "fort":     {"bg": "#909090", "border": "#505050", "icon_color": "#ffffff"},
+    "ruins":    {"bg": "#7a6040", "border": "#4a3820", "icon_color": "#e8d0a0"},
+    "temple":   {"bg": "#7040a0", "border": "#3a1860", "icon_color": "#f0d0ff"},
+    "cave":     {"bg": "#604830", "border": "#301808", "icon_color": "#f0c080"},
+}
 
 # Build a location lookup: (x,y) -> location_id
 _LOC_BY_COORD = {(loc["x"], loc["y"]): loc_id for loc_id, loc in LOCATIONS.items()}
@@ -79,20 +100,10 @@ class WorldMapScreen(tk.Frame):
         self._walking = False
         self._walk_job = None
 
-        # Ensure fog-of-war fields exist (backward-compat with old saves)
-        if not hasattr(self.game_state, 'revealed_cells'):
-            self.game_state.revealed_cells = set()
-        if not hasattr(self.game_state, 'reveal_radius'):
-            self.game_state.reveal_radius = 4
-
         self._build()
-
-        # Initial reveal around starting position
-        self.game_state.reveal_around(self.hero_x, self.hero_y, 5)
 
         self._center_camera()
         self._draw_map()
-        self._draw_fog()
         self._draw_hero()
         self._start_blink()
 
@@ -157,9 +168,8 @@ class WorldMapScreen(tk.Frame):
         self._music_btn.pack(side="right", padx=2)
 
         # Explored percentage label
-        self.explored_var = tk.StringVar(value="Exploré: 0%")
-        tk.Label(top, textvariable=self.explored_var, font=FONT_TINY,
-                 bg=BG2, fg=DARK_GOLD).pack(side="right", padx=8)
+        self.explored_var = tk.StringVar(value="")
+        # (no fog — explored% label removed)
 
         self._update_top_bar()
 
@@ -211,13 +221,6 @@ class WorldMapScreen(tk.Frame):
                                    highlightthickness=1, highlightbackground="#333")
             color_box.pack(side="left", padx=(0, 6))
             tk.Label(row, text=name, font=FONT_TINY, bg=BG2, fg=PARCHMENT_LIGHT).pack(side="left")
-        # Fog of war legend entry
-        fog_row = tk.Frame(legend_frame, bg=BG2)
-        fog_row.pack(fill="x", pady=1)
-        fog_box = tk.Canvas(fog_row, width=14, height=14, bg="#111111",
-                             highlightthickness=1, highlightbackground="#333")
-        fog_box.pack(side="left", padx=(0, 6))
-        tk.Label(fog_row, text="Inexploré", font=FONT_TINY, bg=BG2, fg=PARCHMENT_LIGHT).pack(side="left")
 
         tk.Label(right, text="━" * 22, font=FONT_TINY, bg=BG2, fg=DARK_GOLD).pack(pady=2)
 
@@ -320,107 +323,145 @@ class WorldMapScreen(tk.Frame):
     def _redraw(self):
         """Full redraw — called after tutorial closes or window becomes visible."""
         self._draw_map()
-        self._draw_fog()
         self._draw_hero()
-        # Ensure hero glow is always above fog layer
-        self.canvas.tag_raise("hero", "fog")
 
     def _draw_map(self):
-        """Draw terrain tiles and location markers onto canvas."""
+        """Draw Alaloth-style illustrated fantasy map — no fog of war."""
         self.canvas.delete("all")
 
-        cols_visible = CANVAS_W // CELL
-        rows_visible = CANVAS_H // CELL
+        cols_visible = CANVAS_W // CELL + 2
+        rows_visible = CANVAS_H // CELL + 2
 
-        for row in range(rows_visible + 1):
+        # ── 1. Terrain base + decoration ─────────
+        for row in range(rows_visible):
             gy = self.cam_y + row
             if gy >= MAP_H:
                 break
-            for col in range(cols_visible + 1):
+            for col in range(cols_visible):
                 gx = self.cam_x + col
                 if gx >= MAP_W:
                     break
                 terrain = MAP_GRID[gy][gx]
-                color = TERRAIN_COLORS.get(terrain, "#2d5a1b")
+                style = TERRAIN_DRAW.get(terrain, TERRAIN_DRAW[0])
                 x0 = col * CELL
                 y0 = row * CELL
                 x1 = x0 + CELL
                 y1 = y0 + CELL
-                # Tile
-                self.canvas.create_rectangle(x0, y0, x1, y1, fill=color, outline="", tags="terrain")
-                # Subtle grid lines
-                darker = self._darken(color)
-                self.canvas.create_rectangle(x0, y0, x1, y1, fill="", outline=darker, tags="grid")
+                cx = x0 + CELL // 2
+                cy = y0 + CELL // 2
 
-        # Draw locations — only if their cell is revealed
-        revealed = getattr(self.game_state, 'revealed_cells', set())
+                self.canvas.create_rectangle(x0, y0, x1, y1,
+                                              fill=style["fill"], outline="", tags="terrain")
+
+                # Terrain details
+                if terrain == 0:  # grass — subtle darker dots
+                    pass
+                elif terrain == 1:  # forest — tree canopy circles
+                    for dx, dy in ((-4, -3), (4, -3), (0, 4)):
+                        self.canvas.create_oval(cx+dx-3, cy+dy-3, cx+dx+3, cy+dy+3,
+                                                fill="#1a4a08", outline="", tags="terrain")
+                elif terrain == 2:  # mountain — twin peaks
+                    for ox in (-5, 2):
+                        pts = [cx+ox, cy-7, cx+ox-5, cy+6, cx+ox+5, cy+6]
+                        self.canvas.create_polygon(pts, fill="#c8c0b0",
+                                                    outline="#6a5a4a", width=1, tags="terrain")
+                elif terrain == 3:  # water — ripple ovals
+                    self.canvas.create_oval(cx-6, cy-2, cx+6, cy+2,
+                                            fill="#4a72b0", outline="", tags="terrain")
+                    self.canvas.create_oval(cx-4, cy+3, cx+4, cy+6,
+                                            fill="#4a72b0", outline="", tags="terrain")
+                elif terrain == 4:  # road — center stripe
+                    self.canvas.create_rectangle(x0, cy-2, x1, cy+2,
+                                                  fill="#e0c080", outline="", tags="terrain")
+                    self.canvas.create_rectangle(cx-2, y0, cx+2, y1,
+                                                  fill="#e0c080", outline="", tags="terrain")
+
+        # ── 2. Roads between connected locations ─
+        visited = getattr(self.game_state, 'visited_locations', [])
+        road_pairs = [
+            ("piedval", "bourg_amont"), ("piedval", "fort_gris"),
+            ("piedval", "crypte_brume"), ("piedval", "temple_soleil"),
+            ("piedval", "marais_brumeux"), ("bourg_amont", "academie_arcane"),
+            ("bourg_amont", "village_peche"), ("fort_gris", "mine_abandonnee"),
+            ("fort_gris", "ruines_valdrigard"), ("crypte_brume", "necropole"),
+            ("necropole", "terres_maudites"),
+        ]
+        for a_id, b_id in road_pairs:
+            a = LOCATIONS.get(a_id)
+            b = LOCATIONS.get(b_id)
+            if not a or not b:
+                continue
+            ax = (a["x"] - self.cam_x) * CELL + CELL // 2
+            ay = (a["y"] - self.cam_y) * CELL + CELL // 2
+            bx = (b["x"] - self.cam_x) * CELL + CELL // 2
+            by = (b["y"] - self.cam_y) * CELL + CELL // 2
+            self.canvas.create_line(ax, ay, bx, by,
+                                     fill="#c8a050", width=2, dash=(4, 3),
+                                     tags="roads")
+
+        # ── 3. Region name labels ─────────────────
+        region_labels = [
+            (6, 3,  "TERRES MAUDITES", "#aa4040"),
+            (30, 3, "MER DE L'EST",    "#4070b0"),
+            (32, 14, "CÔTES DORÉES",   "#c8a030"),
+            (2, 20, "PLAINES DE L'OUEST", "#6a9a30"),
+            (20, 27, "DÉSERT DU SUD",  "#c08020"),
+        ]
+        for rx, ry, rname, rcolor in region_labels:
+            col = rx - self.cam_x
+            row = ry - self.cam_y
+            if 0 <= col < cols_visible and 0 <= row < rows_visible:
+                self.canvas.create_text(
+                    col * CELL + CELL // 2, row * CELL + CELL // 2,
+                    text=rname, font=("Times New Roman", 9, "italic"),
+                    fill=rcolor, tags="labels",
+                    angle=0
+                )
+
+        # ── 4. Location markers (always visible) ─
         for loc_id, loc in LOCATIONS.items():
             gx, gy = loc["x"], loc["y"]
-            if (gx, gy) not in revealed:
-                continue
             col = gx - self.cam_x
             row = gy - self.cam_y
-            if 0 <= col < cols_visible and 0 <= row < rows_visible:
-                cx = col * CELL + CELL // 2
-                cy = row * CELL + CELL // 2
-                r = CELL // 2 - 1
-                lcolor = loc.get("color", "#f0c060")
-                # Outer glow ring
-                self.canvas.create_oval(cx - r - 2, cy - r - 2, cx + r + 2, cy + r + 2,
-                                         fill="", outline="#ffffff44", width=1, tags="location")
-                # Circle
-                self.canvas.create_oval(cx - r, cy - r, cx + r, cy + r,
-                                         fill=lcolor, outline="#ffffff", width=1, tags="location")
-                # Letter
-                icon = loc.get("icon", "?")
-                self.canvas.create_text(cx, cy, text=icon, font=("Courier New", 9, "bold"),
-                                         fill="#0d0b08", tags="location")
-                # Completion checkmark
-                if loc_id in getattr(self.game_state, 'visited_locations', []):
-                    self.canvas.create_text(cx + r - 2, cy - r + 2, text="✓",
-                                             font=("Courier New", 7, "bold"),
-                                             fill="#44ff44", tags="location")
+            if not (-1 <= col < cols_visible and -1 <= row < rows_visible):
+                continue
 
-    def _draw_fog(self):
-        """Draw fog of war over unrevealed cells using merged horizontal spans."""
-        self.canvas.delete("fog")
-        revealed = getattr(self.game_state, 'revealed_cells', set())
-        cols_visible = CANVAS_W // CELL
-        rows_visible = CANVAS_H // CELL
+            cx = col * CELL + CELL // 2
+            cy = row * CELL + CELL // 2
 
-        for row in range(rows_visible + 1):
-            gy = self.cam_y + row
-            if gy >= MAP_H:
-                break
-            # Merge consecutive hidden cells in this row into horizontal spans
-            span_start = None
-            for col in range(cols_visible + 2):
-                gx = self.cam_x + col
-                hidden = (gx >= MAP_W) or ((gx, gy) not in revealed)
-                in_viewport = col <= cols_visible
+            loc_type = loc.get("type", "village")
+            style = LOC_TYPE_STYLE.get(loc_type, LOC_TYPE_STYLE["village"])
+            icon = loc.get("icon", "?")
+            name = loc.get("name", "")
+            r = 12
 
-                if hidden and in_viewport and gx < MAP_W:
-                    if span_start is None:
-                        span_start = col
-                else:
-                    if span_start is not None:
-                        # Draw one rectangle spanning span_start..col-1
-                        sx0 = span_start * CELL
-                        sy0 = row * CELL
-                        sx1 = col * CELL
-                        sy1 = sy0 + CELL
-                        self.canvas.create_rectangle(
-                            sx0, sy0, sx1, sy1,
-                            fill="#111111", outline="",
-                            tags="fog"
-                        )
-                        span_start = None
-
-        # Update explored % label
-        total = MAP_W * MAP_H
-        pct = int(len(revealed) * 100 / total)
-        if hasattr(self, 'explored_var'):
-            self.explored_var.set(f"Exploré: {pct}%")
+            # Drop shadow
+            self.canvas.create_oval(cx-r+2, cy-r+2, cx+r+2, cy+r+2,
+                                     fill="#000000", outline="", tags="location")
+            # Outer ring (glow)
+            self.canvas.create_oval(cx-r-1, cy-r-1, cx+r+1, cy+r+1,
+                                     fill="#ffffff", outline="", tags="location")
+            # Main circle
+            self.canvas.create_oval(cx-r, cy-r, cx+r, cy+r,
+                                     fill=style["bg"], outline=style["border"],
+                                     width=2, tags="location")
+            # Icon
+            self.canvas.create_text(cx, cy, text=icon,
+                                     font=("Segoe UI Emoji", 10, "bold"),
+                                     fill=style["icon_color"], tags="location")
+            # Name label (with dark outline for readability)
+            for ox, oy in ((-1,0),(1,0),(0,-1),(0,1)):
+                self.canvas.create_text(cx+ox, cy+r+8+oy, text=name,
+                                         font=("Times New Roman", 8, "bold"),
+                                         fill="#000000", tags="location", anchor="n")
+            self.canvas.create_text(cx, cy+r+8, text=name,
+                                     font=("Times New Roman", 8, "bold"),
+                                     fill="#f0e8c0", tags="location", anchor="n")
+            # Visited checkmark
+            if loc_id in visited:
+                self.canvas.create_text(cx+r-2, cy-r+4, text="✓",
+                                         font=("Courier New", 8, "bold"),
+                                         fill="#44ff44", tags="location")
 
     def _draw_hero(self):
         """Draw (or redraw) the hero marker."""
@@ -437,30 +478,25 @@ class WorldMapScreen(tk.Frame):
 
         cx = col * CELL + CELL // 2
         cy = row * CELL + CELL // 2
-        r = CELL // 2 - 1
+        r = 10
 
-        # Torch glow — concentric rings from outer (dark) to inner (bright)
-        for glow_r, glow_col in (
-            (r + 10, "#1a0c00"),
-            (r + 7,  "#2e1800"),
-            (r + 5,  "#4d2e00"),
-            (r + 3,  "#7a4e00"),
-        ):
-            self.canvas.create_oval(cx - glow_r, cy - glow_r, cx + glow_r, cy + glow_r,
+        # Outer glow pulse (torch light)
+        for glow_r, glow_col in ((r+9, "#2a1500"), (r+6, "#5a3000"), (r+3, "#a06000")):
+            self.canvas.create_oval(cx-glow_r, cy-glow_r, cx+glow_r, cy+glow_r,
                                      fill=glow_col, outline="", tags="hero")
-
-        # Shadow
-        self.canvas.create_oval(cx - r + 1, cy - r + 1, cx + r + 1, cy + r + 1,
+        # Drop shadow
+        self.canvas.create_oval(cx-r+2, cy-r+2, cx+r+2, cy+r+2,
                                  fill="#000000", outline="", tags="hero")
-        # Hero circle
-        self.canvas.create_oval(cx - r, cy - r, cx + r, cy + r,
-                                 fill="#e8d5a3", outline="#ffdd88", width=2, tags="hero")
-        # H letter
+        # Hero pawn circle — bright gold
+        self.canvas.create_oval(cx-r, cy-r, cx+r, cy+r,
+                                 fill="#ffe070", outline="#ffffff", width=2, tags="hero")
+        # First letter of name
         char_name = ""
         if hasattr(self, "game_state") and self.game_state and self.game_state.character:
             char_name = (self.game_state.character.name or "H")[0].upper()
-        self.canvas.create_text(cx, cy, text=char_name or "H", font=("Courier New", 8, "bold"),
-                                 fill="#0d0b08", tags="hero")
+        self.canvas.create_text(cx, cy, text=char_name or "H",
+                                 font=("Times New Roman", 10, "bold"),
+                                 fill="#3a1000", tags="hero")
 
     def _build_joystick(self, parent):
         """Build virtual D-pad for touch/mouse control."""
@@ -647,10 +683,6 @@ class WorldMapScreen(tk.Frame):
         self.hero_y = ny
         self.steps_since_encounter += 1
 
-        # Fog of war reveal based on terrain
-        _fow_radius = {0: 4, 1: 2, 2: 3, 3: 4, 4: 5, 5: 4}.get(terrain, 4)
-        self.game_state.reveal_around(self.hero_x, self.hero_y, _fow_radius)
-
         # Footstep sound every 2-3 steps
         self._step_sound_counter += 1
         if self._step_sound_counter >= self._step_sound_every:
@@ -661,9 +693,7 @@ class WorldMapScreen(tk.Frame):
         # Update camera if hero near edge
         self._center_camera()
         self._draw_map()
-        self._draw_fog()
         self._draw_hero()
-        self.canvas.tag_raise("hero", "fog")
 
         # Update status bar
         terrain_name = TERRAIN_NAMES.get(terrain, "Inconnu")
