@@ -1,8 +1,20 @@
 extends Node
-# GameState.gd — Équivalent de engine/game.py
-# Singleton : ajouter dans Projet > Paramètres > AutoLoad sous le nom "GameState"
+# GameState.gd — Singleton global
+# Ajouter dans Projet > Paramètres > AutoLoad sous le nom "GameState"
 
-var character: Dictionary = {}
+var character: Dictionary = {
+	"name":        "Meredius",
+	"hp":          10,
+	"max_hp":      10,
+	"armor_class": 10,
+	"attack_bonus": 1,
+	"gold":        50,
+	"xp":          0,
+	"level":       1,
+	"inventory":   []
+}
+
+var monstre_actuel: Dictionary = {}
 var current_node_id: String = "start"
 var active_quests: Array = []
 var completed_quests: Array = []
@@ -30,13 +42,24 @@ func _load_data():
 	npcs      = _load_json("res://data/npcs.json")
 
 func _load_json(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
 	var file = FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		push_error("Cannot open: " + path)
 		return {}
 	var text = file.get_as_text()
 	file.close()
-	return JSON.parse_string(text)
+	var result = JSON.parse_string(text)
+	return result if result != null else {}
+
+func lancer_combat(nom_monstre: String):
+	if monsters.has(nom_monstre):
+		monstre_actuel = monsters[nom_monstre].duplicate(true)
+	else:
+		monstre_actuel = {
+			"name": nom_monstre, "hp": 10, "ac": 12,
+			"attack_bonus": 1, "damage": "1d6", "xp": 50, "loot": []
+		}
 
 func current_node() -> Dictionary:
 	return story.get(current_node_id, {})
