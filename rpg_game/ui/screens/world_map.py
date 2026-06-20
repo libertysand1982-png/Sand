@@ -98,6 +98,7 @@ class WorldMapScreen(tk.Frame):
 
         self.focus_set()
         self.bind("<KeyPress>", self._on_key)
+        self.bind("<Escape>", lambda e: self.on_menu() if self.on_menu else None)
         self.bind("<Visibility>", lambda e: self._redraw())
         self.bind("<Map>", lambda e: self._redraw())
 

@@ -50,17 +50,18 @@ class TutorialOverlay(tk.Toplevel):
         self.steps = TUTORIAL_STEPS
 
         self.title("Tutoriel")
-        self.geometry("500x400")
+        self.geometry("520x460")
         self.resizable(False, False)
         self.configure(bg=BG)
-        self.grab_set()
+        self.transient(master)   # stay on top without blocking parent rendering
         self.focus_set()
+        self.bind("<Escape>", lambda e: self._skip())
 
         # Center on parent
         self.update_idletasks()
-        px = master.winfo_x() + (master.winfo_width() - 500) // 2
-        py = master.winfo_y() + (master.winfo_height() - 400) // 2
-        self.geometry(f"500x400+{px}+{py}")
+        px = master.winfo_x() + (master.winfo_width() - 520) // 2
+        py = master.winfo_y() + (master.winfo_height() - 460) // 2
+        self.geometry(f"520x460+{px}+{py}")
 
         self._build()
         self._show_step()
@@ -81,7 +82,7 @@ class TutorialOverlay(tk.Toplevel):
 
         # Text
         self.text_label = tk.Label(self, text="", font=("Times New Roman", 12),
-                                    bg=BG, fg=PARCHMENT_LIGHT, wraplength=440,
+                                    bg=BG, fg=PARCHMENT_LIGHT, wraplength=460,
                                     justify="left", padx=20)
         self.text_label.pack(pady=10, fill="x")
 

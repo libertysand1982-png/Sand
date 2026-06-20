@@ -66,6 +66,8 @@ class GameScreen(tk.Frame):
         self.on_restart = on_restart
         self._build()
         self._show_node()
+        self.bind("<Escape>", lambda e: self.on_restart())
+        self.focus_set()
 
     def _build(self):
         char = self.game_state.character
