@@ -1,40 +1,44 @@
 extends Control
-## Carte du monde "La Foret de Brume" en diorama isometrique medieval.
-## Sol pave en losange + batiments Kenney empiles, dans une clairiere de foret.
+## Carte du monde "La Foret de Brume" — carte top-down peinte.
+## Sol d'herbe, lac, foret, et lieux interactifs (pack terrain).
 
-# --- Parametres isometriques (ajustables) ---
-const SCALE := 0.5
-const ISO_W := 64.0           # demi-largeur du losange
-const ISO_H := 32.0           # demi-hauteur du losange
-const ORIGINE := Vector2(576, 250)
-const ANCRE_Y := 40.0         # decalage vertical global
+const TREES := ["Tree1", "Tree2", "Tree3", "Fruit_tree1", "Flower_tree1", "Moss_tree1", "Autumn_tree1"]
+const ROCKS := ["Rock1_grass_shadow1", "Rock2_grass_shadow1", "Rock4_grass_shadow2",
+	"Rock5_grass_shadow1", "Rock6_grass_shadow3"]
 
-const TEINTE_SOL := Color(0.94, 0.92, 0.96)
-const TEINTE_PIERRE := Color(0.96, 0.95, 1.0)
-
-# Lieux interactifs : nom, cellule, recette (bas -> haut), description.
-const LIEUX := [
-	{"nom": "Chateau de l'Aube", "cell": Vector2(1, 0), "recette": ["stoneWallGateClosed_E"],
-		"desc": "La citadelle royale, coeur du royaume et point de depart de ta quete."},
-	{"nom": "Tour de Guet", "cell": Vector2(3, 0), "recette": ["stoneColumn_E"],
-		"desc": "Une haute tour de pierre d'ou les sentinelles scrutent l'horizon brumeux."},
-	{"nom": "Bourg de Boisclair", "cell": Vector2(0, 2), "recette": ["woodWall_E", "roofSingle_E"],
-		"desc": "Un village prospere ou marchands et aubergistes accueillent les aventuriers."},
-	{"nom": "Echoppe du Marchand", "cell": Vector2(2, 2), "recette": ["woodWallWindow_E", "roofSingle_E"],
-		"desc": "On y troque armes, potions et babioles venues des quatre coins du monde."},
-	{"nom": "Vieille Ferme", "cell": Vector2(3, 3), "recette": ["woodWallDoorClosed_E", "roof_E"],
-		"desc": "Une ferme isolee tenue par un meunier bourru mais bon coeur."},
-	{"nom": "Entrepot du Val", "cell": Vector2(1, 3), "recette": ["chestClosed_E"],
-		"desc": "Un depot rempli de vivres et de coffres... dont certains bien gardes."},
+# Arbres en lisiere (foret encadrant la clairiere).
+const FORET := [
+	Vector2(60, 90), Vector2(180, 70), Vector2(300, 85), Vector2(430, 65), Vector2(560, 80),
+	Vector2(690, 68), Vector2(820, 82), Vector2(950, 70), Vector2(1090, 88),
+	Vector2(55, 200), Vector2(80, 320), Vector2(58, 450), Vector2(95, 560),
+	Vector2(1100, 210), Vector2(1095, 340), Vector2(1115, 470),
+	Vector2(250, 610), Vector2(470, 618), Vector2(430, 340), Vector2(540, 500),
 ]
 
-# Decor isometrique non interactif : piece, cellule.
-const DECOR := [
-	{"piece": "stoneColumn_E", "cell": Vector2(0, 0)},
-	{"piece": "stoneWallWindow_E", "cell": Vector2(2, 0)},
-	{"piece": "stoneWall_E", "cell": Vector2(3, 1)},
-	{"piece": "hayBales_E", "cell": Vector2(0, 3)},
-	{"piece": "sack_E", "cell": Vector2(2, 3)},
+const ROCHERS := [
+	Vector2(170, 220), Vector2(700, 300), Vector2(380, 540), Vector2(820, 250), Vector2(610, 580),
+]
+
+# Champignons / petits details : fichier, position.
+const DETAILS := [
+	{"f": "Black_mushrooms1_grass_shadow", "p": Vector2(300, 430)},
+	{"f": "Orange_mushrooms1_grass_shadow", "p": Vector2(660, 470)},
+	{"f": "Rock_statue_head_grass_shadow", "p": Vector2(500, 250)},
+	{"f": "Liana_bridges1_grass_shadow", "p": Vector2(905, 452)},
+]
+
+# Lieux interactifs : nom, fichier, position, echelle, description.
+const LIEUX := [
+	{"nom": "Campement des Errants", "f": "Yurt1_grass_shadow", "p": Vector2(330, 310), "e": 1.3,
+		"desc": "Une yourte chaleureuse ou des nomades partagent vivres, rumeurs et quetes."},
+	{"nom": "Caverne d'Ombre", "f": "Cave_entrance1_grass_shadow", "p": Vector2(880, 180), "e": 1.25,
+		"desc": "Une bouche sombre creusee dans la roche. Un donjon dont nul n'est jamais ressorti indemne."},
+	{"nom": "Pyramide Engloutie", "f": "Stone_pyramid1_grass_shadow", "p": Vector2(610, 175), "e": 3.0,
+		"desc": "Un monument ancien aux glyphes oublies, garde par d'antiques sortileges."},
+	{"nom": "Sanctuaire de Pierre", "f": "Rock_statue_mother_grass_shadow", "p": Vector2(205, 470), "e": 0.8,
+		"desc": "Une statue maternelle erodee par les ages. On dit qu'elle exauce les voeux sinceres."},
+	{"nom": "Cimetiere du Dragon", "f": "Dragon_bones_full_grass_shadow", "p": Vector2(745, 415), "e": 0.9,
+		"desc": "Les ossements colossaux d'un dragon dechu. Un tresor doit sommeiller sous ses cotes."},
 ]
 
 var _lieu_courant := -1
@@ -43,20 +47,14 @@ var _sprites_lieu := {}
 
 func _ready() -> void:
 	_remplir_panneau_heros()
-	_construire_sol()
-	_construire_batiments()
+	_construire_carte()
+	_lancer_musique()
 
 	$BtnRetour.pressed.connect(_on_retour)
 	$BtnRetour.mouse_entered.connect(Audio.play_hover)
 	$PanneauInfo/BtnVoyager.pressed.connect(_on_voyager)
 	$PanneauInfo/BtnVoyager.mouse_entered.connect(Audio.play_hover)
 
-
-func iso(cell: Vector2) -> Vector2:
-	return ORIGINE + Vector2((cell.x - cell.y) * ISO_W, (cell.x + cell.y) * ISO_H + ANCRE_Y)
-
-
-# --- Panneau du heros ------------------------------------------------------
 
 func _remplir_panneau_heros() -> void:
 	var portrait := $PanneauHeros/CadrePortrait/Portrait as TextureRect
@@ -65,61 +63,55 @@ func _remplir_panneau_heros() -> void:
 	$PanneauHeros/Classe.text = "%s %s" % [CharacterData.race_nom, CharacterData.classe_nom]
 
 
-# --- Construction de la scene ----------------------------------------------
+func _lancer_musique() -> void:
+	var flux := load("res://assets/terrain/music/heros_passing.mp3")
+	if flux is AudioStreamMP3:
+		flux.loop = true
+	$Musique.stream = flux
+	$Musique.volume_db = -10.0
+	$Musique.play()
 
-func _piece(nom: String, cell: Vector2, teinte: Color) -> Sprite2D:
+
+# --- Construction de la carte ----------------------------------------------
+
+func _sprite(chemin: String, pos: Vector2, echelle := 1.0) -> Sprite2D:
 	var s := Sprite2D.new()
-	s.texture = load("res://assets/iso/%s.png" % nom)
-	s.scale = Vector2(SCALE, SCALE)
-	s.position = iso(cell)
-	s.modulate = teinte
-	s.set_meta("base_y", s.position.y)
-	$IsoMonde.add_child(s)
+	s.texture = load(chemin)
+	s.position = pos
+	s.scale = Vector2(echelle, echelle)
+	$Monde.add_child(s)
 	return s
 
 
-func _construire_sol() -> void:
-	var tuiles := ["stone_E", "stoneTile_E", "dirt_E", "planks_E"]
-	var cells := []
-	for c in range(4):
-		for r in range(4):
-			cells.append(Vector2(c, r))
-	cells.sort_custom(func(a, b): return (a.x + a.y) < (b.x + b.y))
-	for cell in cells:
-		var nom: String = tuiles[(int(cell.x) + int(cell.y)) % tuiles.size()]
-		_piece(nom, cell, TEINTE_SOL)
-
-
-func _construire_batiments() -> void:
-	# Decor + batiments tries par profondeur (arriere -> avant).
-	var entrees := []
-	for d in DECOR:
-		entrees.append({"depth": d["cell"].x + d["cell"].y, "kind": "decor", "data": d})
+func _construire_carte() -> void:
+	# Foret en lisiere.
+	for i in FORET.size():
+		var nom: String = TREES[i % TREES.size()]
+		_sprite("res://assets/terrain/trees/%s.png" % nom, FORET[i], randf_range(0.9, 1.2))
+	# Rochers.
+	for i in ROCHERS.size():
+		var nom: String = ROCKS[i % ROCKS.size()]
+		_sprite("res://assets/terrain/rocks/%s.png" % nom, ROCHERS[i], randf_range(0.9, 1.3))
+	# Details (champignons, statue tete, pont).
+	for d in DETAILS:
+		_sprite("res://assets/terrain/objects/%s.png" % d["f"], d["p"])
+	# Lieux interactifs.
 	for i in LIEUX.size():
 		var l: Dictionary = LIEUX[i]
-		entrees.append({"depth": l["cell"].x + l["cell"].y, "kind": "lieu", "idx": i, "data": l})
-	entrees.sort_custom(func(a, b): return a["depth"] < b["depth"])
-
-	for e in entrees:
-		if e["kind"] == "decor":
-			_piece(e["data"]["piece"], e["data"]["cell"], TEINTE_PIERRE)
-		else:
-			var l: Dictionary = e["data"]
-			var sprites := []
-			for p in l["recette"]:
-				sprites.append(_piece(p, l["cell"], Color(1, 1, 1)))
-			_sprites_lieu[e["idx"]] = sprites
-			_creer_hotspot(e["idx"], l["cell"])
+		var s := _sprite("res://assets/terrain/objects/%s.png" % l["f"], l["p"], l["e"])
+		_sprites_lieu[i] = s
+		var taille: Vector2 = s.texture.get_size() * float(l["e"])
+		_creer_hotspot(i, l["p"], taille)
 
 
-func _creer_hotspot(idx: int, cell: Vector2) -> void:
-	var p := iso(cell)
+func _creer_hotspot(idx: int, pos: Vector2, taille: Vector2) -> void:
+	var w: float = max(taille.x, 70.0)
+	var h: float = max(taille.y, 70.0)
 	var b := Button.new()
 	b.flat = true
 	b.focus_mode = Control.FOCUS_NONE
-	b.custom_minimum_size = Vector2(120, 170)
-	b.size = Vector2(120, 170)
-	b.position = p + Vector2(-60, -150)
+	b.size = Vector2(w, h)
+	b.position = pos - Vector2(w, h) * 0.5
 	b.mouse_entered.connect(_survol.bind(idx, true))
 	b.mouse_exited.connect(_survol.bind(idx, false))
 	b.pressed.connect(_selectionner.bind(idx))
@@ -131,11 +123,11 @@ func _creer_hotspot(idx: int, cell: Vector2) -> void:
 func _survol(idx: int, entre: bool) -> void:
 	if entre:
 		Audio.play_hover()
-	var dy := -12.0 if entre else 0.0
-	for s in _sprites_lieu[idx]:
-		var base: float = s.get_meta("base_y")
-		var tw := create_tween()
-		tw.tween_property(s, "position:y", base + dy, 0.12).set_trans(Tween.TRANS_BACK)
+	var s: Sprite2D = _sprites_lieu[idx]
+	var base: float = float(LIEUX[idx]["e"])
+	var cible := Vector2(base, base) * (1.12 if entre else 1.0)
+	var tw := create_tween()
+	tw.tween_property(s, "scale", cible, 0.12).set_trans(Tween.TRANS_BACK)
 
 
 func _selectionner(idx: int) -> void:
