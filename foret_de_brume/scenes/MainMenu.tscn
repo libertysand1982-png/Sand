@@ -1,9 +1,19 @@
-[gd_scene load_steps=5 format=3 uid="uid://foretmenu01"]
+[gd_scene load_steps=16 format=3 uid="uid://foretmenu01"]
 
 [ext_resource type="Script" path="res://scripts/MainMenu.gd" id="1_menu"]
 [ext_resource type="Texture2D" path="res://assets/bg/textureBricks.png" id="2_bricks"]
 [ext_resource type="Texture2D" path="res://assets/ui/panel.png" id="3_panel"]
 [ext_resource type="FontFile" path="res://assets/fonts/lilita_one_regular.ttf" id="4_font"]
+[ext_resource type="Texture2D" path="res://assets/decor/castle.png" id="5_castle"]
+[ext_resource type="Texture2D" path="res://assets/decor/church.png" id="6_church"]
+[ext_resource type="Texture2D" path="res://assets/decor/house.png" id="7_house"]
+[ext_resource type="Texture2D" path="res://assets/decor/houseSmall.png" id="8_houseS"]
+[ext_resource type="Texture2D" path="res://assets/decor/mill.png" id="9_mill"]
+[ext_resource type="Texture2D" path="res://assets/decor/well.png" id="10_well"]
+[ext_resource type="Texture2D" path="res://assets/decor/tent.png" id="11_tent"]
+[ext_resource type="Texture2D" path="res://assets/decor/bush.png" id="12_bush"]
+[ext_resource type="Texture2D" path="res://assets/decor/banner.png" id="13_banner"]
+[ext_resource type="Texture2D" path="res://assets/decor/campfire.png" id="14_fire"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -28,7 +38,102 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.04, 0.03, 0.06, 0.45)
 
-[node name="Panneau" type="NinePatchRect" parent="." unique_name_in_owner=true]
+[node name="Decor" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Castle" type="TextureRect" parent="Decor"]
+modulate = Color(0.82, 0.8, 0.86, 1)
+offset_left = 8.0
+offset_top = 352.0
+offset_right = 136.0
+offset_bottom = 480.0
+texture = ExtResource("5_castle")
+
+[node name="Mill" type="TextureRect" parent="Decor"]
+modulate = Color(0.8, 0.78, 0.84, 1)
+offset_left = 178.0
+offset_top = 332.0
+offset_right = 242.0
+offset_bottom = 396.0
+texture = ExtResource("9_mill")
+
+[node name="House" type="TextureRect" parent="Decor"]
+modulate = Color(0.84, 0.82, 0.87, 1)
+offset_left = 132.0
+offset_top = 404.0
+offset_right = 260.0
+offset_bottom = 532.0
+texture = ExtResource("7_house")
+
+[node name="Bush" type="TextureRect" parent="Decor"]
+modulate = Color(0.78, 0.82, 0.78, 1)
+offset_left = 34.0
+offset_top = 470.0
+offset_right = 162.0
+offset_bottom = 598.0
+texture = ExtResource("12_bush")
+
+[node name="Church" type="TextureRect" parent="Decor"]
+modulate = Color(0.83, 0.81, 0.86, 1)
+offset_left = 1016.0
+offset_top = 352.0
+offset_right = 1144.0
+offset_bottom = 480.0
+texture = ExtResource("6_church")
+
+[node name="Well" type="TextureRect" parent="Decor"]
+modulate = Color(0.82, 0.8, 0.85, 1)
+offset_left = 884.0
+offset_top = 414.0
+offset_right = 1012.0
+offset_bottom = 542.0
+texture = ExtResource("10_well")
+
+[node name="HouseSmall" type="TextureRect" parent="Decor"]
+modulate = Color(0.84, 0.82, 0.87, 1)
+offset_left = 968.0
+offset_top = 458.0
+offset_right = 1032.0
+offset_bottom = 522.0
+texture = ExtResource("8_houseS")
+
+[node name="Tent" type="TextureRect" parent="Decor"]
+modulate = Color(0.82, 0.8, 0.84, 1)
+offset_left = 1056.0
+offset_top = 470.0
+offset_right = 1120.0
+offset_bottom = 534.0
+texture = ExtResource("11_tent")
+
+[node name="BanniereGauche" type="TextureRect" parent="Decor"]
+pivot_offset = Vector2(64, 12)
+offset_left = 158.0
+offset_top = 138.0
+offset_right = 286.0
+offset_bottom = 266.0
+texture = ExtResource("13_banner")
+
+[node name="BanniereDroite" type="TextureRect" parent="Decor"]
+pivot_offset = Vector2(64, 12)
+offset_left = 866.0
+offset_top = 138.0
+offset_right = 994.0
+offset_bottom = 266.0
+texture = ExtResource("13_banner")
+
+[node name="FeuDeCamp" type="TextureRect" parent="Decor"]
+pivot_offset = Vector2(64, 110)
+offset_left = 512.0
+offset_top = 528.0
+offset_right = 640.0
+offset_bottom = 656.0
+texture = ExtResource("14_fire")
+
+[node name="Panneau" type="NinePatchRect" parent="."]
 layout_mode = 1
 anchor_left = 0.5
 anchor_top = 0.5
@@ -80,19 +185,19 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
 
-[node name="BtnCommencer" type="Button" parent="Panneau/Marges/Colonne" unique_name_in_owner=true]
+[node name="BtnCommencer" type="Button" parent="Panneau/Marges/Colonne"]
 custom_minimum_size = Vector2(330, 58)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Commencer l'aventure"
 
-[node name="BtnOptions" type="Button" parent="Panneau/Marges/Colonne" unique_name_in_owner=true]
+[node name="BtnOptions" type="Button" parent="Panneau/Marges/Colonne"]
 custom_minimum_size = Vector2(330, 58)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Options"
 
-[node name="BtnQuitter" type="Button" parent="Panneau/Marges/Colonne" unique_name_in_owner=true]
+[node name="BtnQuitter" type="Button" parent="Panneau/Marges/Colonne"]
 custom_minimum_size = Vector2(330, 58)
 layout_mode = 2
 size_flags_horizontal = 4

@@ -6,6 +6,9 @@ extends Control
 @onready var _bouton_commencer: Button = $Panneau/Marges/Colonne/BtnCommencer
 @onready var _bouton_options: Button = $Panneau/Marges/Colonne/BtnOptions
 @onready var _bouton_quitter: Button = $Panneau/Marges/Colonne/BtnQuitter
+@onready var _banniere_gauche: Control = $Decor/BanniereGauche
+@onready var _banniere_droite: Control = $Decor/BanniereDroite
+@onready var _feu: Control = $Decor/FeuDeCamp
 
 
 func _ready() -> void:
@@ -26,6 +29,33 @@ func _ready() -> void:
 	_panneau.modulate.a = 0.0
 	var tween := create_tween()
 	tween.tween_property(_panneau, "modulate:a", 1.0, 0.5)
+
+	_animer_decor()
+
+
+func _animer_decor() -> void:
+	# Banderoles qui ondulent doucement (en opposition de phase).
+	_balancer_banniere(_banniere_gauche, 0.06, 2.3)
+	_balancer_banniere(_banniere_droite, -0.06, 2.6)
+
+	# Feu de camp qui vacille (echelle + teinte chaude).
+	_feu.pivot_offset = Vector2(64, 110)
+	var feu := create_tween().set_loops()
+	feu.tween_property(_feu, "scale", Vector2(1.05, 1.08), 0.45) \
+		.set_trans(Tween.TRANS_SINE)
+	feu.parallel().tween_property(_feu, "modulate", Color(1.0, 0.92, 0.72, 1), 0.45)
+	feu.tween_property(_feu, "scale", Vector2(0.97, 0.95), 0.55) \
+		.set_trans(Tween.TRANS_SINE)
+	feu.parallel().tween_property(_feu, "modulate", Color(1.0, 0.82, 0.55, 1), 0.55)
+
+
+func _balancer_banniere(banniere: Control, amplitude: float, duree: float) -> void:
+	banniere.rotation = -amplitude
+	var t := create_tween().set_loops()
+	t.tween_property(banniere, "rotation", amplitude, duree) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	t.tween_property(banniere, "rotation", -amplitude, duree) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func _on_commencer() -> void:
