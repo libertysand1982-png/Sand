@@ -1,86 +1,59 @@
 extends Control
-## Carte du monde "La Foret de Brume" facon carte au tresor a l'encre.
-## Genere les lieux interactifs, les routes, le decor et la bordure.
+## Carte du monde "La Foret de Brume" en diorama isometrique medieval.
+## Sol pave en losange + batiments Kenney empiles, dans une clairiere de foret.
 
-const ENCRE := Color(0.27, 0.2, 0.13)
-const ENCRE_PALE := Color(0.4, 0.3, 0.18)
+# --- Parametres isometriques (ajustables) ---
+const SCALE := 0.5
+const ISO_W := 64.0           # demi-largeur du losange
+const ISO_H := 32.0           # demi-hauteur du losange
+const ORIGINE := Vector2(576, 250)
+const ANCRE_Y := 40.0         # decalage vertical global
 
-# Lieux interactifs : nom, icone, position (centre), description.
+const TEINTE_SOL := Color(0.94, 0.92, 0.96)
+const TEINTE_PIERRE := Color(0.96, 0.95, 1.0)
+
+# Lieux interactifs : nom, cellule, recette (bas -> haut), description.
 const LIEUX := [
-	{"nom": "Chateau de l'Aube", "icone": "castle", "pos": Vector2(380, 300),
+	{"nom": "Chateau de l'Aube", "cell": Vector2(1, 0), "recette": ["stoneWallGateClosed_E"],
 		"desc": "La citadelle royale, coeur du royaume et point de depart de ta quete."},
-	{"nom": "Bourg de Boisclair", "icone": "houses", "pos": Vector2(560, 410),
+	{"nom": "Tour de Guet", "cell": Vector2(3, 0), "recette": ["stoneColumn_E"],
+		"desc": "Une haute tour de pierre d'ou les sentinelles scrutent l'horizon brumeux."},
+	{"nom": "Bourg de Boisclair", "cell": Vector2(0, 2), "recette": ["woodWall_E", "roofSingle_E"],
 		"desc": "Un village prospere ou marchands et aubergistes accueillent les aventuriers."},
-	{"nom": "Abbaye Saint-Gral", "icone": "church", "pos": Vector2(740, 250),
-		"desc": "Un monastere ancien dont les moines veillent sur d'antiques reliques."},
-	{"nom": "Mine de Fer-Noir", "icone": "mine", "pos": Vector2(884, 168),
-		"desc": "Des galeries profondes creusees dans la montagne. On y murmure des dangers."},
-	{"nom": "Ruines de Mornkeep", "icone": "runis", "pos": Vector2(250, 472),
-		"desc": "Les vestiges hantes d'une forteresse oubliee. Un donjon pour les plus braves."},
-	{"nom": "Port de Lamer", "icone": "dock", "pos": Vector2(958, 470),
-		"desc": "Un port anime d'ou partent les navires vers des terres lointaines."},
-	{"nom": "Phare des Brumes", "icone": "lighthouse", "pos": Vector2(1058, 378),
-		"desc": "Sa lumiere perce le brouillard et guide les marins egares."},
-	{"nom": "Cimetiere Oublie", "icone": "graveyard", "pos": Vector2(200, 252),
-		"desc": "Un champ de pierres tombales ou les morts ne reposent pas toujours en paix."},
-	{"nom": "Moulin du Val", "icone": "mill", "pos": Vector2(470, 524),
-		"desc": "Un vieux moulin a vent au bord de la riviere, refuge d'un meunier bourru."},
-	{"nom": "Camp du Nord", "icone": "houseViking", "pos": Vector2(650, 132),
-		"desc": "Un campement de farouches guerriers du nord, allies incertains."},
+	{"nom": "Echoppe du Marchand", "cell": Vector2(2, 2), "recette": ["woodWallWindow_E", "roofSingle_E"],
+		"desc": "On y troque armes, potions et babioles venues des quatre coins du monde."},
+	{"nom": "Vieille Ferme", "cell": Vector2(3, 3), "recette": ["woodWallDoorClosed_E", "roof_E"],
+		"desc": "Une ferme isolee tenue par un meunier bourru mais bon coeur."},
+	{"nom": "Entrepot du Val", "cell": Vector2(1, 3), "recette": ["chestClosed_E"],
+		"desc": "Un depot rempli de vivres et de coffres... dont certains bien gardes."},
 ]
 
-# Routes reliant les lieux (par index).
-const ROUTES := [
-	[0, 1], [1, 2], [2, 3], [0, 4], [1, 8], [1, 5], [5, 6], [0, 7], [1, 9], [9, 2],
-]
-
-# Decor non interactif : icone, position, taille.
+# Decor isometrique non interactif : piece, cellule.
 const DECOR := [
-	# Chaine de montagnes au nord
-	{"i": "rocksMountain", "p": Vector2(740, 150), "t": 82},
-	{"i": "rocksTall", "p": Vector2(800, 135), "t": 74},
-	{"i": "rocksMountain", "p": Vector2(840, 158), "t": 88},
-	{"i": "rocksTall", "p": Vector2(930, 138), "t": 70},
-	{"i": "rocksMountain", "p": Vector2(980, 160), "t": 84},
-	{"i": "rocksMountain", "p": Vector2(1040, 150), "t": 76},
-	# La grande foret de Brume (centre-ouest)
-	{"i": "bush", "p": Vector2(320, 360), "t": 66},
-	{"i": "bush", "p": Vector2(370, 400), "t": 72},
-	{"i": "bush", "p": Vector2(300, 430), "t": 60},
-	{"i": "bush", "p": Vector2(420, 370), "t": 70},
-	{"i": "bush", "p": Vector2(450, 430), "t": 64},
-	{"i": "bush", "p": Vector2(340, 480), "t": 68},
-	{"i": "bush", "p": Vector2(290, 520), "t": 62},
-	{"i": "bush", "p": Vector2(400, 510), "t": 66},
-	{"i": "bush", "p": Vector2(520, 360), "t": 60},
-	{"i": "bush", "p": Vector2(250, 380), "t": 58},
-	# Lac et navire a l'est
-	{"i": "lake", "p": Vector2(990, 548), "t": 132},
-	{"i": "lakeRound", "p": Vector2(1070, 520), "t": 110},
-	{"i": "ship", "p": Vector2(1010, 520), "t": 52},
-	# Details
-	{"i": "flag", "p": Vector2(440, 250), "t": 60},
-	{"i": "fence", "p": Vector2(620, 452), "t": 64},
-	{"i": "rocks", "p": Vector2(700, 470), "t": 48},
-	{"i": "rocks", "p": Vector2(560, 210), "t": 44},
+	{"piece": "stoneColumn_E", "cell": Vector2(0, 0)},
+	{"piece": "stoneWallWindow_E", "cell": Vector2(2, 0)},
+	{"piece": "stoneWall_E", "cell": Vector2(3, 1)},
+	{"piece": "hayBales_E", "cell": Vector2(0, 3)},
+	{"piece": "sack_E", "cell": Vector2(2, 3)},
 ]
 
-var _calligraphie: Node2D
 var _lieu_courant := -1
+var _sprites_lieu := {}
 
 
 func _ready() -> void:
-	_calligraphie = $Calligraphie
-
 	_remplir_panneau_heros()
-	_dessiner_bordure_et_routes()
-	_construire_decor()
-	_construire_lieux()
+	_construire_sol()
+	_construire_batiments()
 
 	$BtnRetour.pressed.connect(_on_retour)
 	$BtnRetour.mouse_entered.connect(Audio.play_hover)
 	$PanneauInfo/BtnVoyager.pressed.connect(_on_voyager)
 	$PanneauInfo/BtnVoyager.mouse_entered.connect(Audio.play_hover)
+
+
+func iso(cell: Vector2) -> Vector2:
+	return ORIGINE + Vector2((cell.x - cell.y) * ISO_W, (cell.x + cell.y) * ISO_H + ANCRE_Y)
 
 
 # --- Panneau du heros ------------------------------------------------------
@@ -92,114 +65,86 @@ func _remplir_panneau_heros() -> void:
 	$PanneauHeros/Classe.text = "%s %s" % [CharacterData.race_nom, CharacterData.classe_nom]
 
 
-# --- Bordure + routes (Line2D) ---------------------------------------------
+# --- Construction de la scene ----------------------------------------------
 
-func _dessiner_bordure_et_routes() -> void:
-	# Double bordure encrée.
-	_cadre(Vector2(18, 74), Vector2(1134, 630), 3.0, ENCRE)
-	_cadre(Vector2(26, 82), Vector2(1126, 622), 1.5, ENCRE_PALE)
-
-	# Routes ondulees entre les lieux.
-	for r in ROUTES:
-		var a: Vector2 = LIEUX[r[0]]["pos"]
-		var b: Vector2 = LIEUX[r[1]]["pos"]
-		_route(a, b)
-
-
-func _cadre(haut_gauche: Vector2, bas_droite: Vector2, largeur: float, couleur: Color) -> void:
-	var l := Line2D.new()
-	l.width = largeur
-	l.default_color = couleur
-	l.closed = true
-	l.points = PackedVector2Array([
-		haut_gauche,
-		Vector2(bas_droite.x, haut_gauche.y),
-		bas_droite,
-		Vector2(haut_gauche.x, bas_droite.y),
-	])
-	_calligraphie.add_child(l)
+func _piece(nom: String, cell: Vector2, teinte: Color) -> Sprite2D:
+	var s := Sprite2D.new()
+	s.texture = load("res://assets/iso/%s.png" % nom)
+	s.scale = Vector2(SCALE, SCALE)
+	s.position = iso(cell)
+	s.modulate = teinte
+	s.set_meta("base_y", s.position.y)
+	$IsoMonde.add_child(s)
+	return s
 
 
-func _route(a: Vector2, b: Vector2) -> void:
-	var l := Line2D.new()
-	l.width = 3.0
-	l.default_color = ENCRE
-	l.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	l.end_cap_mode = Line2D.LINE_CAP_ROUND
-	l.joint_mode = Line2D.LINE_JOINT_ROUND
-	# Trois points avec une legere ondulation perpendiculaire (effet trace a la main).
-	var milieu := (a + b) * 0.5
-	var perp := (b - a).orthogonal().normalized()
-	var ondu := 14.0 * (1.0 if int(a.x + b.y) % 2 == 0 else -1.0)
-	l.points = PackedVector2Array([a, milieu + perp * ondu, b])
-	_calligraphie.add_child(l)
+func _construire_sol() -> void:
+	var tuiles := ["stone_E", "stoneTile_E", "dirt_E", "planks_E"]
+	var cells := []
+	for c in range(4):
+		for r in range(4):
+			cells.append(Vector2(c, r))
+	cells.sort_custom(func(a, b): return (a.x + a.y) < (b.x + b.y))
+	for cell in cells:
+		var nom: String = tuiles[(int(cell.x) + int(cell.y)) % tuiles.size()]
+		_piece(nom, cell, TEINTE_SOL)
 
 
-# --- Decor -----------------------------------------------------------------
-
-func _construire_decor() -> void:
+func _construire_batiments() -> void:
+	# Decor + batiments tries par profondeur (arriere -> avant).
+	var entrees := []
 	for d in DECOR:
-		var t := TextureRect.new()
-		t.texture = load("res://assets/map/%s.png" % d["i"])
-		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		var taille: float = d["t"]
-		t.size = Vector2(taille, taille)
-		t.position = d["p"] - Vector2(taille, taille) * 0.5
-		t.modulate = ENCRE
-		t.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		$Decor.add_child(t)
-
-
-# --- Lieux interactifs -----------------------------------------------------
-
-func _construire_lieux() -> void:
+		entrees.append({"depth": d["cell"].x + d["cell"].y, "kind": "decor", "data": d})
 	for i in LIEUX.size():
-		var lieu: Dictionary = LIEUX[i]
-		var taille := 86.0
+		var l: Dictionary = LIEUX[i]
+		entrees.append({"depth": l["cell"].x + l["cell"].y, "kind": "lieu", "idx": i, "data": l})
+	entrees.sort_custom(func(a, b): return a["depth"] < b["depth"])
 
-		var bouton := TextureButton.new()
-		bouton.texture_normal = load("res://assets/map/%s.png" % lieu["icone"])
-		bouton.ignore_texture_size = true
-		bouton.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		bouton.custom_minimum_size = Vector2(taille, taille)
-		bouton.size = Vector2(taille, taille)
-		bouton.position = lieu["pos"] - Vector2(taille, taille) * 0.5
-		bouton.modulate = ENCRE
-		bouton.pivot_offset = Vector2(taille, taille) * 0.5
-		bouton.mouse_entered.connect(_survol_lieu.bind(bouton, true))
-		bouton.mouse_exited.connect(_survol_lieu.bind(bouton, false))
-		bouton.pressed.connect(_selectionner_lieu.bind(i))
-		$Lieux.add_child(bouton)
-
-		var etiquette := Label.new()
-		etiquette.text = lieu["nom"]
-		etiquette.add_theme_font_size_override("font_size", 14)
-		etiquette.add_theme_color_override("font_color", ENCRE)
-		etiquette.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		etiquette.size = Vector2(200, 22)
-		etiquette.position = lieu["pos"] + Vector2(-100, taille * 0.5 - 6)
-		etiquette.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		$Lieux.add_child(etiquette)
+	for e in entrees:
+		if e["kind"] == "decor":
+			_piece(e["data"]["piece"], e["data"]["cell"], TEINTE_PIERRE)
+		else:
+			var l: Dictionary = e["data"]
+			var sprites := []
+			for p in l["recette"]:
+				sprites.append(_piece(p, l["cell"], Color(1, 1, 1)))
+			_sprites_lieu[e["idx"]] = sprites
+			_creer_hotspot(e["idx"], l["cell"])
 
 
-func _survol_lieu(bouton: TextureButton, entre: bool) -> void:
+func _creer_hotspot(idx: int, cell: Vector2) -> void:
+	var p := iso(cell)
+	var b := Button.new()
+	b.flat = true
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(120, 170)
+	b.size = Vector2(120, 170)
+	b.position = p + Vector2(-60, -150)
+	b.mouse_entered.connect(_survol.bind(idx, true))
+	b.mouse_exited.connect(_survol.bind(idx, false))
+	b.pressed.connect(_selectionner.bind(idx))
+	$Hotspots.add_child(b)
+
+
+# --- Interactions ----------------------------------------------------------
+
+func _survol(idx: int, entre: bool) -> void:
 	if entre:
 		Audio.play_hover()
-	var cible := Vector2(1.18, 1.18) if entre else Vector2.ONE
-	var tw := create_tween()
-	tw.tween_property(bouton, "scale", cible, 0.12).set_trans(Tween.TRANS_BACK)
+	var dy := -12.0 if entre else 0.0
+	for s in _sprites_lieu[idx]:
+		var base: float = s.get_meta("base_y")
+		var tw := create_tween()
+		tw.tween_property(s, "position:y", base + dy, 0.12).set_trans(Tween.TRANS_BACK)
 
 
-func _selectionner_lieu(index: int) -> void:
+func _selectionner(idx: int) -> void:
 	Audio.play_click()
-	_lieu_courant = index
-	$PanneauInfo/NomLieu.text = LIEUX[index]["nom"]
-	$PanneauInfo/Desc.text = LIEUX[index]["desc"]
+	_lieu_courant = idx
+	$PanneauInfo/NomLieu.text = LIEUX[idx]["nom"]
+	$PanneauInfo/Desc.text = LIEUX[idx]["desc"]
 	$PanneauInfo.visible = true
 
-
-# --- Actions ---------------------------------------------------------------
 
 func _on_voyager() -> void:
 	Audio.play_click()
