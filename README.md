@@ -1,29 +1,40 @@
 # Sand
 
-Dépôt regroupant une bibliothèque d'assets (style Kenney) et deux projets de jeu Godot.
+Dépôt regroupant **une seule bibliothèque d'assets** (`assets/`) et plusieurs projets de jeu Godot.
 
 ## Structure
 
 ```
-assets/                Bibliothèque d'assets partagée (réorganisée par catégorie)
+assets/                BIBLIOTHÈQUE UNIQUE — tous les assets, classés par catégorie
 ├── audio/             Sons et musiques (.ogg)
-├── characters/        Sprites de personnages animés (Male_*, Run/Pickup/Idle)
+├── backgrounds/       Décors pixel-art (nature_*, forêt, montagne, aurore…)
+├── characters/        Sprites de personnages
+│   ├── knights/       Chevaliers animés (Knight_1/2/3 : Idle, Run, Attack…)
+│   ├── wizards/       Mages animés (Fire Wizard, Lightning Mage…)
+│   └── Male_*         Sprites de personnages génériques (Run/Pickup/Idle)
+├── items/             Icônes d'objets RPG
+│   ├── icons/         Icônes 512² (avec ombre)
+│   └── no_shadow/     Icônes 256² (sans ombre)
 ├── models/            Modèles 3D (.glb)
 ├── objects/           Objets isométriques (orientations _E/_N/_S/_W)
+├── portraits/         Portraits de personnages
+│   ├── framed/        Avec fond (512²)
+│   └── transparent/   Sans fond
 ├── sprites/           Spritesheets génériques (sprite_*)
 ├── tiles/             Tuiles de terrain (tile_*)
 │   └── buildings/     Tuiles de bâtiments (buildingTiles_*)
-├── ui/                Éléments d'interface (panels, barres, boutons, flèches, curseurs)
+├── ui/                Interface (panels, barres, boutons, flèches, curseurs)
 ├── source/            Fichiers sources éditables (.svg, .xml, .tmx, .tsx, .swf)
-└── misc/              Décors divers (rochers, parchemins, structures de carte…)
+└── misc/              Pack cartographie + décors (château, montagnes, parchemins…)
 
-city_builder/          Projet Godot — city builder (autonome, res:// interne)
-rpg_game/              Projet RPG (Python + export Godot, autonome)
+foret_de_brume/        Projet Godot — RPG "La Forêt de Brume" (menu, création, carte)
+city_builder/          Projet Godot — city builder
+rpg_game/              Projet RPG (Python + export Godot)
 ```
 
 ## Notes
 
-- Les deux projets `city_builder/` et `rpg_game/` sont autonomes : ils embarquent
-  leurs propres assets et n'utilisent pas la bibliothèque `assets/` directement.
-- `assets/` est une bibliothèque de ressources brutes, fusionnée depuis les deux
-  branches d'origine et réorganisée par catégorie.
+- **Tous les assets bruts sont regroupés dans `assets/`** (une seule bibliothèque).
+- Les projets de jeu (`foret_de_brume/`, `city_builder/`, `rpg_game/`) sont
+  **autonomes** : ils embarquent leurs propres copies d'assets via `res://` et
+  n'utilisent pas `assets/` directement. Ne pas déplacer leur contenu interne.
