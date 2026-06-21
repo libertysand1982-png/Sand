@@ -1,0 +1,320 @@
+[gd_scene load_steps=8 format=3 uid="uid://foretcreation01"]
+
+[ext_resource type="Script" path="res://scripts/CharacterCreation.gd" id="1_crea"]
+[ext_resource type="Texture2D" path="res://assets/bg/nature_aurora.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/panel.png" id="3_panel"]
+[ext_resource type="Texture2D" path="res://assets/ui/panelInset_brown.png" id="4_inset"]
+[ext_resource type="Texture2D" path="res://assets/ui/arrowBeige_left.png" id="5_aleft"]
+[ext_resource type="Texture2D" path="res://assets/ui/arrowBeige_right.png" id="6_aright"]
+[ext_resource type="FontFile" path="res://assets/fonts/lilita_one_regular.ttf" id="7_font"]
+
+[node name="CharacterCreation" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_crea")
+
+[node name="Fond" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource("2_bg")
+stretch_mode = 0
+modulate = Color(0.72, 0.74, 0.85, 1)
+
+[node name="Voile" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.03, 0.03, 0.07, 0.5)
+
+[node name="Titre" type="Label" parent="."]
+layout_mode = 1
+anchor_right = 1.0
+offset_top = 16.0
+offset_bottom = 78.0
+theme_override_colors/font_color = Color(0.96, 0.85, 0.42, 1)
+theme_override_colors/font_outline_color = Color(0.15, 0.09, 0.04, 1)
+theme_override_constants/outline_size = 6
+theme_override_fonts/font = ExtResource("7_font")
+theme_override_font_sizes/font_size = 42
+text = "Creation du heros"
+horizontal_alignment = 1
+
+[node name="PanneauGauche" type="NinePatchRect" parent="."]
+layout_mode = 1
+offset_left = 36.0
+offset_top = 92.0
+offset_right = 396.0
+offset_bottom = 548.0
+texture = ExtResource("3_panel")
+patch_margin_left = 16
+patch_margin_top = 16
+patch_margin_right = 16
+patch_margin_bottom = 16
+
+[node name="CadrePortrait" type="NinePatchRect" parent="PanneauGauche"]
+offset_left = 64.0
+offset_top = 26.0
+offset_right = 296.0
+offset_bottom = 258.0
+texture = ExtResource("4_inset")
+patch_margin_left = 16
+patch_margin_top = 16
+patch_margin_right = 16
+patch_margin_bottom = 16
+
+[node name="Portrait" type="TextureRect" parent="PanneauGauche/CadrePortrait"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="FlechePortraitG" type="TextureButton" parent="PanneauGauche"]
+offset_left = 20.0
+offset_top = 128.0
+offset_right = 52.0
+offset_bottom = 160.0
+texture_normal = ExtResource("5_aleft")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="FlechePortraitD" type="TextureButton" parent="PanneauGauche"]
+offset_left = 308.0
+offset_top = 128.0
+offset_right = 340.0
+offset_bottom = 160.0
+texture_normal = ExtResource("6_aright")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="LabelPortrait" type="Label" parent="PanneauGauche"]
+offset_left = 64.0
+offset_top = 262.0
+offset_right = 296.0
+offset_bottom = 286.0
+theme_override_colors/font_color = Color(0.82, 0.8, 0.74, 1)
+theme_override_font_sizes/font_size = 15
+text = "Portrait 1 / 50"
+horizontal_alignment = 1
+
+[node name="ChampNom" type="LineEdit" parent="PanneauGauche"]
+offset_left = 50.0
+offset_top = 296.0
+offset_right = 310.0
+offset_bottom = 336.0
+theme_override_font_sizes/font_size = 18
+placeholder_text = "Nom du heros"
+alignment = 1
+max_length = 18
+
+[node name="LabelApparence" type="Label" parent="PanneauGauche"]
+offset_left = 64.0
+offset_top = 344.0
+offset_right = 296.0
+offset_bottom = 366.0
+theme_override_colors/font_color = Color(0.82, 0.8, 0.74, 1)
+theme_override_font_sizes/font_size = 15
+text = "Apparence"
+horizontal_alignment = 1
+
+[node name="Chevalier" type="Sprite2D" parent="PanneauGauche"]
+position = Vector2(180, 410)
+scale = Vector2(1.7, 1.7)
+hframes = 4
+
+[node name="FlecheChevalierG" type="TextureButton" parent="PanneauGauche"]
+offset_left = 30.0
+offset_top = 392.0
+offset_right = 62.0
+offset_bottom = 424.0
+texture_normal = ExtResource("5_aleft")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="FlecheChevalierD" type="TextureButton" parent="PanneauGauche"]
+offset_left = 298.0
+offset_top = 392.0
+offset_right = 330.0
+offset_bottom = 424.0
+texture_normal = ExtResource("6_aright")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="PanneauDroit" type="NinePatchRect" parent="."]
+layout_mode = 1
+offset_left = 420.0
+offset_top = 92.0
+offset_right = 1116.0
+offset_bottom = 548.0
+texture = ExtResource("3_panel")
+patch_margin_left = 16
+patch_margin_top = 16
+patch_margin_right = 16
+patch_margin_bottom = 16
+
+[node name="Marges" type="MarginContainer" parent="PanneauDroit"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 34
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 34
+theme_override_constants/margin_bottom = 26
+
+[node name="Colonne" type="VBoxContainer" parent="PanneauDroit/Marges"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LigneRace" type="HBoxContainer" parent="PanneauDroit/Marges/Colonne"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Etiquette" type="Label" parent="PanneauDroit/Marges/Colonne/LigneRace"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.88, 0.6, 1)
+theme_override_font_sizes/font_size = 20
+text = "Race"
+vertical_alignment = 1
+
+[node name="FlecheG" type="TextureButton" parent="PanneauDroit/Marges/Colonne/LigneRace"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+size_flags_vertical = 4
+texture_normal = ExtResource("5_aleft")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="Valeur" type="Label" parent="PanneauDroit/Marges/Colonne/LigneRace"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.98, 0.96, 0.9, 1)
+theme_override_font_sizes/font_size = 20
+text = "Humain"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FlecheD" type="TextureButton" parent="PanneauDroit/Marges/Colonne/LigneRace"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+size_flags_vertical = 4
+texture_normal = ExtResource("6_aright")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="LigneClasse" type="HBoxContainer" parent="PanneauDroit/Marges/Colonne"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Etiquette" type="Label" parent="PanneauDroit/Marges/Colonne/LigneClasse"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.88, 0.6, 1)
+theme_override_font_sizes/font_size = 20
+text = "Classe"
+vertical_alignment = 1
+
+[node name="FlecheG" type="TextureButton" parent="PanneauDroit/Marges/Colonne/LigneClasse"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+size_flags_vertical = 4
+texture_normal = ExtResource("5_aleft")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="Valeur" type="Label" parent="PanneauDroit/Marges/Colonne/LigneClasse"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.98, 0.96, 0.9, 1)
+theme_override_font_sizes/font_size = 20
+text = "Guerrier"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FlecheD" type="TextureButton" parent="PanneauDroit/Marges/Colonne/LigneClasse"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+size_flags_vertical = 4
+texture_normal = ExtResource("6_aright")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="DescriptionClasse" type="Label" parent="PanneauDroit/Marges/Colonne"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.84, 0.84, 0.82, 1)
+theme_override_font_sizes/font_size = 15
+text = "Description"
+autowrap_mode = 3
+vertical_alignment = 1
+
+[node name="Separateur" type="ColorRect" parent="PanneauDroit/Marges/Colonne"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.5, 0.42, 0.24, 0.7)
+
+[node name="EnteteStats" type="HBoxContainer" parent="PanneauDroit/Marges/Colonne"]
+layout_mode = 2
+
+[node name="Titre" type="Label" parent="PanneauDroit/Marges/Colonne/EnteteStats"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.88, 0.6, 1)
+theme_override_font_sizes/font_size = 19
+text = "Caracteristiques"
+
+[node name="Points" type="Label" parent="PanneauDroit/Marges/Colonne/EnteteStats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.95, 0.7, 1)
+theme_override_font_sizes/font_size = 18
+text = "Points : 27"
+
+[node name="ListeStats" type="VBoxContainer" parent="PanneauDroit/Marges/Colonne"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="BtnRetour" type="Button" parent="."]
+custom_minimum_size = Vector2(220, 52)
+offset_left = 36.0
+offset_top = 568.0
+offset_right = 256.0
+offset_bottom = 620.0
+text = "Retour"
+
+[node name="BtnValider" type="Button" parent="."]
+custom_minimum_size = Vector2(360, 52)
+offset_left = 756.0
+offset_top = 568.0
+offset_right = 1116.0
+offset_bottom = 620.0
+text = "Commencer l'aventure"
+
+[node name="Message" type="Label" parent="."]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -30.0
+offset_right = 300.0
+offset_bottom = 30.0
+theme_override_colors/font_color = Color(0.7, 0.95, 0.7, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.1, 0.05, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("7_font")
+theme_override_font_sizes/font_size = 30
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1

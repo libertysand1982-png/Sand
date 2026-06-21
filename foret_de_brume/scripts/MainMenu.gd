@@ -60,9 +60,8 @@ func _balancer_banniere(banniere: Control, amplitude: float, duree: float) -> vo
 
 func _on_commencer() -> void:
 	Audio.play_click()
-	# La carte du monde sera ajoutee a la prochaine etape.
-	# get_tree().change_scene_to_file("res://scenes/WorldMap.tscn")
-	print("Commencer l'aventure")
+	await get_tree().create_timer(0.12).timeout
+	get_tree().change_scene_to_file("res://scenes/CharacterCreation.tscn")
 
 
 func _on_options() -> void:

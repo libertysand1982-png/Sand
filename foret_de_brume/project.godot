@@ -14,6 +14,7 @@ config/icon="res://assets/ui/panelInset_brown.png"
 [autoload]
 
 Audio="*res://scripts/Audio.gd"
+CharacterData="*res://scripts/CharacterData.gd"
 
 [display]
 
