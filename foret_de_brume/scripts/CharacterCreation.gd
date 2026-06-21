@@ -260,13 +260,17 @@ func _on_valider() -> void:
 	CharacterData.nom = nom if nom != "" else "Heros sans nom"
 	CharacterData.race_index = _race_idx
 	CharacterData.classe_index = _classe_idx
+	CharacterData.race_nom = RACES[_race_idx]["nom"]
+	CharacterData.classe_nom = CLASSES[_classe_idx]["nom"]
 	CharacterData.portrait_index = _portrait_idx
 	CharacterData.chevalier_index = _knight_idx
 	var bonus := _bonus_race()
 	for s in STAT_ORDRE:
 		CharacterData.stats[s] = _base[s] + bonus.get(s, 0)
 
-	_message.text = "%s, %s %s, est pret !" % [
+	_message.text = "%s, %s %s, part a l'aventure !" % [
 		CharacterData.nom, RACES[_race_idx]["nom"], CLASSES[_classe_idx]["nom"]]
 	$BtnValider.disabled = true
 	print("Personnage cree : ", CharacterData.resume(), " | stats=", CharacterData.stats)
+	await get_tree().create_timer(1.0).timeout
+	get_tree().change_scene_to_file("res://scenes/WorldMap.tscn")

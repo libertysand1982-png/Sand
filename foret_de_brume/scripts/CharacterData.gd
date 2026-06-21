@@ -5,6 +5,8 @@ extends Node
 var nom: String = "Heros"
 var race_index: int = 0
 var classe_index: int = 0
+var race_nom: String = "Humain"
+var classe_nom: String = "Guerrier"
 var portrait_index: int = 1
 var chevalier_index: int = 0
 
