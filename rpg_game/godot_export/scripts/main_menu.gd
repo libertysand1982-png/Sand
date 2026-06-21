@@ -1,11 +1,13 @@
-extends Control
+extends Node2D
 
 func _ready():
-	$Button.pressed.connect(_nouvelle_partie)
-	$Button2.pressed.connect(_quitter)
+	$CanvasLayer/BtnCommencer.pressed.connect(_on_commencer)
+	$CanvasLayer/BtnQuitter.pressed.connect(_on_quitter)
 
-func _nouvelle_partie():
+
+func _on_commencer():
 	get_tree().change_scene_to_file("res://WorldMap.tscn")
 
-func _quitter():
+
+func _on_quitter():
 	get_tree().quit()

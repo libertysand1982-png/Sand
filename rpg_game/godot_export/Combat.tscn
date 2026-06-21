@@ -1,173 +1,139 @@
-[gd_scene load_steps=22 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://combat"]
 
-[ext_resource type="Script" path="res://scripts/combat.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/ui/barBack_horizontalMid.png" id="2"]
-[ext_resource type="Texture2D" path="res://assets/ui/barRed_horizontalMid.png" id="3"]
-[ext_resource type="Texture2D" path="res://assets/ui/barGreen_horizontalMid.png" id="4"]
-[ext_resource type="Texture2D" path="res://assets/ui/buttonLong_blue.png" id="5"]
-[ext_resource type="Texture2D" path="res://assets/ui/buttonLong_blue_pressed.png" id="6"]
-[ext_resource type="Texture2D" path="res://assets/ui/buttonLong_brown.png" id="7"]
-[ext_resource type="Texture2D" path="res://assets/ui/buttonLong_brown_pressed.png" id="8"]
-[ext_resource type="Texture2D" path="res://assets/ui/buttonLong_grey.png" id="9"]
-[ext_resource type="Texture2D" path="res://assets/ui/buttonLong_grey_pressed.png" id="10"]
-[ext_resource type="Texture2D" path="res://assets/ui/panelInset_brown.png" id="11"]
+[ext_resource type="Script" path="res://scripts/combat.gd" id="1_combat"]
+[ext_resource type="Texture2D" path="res://assets/portraits/portrait_hero.png" id="2_hero_portrait"]
+[ext_resource type="Texture2D" path="res://assets/portraits/portrait_gobelin.png" id="3_monstre_portrait"]
 
 [node name="Combat" type="Node2D"]
-script = ExtResource("1")
+script = ExtResource("1_combat")
 
 [node name="Fond" type="ColorRect" parent="."]
-offset_right = 1152.0
-offset_bottom = 648.0
-color = Color(0.04, 0.04, 0.07, 1)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.03, 0.08, 1)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="PanneauJoueur" type="NinePatchRect" parent="CanvasLayer"]
-offset_left = 20.0
-offset_top = 20.0
-offset_right = 420.0
-offset_bottom = 200.0
-texture = ExtResource("11")
-
-[node name="PanneauMonstre" type="NinePatchRect" parent="CanvasLayer"]
-offset_left = 730.0
-offset_top = 20.0
-offset_right = 1130.0
-offset_bottom = 200.0
-texture = ExtResource("11")
-
-[node name="PanneauLog" type="NinePatchRect" parent="CanvasLayer"]
-offset_left = 20.0
-offset_top = 380.0
-offset_right = 1130.0
-offset_bottom = 620.0
-texture = ExtResource("11")
-
-[node name="TexteCombat" type="Label" parent="CanvasLayer"]
-offset_left = 440.0
-offset_top = 30.0
-offset_right = 720.0
-offset_bottom = 200.0
-text = "Tour 0"
+[node name="LabelLieu" type="Label" parent="CanvasLayer"]
+offset_left = 300.0
+offset_top = 8.0
+offset_right = 852.0
+offset_bottom = 36.0
+theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
-vertical_alignment = 1
+text = "Combat - Foret de Brume"
+modulate = Color(0.8, 0.6, 1.0, 1)
 
-[node name="LabelPV" type="Label" parent="CanvasLayer"]
+[node name="PortraitHeros" type="TextureRect" parent="CanvasLayer"]
 offset_left = 30.0
-offset_top = 30.0
-offset_right = 410.0
-offset_bottom = 70.0
-text = "PV: 10/10"
-theme_override_font_sizes/font_size = 18
+offset_top = 60.0
+offset_right = 190.0
+offset_bottom = 220.0
+texture = ExtResource("2_hero_portrait")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="BarrePV_BG" type="TextureRect" parent="CanvasLayer"]
+[node name="LabelHeros" type="Label" parent="CanvasLayer"]
 offset_left = 30.0
-offset_top = 75.0
-offset_right = 410.0
-offset_bottom = 105.0
-texture = ExtResource("2")
-stretch_mode = 3
+offset_top = 220.0
+offset_right = 190.0
+offset_bottom = 260.0
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+text = "Heros"
+modulate = Color(0.5, 0.8, 1.0, 1)
 
-[node name="BarrePV" type="TextureRect" parent="CanvasLayer"]
+[node name="PortraitMonstre" type="TextureRect" parent="CanvasLayer"]
+offset_left = 962.0
+offset_top = 60.0
+offset_right = 1122.0
+offset_bottom = 220.0
+texture = ExtResource("3_monstre_portrait")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="LabelMonstre" type="Label" parent="CanvasLayer"]
+offset_left = 962.0
+offset_top = 220.0
+offset_right = 1122.0
+offset_bottom = 260.0
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+text = "Monstre"
+modulate = Color(1.0, 0.4, 0.4, 1)
+
+[node name="StatHeros" type="Label" parent="CanvasLayer"]
 offset_left = 30.0
-offset_top = 75.0
-offset_right = 410.0
-offset_bottom = 105.0
-texture = ExtResource("3")
-stretch_mode = 3
-
-[node name="LabelMob" type="Label" parent="CanvasLayer"]
-offset_left = 740.0
-offset_top = 30.0
-offset_right = 1120.0
-offset_bottom = 70.0
-text = "PV monstre: 10/10"
-theme_override_font_sizes/font_size = 18
-
-[node name="BarreMob_BG" type="TextureRect" parent="CanvasLayer"]
-offset_left = 740.0
-offset_top = 75.0
-offset_right = 1120.0
-offset_bottom = 105.0
-texture = ExtResource("2")
-stretch_mode = 3
-
-[node name="BarreMob" type="TextureRect" parent="CanvasLayer"]
-offset_left = 740.0
-offset_top = 75.0
-offset_right = 1120.0
-offset_bottom = 105.0
-texture = ExtResource("4")
-stretch_mode = 3
-
-[node name="Log" type="Label" parent="CanvasLayer"]
-offset_left = 35.0
-offset_top = 390.0
-offset_right = 1115.0
-offset_bottom = 610.0
-text = ""
-autowrap_mode = 3
+offset_top = 265.0
+offset_right = 300.0
+offset_bottom = 340.0
 theme_override_font_sizes/font_size = 16
+text = "PV: 30/30\nATK: 5  CA: 10"
+modulate = Color(0.7, 1.0, 0.7, 1)
 
-[node name="BtnAttaquer" type="TextureButton" parent="CanvasLayer"]
-offset_left = 80.0
-offset_top = 290.0
-offset_right = 400.0
-offset_bottom = 360.0
-scale = Vector2(1, 1)
-texture_normal = ExtResource("5")
-texture_pressed = ExtResource("6")
-texture_hover = ExtResource("5")
+[node name="StatMonstre" type="Label" parent="CanvasLayer"]
+offset_left = 860.0
+offset_top = 265.0
+offset_right = 1122.0
+offset_bottom = 340.0
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 2
+text = "PV: 8/8\nAC: 11"
+modulate = Color(1.0, 0.6, 0.6, 1)
 
-[node name="LabelAttaquer" type="Label" parent="CanvasLayer/BtnAttaquer"]
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 320.0
-offset_bottom = 70.0
-text = "⚔️  Attaquer"
-horizontal_alignment = 1
-vertical_alignment = 1
+[node name="JournalCombat" type="RichTextLabel" parent="CanvasLayer"]
+offset_left = 200.0
+offset_top = 60.0
+offset_right = 952.0
+offset_bottom = 380.0
+theme_override_font_sizes/font_size = 16
+bbcode_enabled = true
+text = "[i]Le combat commence...[/i]"
 
-[node name="BtnDefendre" type="TextureButton" parent="CanvasLayer"]
-offset_left = 416.0
-offset_top = 290.0
-offset_right = 736.0
-offset_bottom = 360.0
-texture_normal = ExtResource("7")
-texture_pressed = ExtResource("8")
-texture_hover = ExtResource("7")
+[node name="BtnAttaquer" type="Button" parent="CanvasLayer"]
+offset_left = 200.0
+offset_top = 400.0
+offset_right = 420.0
+offset_bottom = 445.0
+theme_override_font_sizes/font_size = 18
+text = "Attaquer"
+modulate = Color(1.0, 0.3, 0.3, 1)
 
-[node name="LabelDefendre" type="Label" parent="CanvasLayer/BtnDefendre"]
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 320.0
-offset_bottom = 70.0
-text = "🛡️  Défendre"
-horizontal_alignment = 1
-vertical_alignment = 1
+[node name="BtnPotion" type="Button" parent="CanvasLayer"]
+offset_left = 440.0
+offset_top = 400.0
+offset_right = 660.0
+offset_bottom = 445.0
+theme_override_font_sizes/font_size = 18
+text = "Potion"
+modulate = Color(0.3, 1.0, 0.5, 1)
 
-[node name="BtnFuir" type="TextureButton" parent="CanvasLayer"]
-offset_left = 752.0
-offset_top = 290.0
-offset_right = 1072.0
-offset_bottom = 360.0
-texture_normal = ExtResource("9")
-texture_pressed = ExtResource("10")
-texture_hover = ExtResource("9")
+[node name="BtnFuir" type="Button" parent="CanvasLayer"]
+offset_left = 680.0
+offset_top = 400.0
+offset_right = 900.0
+offset_bottom = 445.0
+theme_override_font_sizes/font_size = 18
+text = "Fuir"
+modulate = Color(0.7, 0.7, 0.7, 1)
 
-[node name="LabelFuir" type="Label" parent="CanvasLayer/BtnFuir"]
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 320.0
-offset_bottom = 70.0
-text = "🏃  Fuir"
-horizontal_alignment = 1
-vertical_alignment = 1
+[node name="BtnContinuer" type="Button" parent="CanvasLayer"]
+offset_left = 426.0
+offset_top = 460.0
+offset_right = 726.0
+offset_bottom = 505.0
+theme_override_font_sizes/font_size = 18
+text = "Continuer"
+visible = false
+modulate = Color(0.5, 0.8, 1.0, 1)
 
-[node name="AudioAttaque" type="AudioStreamPlayer" parent="CanvasLayer"]
-[node name="AudioTouche" type="AudioStreamPlayer" parent="CanvasLayer"]
-[node name="AudioRate" type="AudioStreamPlayer" parent="CanvasLayer"]
-[node name="AudioMort" type="AudioStreamPlayer" parent="CanvasLayer"]
-[node name="AudioVictoire" type="AudioStreamPlayer" parent="CanvasLayer"]
-[node name="AudioFuite" type="AudioStreamPlayer" parent="CanvasLayer"]
-[node name="AudioDefense" type="AudioStreamPlayer" parent="CanvasLayer"]
+[node name="BtnRecommencer" type="Button" parent="CanvasLayer"]
+offset_left = 426.0
+offset_top = 515.0
+offset_right = 726.0
+offset_bottom = 555.0
+theme_override_font_sizes/font_size = 18
+text = "Retour au Menu"
+visible = false
+modulate = Color(0.8, 0.5, 0.5, 1)
