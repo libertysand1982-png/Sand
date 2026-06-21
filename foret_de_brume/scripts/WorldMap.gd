@@ -155,7 +155,7 @@ func _construire_decor() -> void:
 
 func _construire_lieux() -> void:
 	for i in LIEUX.size():
-		var lieu := LIEUX[i]
+		var lieu: Dictionary = LIEUX[i]
 		var taille := 86.0
 
 		var bouton := TextureButton.new()
