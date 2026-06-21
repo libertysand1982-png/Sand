@@ -10,6 +10,9 @@ var classe_nom: String = "Guerrier"
 var portrait_index: int = 1
 var chevalier_index: int = 0
 
+# Destination choisie sur la carte (nom du village a visiter)
+var destination: String = "Village"
+
 # Caracteristiques D&D : FOR, DEX, CON, INT, SAG, CHA
 var stats: Dictionary = {
 	"Force": 8,

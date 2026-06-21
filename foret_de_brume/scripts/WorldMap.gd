@@ -27,10 +27,14 @@ const DETAILS := [
 	{"f": "Liana_bridges1_grass_shadow", "p": Vector2(905, 452)},
 ]
 
-# Lieux interactifs : nom, fichier, position, echelle, description.
+# Lieux interactifs : nom, fichier, position, echelle, description, village (entrable).
 const LIEUX := [
-	{"nom": "Campement des Errants", "f": "Yurt1_grass_shadow", "p": Vector2(330, 310), "e": 1.3,
-		"desc": "Une yourte chaleureuse ou des nomades partagent vivres, rumeurs et quetes."},
+	{"nom": "Bourg de Boisclair", "f": "Yurt1_grass_shadow", "p": Vector2(330, 310), "e": 1.4, "village": true,
+		"desc": "Le plus grand village de la contree. Marche, taverne et forge t'y attendent."},
+	{"nom": "Hameau de Valombre", "f": "Yurt2_grass_shadow", "p": Vector2(520, 470), "e": 1.15, "village": true,
+		"desc": "Un paisible hameau au bord de l'eau, repute pour ses pecheurs et ses conteurs."},
+	{"nom": "Camp des Errants", "f": "Yurt1_grass_shadow", "p": Vector2(960, 330), "e": 1.0, "village": true,
+		"desc": "Un campement de nomades dresse a l'oree de la foret. On y troque de tout."},
 	{"nom": "Caverne d'Ombre", "f": "Cave_entrance1_grass_shadow", "p": Vector2(880, 180), "e": 1.25,
 		"desc": "Une bouche sombre creusee dans la roche. Un donjon dont nul n'est jamais ressorti indemne."},
 	{"nom": "Pyramide Engloutie", "f": "Stone_pyramid1_grass_shadow", "p": Vector2(610, 175), "e": 3.0,
@@ -135,13 +139,21 @@ func _selectionner(idx: int) -> void:
 	_lieu_courant = idx
 	$PanneauInfo/NomLieu.text = LIEUX[idx]["nom"]
 	$PanneauInfo/Desc.text = LIEUX[idx]["desc"]
+	$PanneauInfo/BtnVoyager.text = "Entrer dans le village" if LIEUX[idx].get("village", false) else "S'y rendre"
 	$PanneauInfo.visible = true
 
 
 func _on_voyager() -> void:
 	Audio.play_click()
-	if _lieu_courant >= 0:
-		print("Voyage vers : ", LIEUX[_lieu_courant]["nom"])
+	if _lieu_courant < 0:
+		return
+	var lieu: Dictionary = LIEUX[_lieu_courant]
+	if lieu.get("village", false):
+		$Musique.stop()
+		CharacterData.destination = lieu["nom"]
+		get_tree().change_scene_to_file("res://scenes/Village.tscn")
+	else:
+		print("Voyage vers : ", lieu["nom"])
 
 
 func _on_retour() -> void:

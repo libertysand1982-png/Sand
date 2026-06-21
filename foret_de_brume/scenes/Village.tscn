@@ -1,0 +1,94 @@
+[gd_scene load_steps=5 format=3 uid="uid://foretvillage01"]
+
+[ext_resource type="Script" path="res://scripts/Village.gd" id="1_vil"]
+[ext_resource type="Texture2D" path="res://assets/terrain/ground/grass.png" id="2_grass"]
+[ext_resource type="Texture2D" path="res://assets/ui/panel.png" id="3_panel"]
+[ext_resource type="FontFile" path="res://assets/fonts/lilita_one_regular.ttf" id="4_font"]
+
+[node name="Village" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_vil")
+
+[node name="Fond" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource("2_grass")
+stretch_mode = 1
+modulate = Color(0.55, 0.58, 0.5, 1)
+
+[node name="Voile" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.05, 0.05, 0.1, 0.25)
+
+[node name="IsoVillage" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Hotspots" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Titre" type="Label" parent="."]
+layout_mode = 1
+anchor_right = 1.0
+offset_top = 14.0
+offset_bottom = 64.0
+theme_override_colors/font_color = Color(0.98, 0.92, 0.6, 1)
+theme_override_colors/font_outline_color = Color(0.1, 0.07, 0.03, 1)
+theme_override_constants/outline_size = 7
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 40
+text = "Village"
+horizontal_alignment = 1
+
+[node name="PanneauInfo" type="NinePatchRect" parent="."]
+visible = false
+modulate = Color(1, 0.98, 0.92, 1)
+offset_left = 326.0
+offset_top = 474.0
+offset_right = 826.0
+offset_bottom = 614.0
+texture = ExtResource("3_panel")
+patch_margin_left = 16
+patch_margin_top = 16
+patch_margin_right = 16
+patch_margin_bottom = 16
+
+[node name="NomLieu" type="Label" parent="PanneauInfo"]
+offset_left = 24.0
+offset_top = 16.0
+offset_right = 476.0
+offset_bottom = 50.0
+theme_override_colors/font_color = Color(0.25, 0.16, 0.08, 1)
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 24
+text = "Lieu"
+
+[node name="Desc" type="Label" parent="PanneauInfo"]
+offset_left = 24.0
+offset_top = 54.0
+offset_right = 476.0
+offset_bottom = 124.0
+theme_override_colors/font_color = Color(0.32, 0.22, 0.12, 1)
+theme_override_font_sizes/font_size = 15
+text = "Description"
+autowrap_mode = 3
+
+[node name="BtnRetour" type="Button" parent="."]
+custom_minimum_size = Vector2(220, 48)
+offset_left = 22.0
+offset_top = 584.0
+offset_right = 242.0
+offset_bottom = 632.0
+text = "Retour a la carte"
