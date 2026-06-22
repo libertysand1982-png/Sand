@@ -4,26 +4,28 @@ extends Node2D
 ## et inventaire (I) avec or et equipement.
 
 const VITESSE := 200.0
-const RAYON := 95.0
+const RAYON := 100.0
 
-# --- Parametres isometriques de la ferme ---
-const ISO_W := 64.0
-const ISO_H := 32.0
-const ORIGINE := Vector2(576, 150)
-const SCALE_ISO := 0.5
-
-# Grange et maison (batiments fermes : murs + toit, meme cellule).
-const GRANGE := ["woodWall_W", "woodWall_N", "woodWallDoorClosed_E", "roofSingleWall_E"]
-const MAISON := ["woodWall_W", "woodWallWindow_N", "woodWall_E", "roof_E"]
+# Batiments complets : fichier, position, echelle.
+const BATIMENTS := [
+	{"f": "clan-castle-001", "p": Vector2(576, 150), "e": 0.5},
+	{"f": "blue-roof-keep-tower-001", "p": Vector2(170, 200), "e": 0.34},
+	{"f": "stone-watchtower-001", "p": Vector2(980, 200), "e": 0.34},
+	{"f": "falcon-banner-house", "p": Vector2(560, 235), "e": 0.2},
+	{"f": "blacksmith-forge-001", "p": Vector2(330, 255), "e": 0.36},
+	{"f": "market-stall-001", "p": Vector2(800, 255), "e": 0.36},
+	{"f": "army-camp-tent-001", "p": Vector2(440, 350), "e": 0.32},
+	{"f": "village-fountain-001", "p": Vector2(700, 380), "e": 0.32},
+]
 
 # PNJ : nom, sprite, position, type, texte.
 const PNJS := [
-	{"nom": "Marchand Aldric", "sprite": "Male_1_Idle0", "p": Vector2(420, 500), "type": "vendeur",
-		"texte": "Bienvenue a la ferme ! J'ai armes et armures de qualite. Jette un oeil a mes etals."},
-	{"nom": "Aubergiste Brigitte", "sprite": "Male_3_Idle0", "p": Vector2(720, 520), "type": "aubergiste",
+	{"nom": "Marchand Aldric", "sprite": "Male_1_Idle0", "p": Vector2(800, 370), "type": "vendeur",
+		"texte": "Bienvenue au Bourg ! J'ai armes et armures de qualite. Jette un oeil a mon etal."},
+	{"nom": "Aubergiste Brigitte", "sprite": "Male_3_Idle0", "p": Vector2(560, 360), "type": "aubergiste",
 		"texte": "Une chambre pour la nuit, voyageur ? Repose-toi donc, l'aventure attendra bien."},
-	{"nom": "Fermier Cedric", "sprite": "Male_5_Idle0", "p": Vector2(230, 470), "type": "quete",
-		"texte": "Des gobelins infestent la Caverne d'Ombre et pietinent mes champs. Aiderais-tu un pauvre fermier ?"},
+	{"nom": "Forgeron Cedric", "sprite": "Male_5_Idle0", "p": Vector2(330, 375), "type": "quete",
+		"texte": "Des gobelins infestent la Caverne d'Ombre. Debarrasse-nous d'eux et je te recompenserai !"},
 ]
 
 # Catalogue de la boutique (equipement).
@@ -83,50 +85,13 @@ func _ajouter(chemin: String, pos: Vector2, echelle := 1.0, off_y := 0.0) -> Spr
 	return s
 
 
-func iso(cell: Vector2) -> Vector2:
-	return ORIGINE + Vector2((cell.x - cell.y) * ISO_W, (cell.x + cell.y) * ISO_H)
-
-
-func _piece_iso(nom: String, cell: Vector2) -> void:
-	var s := Sprite2D.new()
-	s.texture = load("res://assets/iso/%s.png" % nom)
-	s.scale = Vector2(SCALE_ISO, SCALE_ISO)
-	s.position = iso(cell)
-	$Monde.add_child(s)
-
-
-func _batiment_iso(recette: Array, cell: Vector2) -> void:
-	for p in recette:
-		_piece_iso(p, cell)
-
-
 func _construire_village() -> void:
-	# Sol isometrique : champ cultive au centre, terre autour.
-	var cells := []
-	for c in range(7):
-		for r in range(6):
-			cells.append(Vector2(c, r))
-	cells.sort_custom(func(a, b): return (a.x + a.y) < (b.x + b.y))
-	var champ := func(cell): return cell.x >= 2 and cell.x <= 5 and cell.y >= 2 and cell.y <= 4
-	for cell in cells:
-		_piece_iso("dirtFarmland_E" if champ.call(cell) else "dirt_E", cell)
-	# Rangees de mais sur le champ.
-	var field := []
-	for c in range(2, 6):
-		for r in range(2, 5):
-			field.append(Vector2(c, r))
-	field.sort_custom(func(a, b): return (a.x + a.y) < (b.x + b.y))
-	for cell in field:
-		_piece_iso("corn_E", cell)
-	# Clotures autour du champ.
-	for r in range(2, 5):
-		_piece_iso("fenceHigh_N", Vector2(1, r))
-	for c in range(2, 6):
-		_piece_iso("fenceLow_E", Vector2(c, 5))
-	# Batiments : grange et maison (en haut).
-	_batiment_iso(GRANGE, Vector2(0, 0))
-	_batiment_iso(MAISON, Vector2(3, 0))
-	_batiment_iso(GRANGE, Vector2(6, 1))
+	# Quelques arbres en lisiere.
+	for v in [Vector2(80, 180), Vector2(1080, 170), Vector2(70, 470), Vector2(1090, 480)]:
+		_ajouter("res://assets/terrain/trees/Tree1.png", v, 1.0)
+	# Batiments complets (tries en profondeur par le y_sort de Monde).
+	for b in BATIMENTS:
+		_ajouter("res://assets/buildings/%s.png" % b["f"], b["p"], b["e"])
 
 
 func _construire_pnjs() -> void:
