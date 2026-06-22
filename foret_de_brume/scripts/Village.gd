@@ -26,14 +26,19 @@ const PNJS := [
 		"texte": "Des gobelins infestent la Caverne d'Ombre. Aiderais-tu notre village a s'en debarrasser ?"},
 ]
 
-# Catalogue de la boutique (icones = grimoires).
+# Catalogue de la boutique (equipement).
 const CATALOGUE := [
-	{"id": 1, "nom": "Grimoire des Flammes", "prix": 40},
-	{"id": 7, "nom": "Codex Glacial", "prix": 45},
-	{"id": 33, "nom": "Parchemin Foudroyant", "prix": 35},
-	{"id": 20, "nom": "Manuel du Roublard", "prix": 25},
-	{"id": 3, "nom": "Tome de Sagesse", "prix": 30},
-	{"id": 25, "nom": "Bestiaire Ancien", "prix": 20},
+	{"nom": "Hache de fer", "icone": "res://assets/equip/iron-axe.png", "slot": "Arme", "atk": 5, "def": 0, "prix": 40},
+	{"nom": "Katana", "icone": "res://assets/equip/katana.png", "slot": "Arme", "atk": 7, "def": 0, "prix": 75},
+	{"nom": "Rapiere", "icone": "res://assets/equip/rapier.png", "slot": "Arme", "atk": 6, "def": 0, "prix": 55},
+	{"nom": "Arc long", "icone": "res://assets/equip/long-bow.png", "slot": "Arme", "atk": 5, "def": 1, "prix": 50},
+	{"nom": "Armure de cuir", "icone": "res://assets/equip/leather-armor.png", "slot": "Armure", "atk": 0, "def": 3, "prix": 35},
+	{"nom": "Cotte de mailles", "icone": "res://assets/equip/scale-mail.png", "slot": "Armure", "atk": 0, "def": 5, "prix": 65},
+	{"nom": "Armure de plaques", "icone": "res://assets/equip/plate-armor.png", "slot": "Armure", "atk": 0, "def": 8, "prix": 110},
+	{"nom": "Heaume de fer", "icone": "res://assets/equip/iron-helmet.png", "slot": "Casque", "atk": 0, "def": 2, "prix": 28},
+	{"nom": "Heaume de plaques", "icone": "res://assets/equip/plate-helmet.png", "slot": "Casque", "atk": 0, "def": 3, "prix": 45},
+	{"nom": "Cape royale", "icone": "res://assets/equip/royal-cape.png", "slot": "Accessoire", "atk": 1, "def": 2, "prix": 50},
+	{"nom": "Brassards runiques", "icone": "res://assets/equip/runed-bracers.png", "slot": "Accessoire", "atk": 2, "def": 1, "prix": 48},
 ]
 
 var _pnj_proche := -1
@@ -275,23 +280,24 @@ func _remplir_boutique() -> void:
 		ligne.add_theme_constant_override("separation", 10)
 
 		var icone := TextureRect.new()
-		icone.texture = load("res://assets/items/%d.png" % art["id"])
-		icone.custom_minimum_size = Vector2(40, 40)
+		icone.texture = load(art["icone"])
+		icone.custom_minimum_size = Vector2(44, 44)
 		icone.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		ligne.add_child(icone)
 
 		var nom := Label.new()
-		nom.text = art["nom"]
+		var stat := ("Atq +%d" % art["atk"]) if art["atk"] > 0 else ("Def +%d" % art["def"])
+		nom.text = "%s  (%s)" % [art["nom"], stat]
 		nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		nom.add_theme_color_override("font_color", Color(0.25, 0.16, 0.08))
-		nom.add_theme_font_size_override("font_size", 16)
+		nom.add_theme_font_size_override("font_size", 15)
 		nom.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		ligne.add_child(nom)
 
 		var prix := Label.new()
 		prix.text = "%d or" % art["prix"]
-		prix.custom_minimum_size = Vector2(70, 0)
+		prix.custom_minimum_size = Vector2(64, 0)
 		prix.add_theme_color_override("font_color", Color(0.55, 0.4, 0.05))
 		prix.add_theme_font_size_override("font_size", 16)
 		prix.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -313,8 +319,9 @@ func _acheter(art: Dictionary) -> void:
 		return
 	Audio.play_click()
 	CharacterData.gold -= art["prix"]
-	CharacterData.ajouter_objet({"id": art["id"], "nom": art["nom"], "type": "Tome"})
-	$UI/Boutique/OrBoutique.text = "Or : %d" % CharacterData.gold
+	CharacterData.ajouter_objet({"nom": art["nom"], "icone": art["icone"],
+		"slot": art["slot"], "atk": art["atk"], "def": art["def"]})
+	$UI/Boutique/OrBoutique.text = "Or : %d (achete !)" % CharacterData.gold
 
 
 # --- Inventaire ------------------------------------------------------------
@@ -334,11 +341,14 @@ func _remplir_grille() -> void:
 		c.queue_free()
 	for obj in CharacterData.inventaire:
 		var b := TextureButton.new()
-		b.texture_normal = load("res://assets/items/%d.png" % obj["id"])
+		b.texture_normal = load(obj["icone"])
 		b.ignore_texture_size = true
 		b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
 		b.custom_minimum_size = Vector2(88, 88)
-		b.tooltip_text = obj["nom"]
+		var info := obj["nom"]
+		if obj.get("slot", "") != "":
+			info += "  (Atq +%d / Def +%d)\nCliquer pour equiper" % [obj.get("atk", 0), obj.get("def", 0)]
+		b.tooltip_text = info
 		b.pressed.connect(_equiper.bind(obj))
 		b.mouse_entered.connect(Audio.play_hover)
 		$UI/Inventaire/Grille.add_child(b)
@@ -347,18 +357,26 @@ func _remplir_grille() -> void:
 func _remplir_equipement() -> void:
 	for c in $UI/Inventaire/Equip.get_children():
 		c.queue_free()
-	for slot in ["Arme", "Armure", "Focaliseur"]:
+	for slot in ["Arme", "Armure", "Casque", "Accessoire"]:
 		var l := Label.new()
 		var obj = CharacterData.equipement[slot]
 		l.text = "%s : %s" % [slot, obj["nom"] if obj else "—"]
 		l.add_theme_color_override("font_color", Color(0.3, 0.2, 0.1))
-		l.add_theme_font_size_override("font_size", 16)
+		l.add_theme_font_size_override("font_size", 15)
 		$UI/Inventaire/Equip.add_child(l)
+	var total := Label.new()
+	total.text = "Bonus total : Atq +%d   Def +%d" % [CharacterData.bonus_atk(), CharacterData.bonus_def()]
+	total.add_theme_color_override("font_color", Color(0.5, 0.32, 0.08))
+	total.add_theme_font_size_override("font_size", 16)
+	$UI/Inventaire/Equip.add_child(total)
 
 
 func _equiper(obj: Dictionary) -> void:
+	if obj.get("slot", "") == "":
+		return
 	Audio.play_click()
-	CharacterData.equipement["Focaliseur"] = obj
+	CharacterData.equiper(obj)
+	_remplir_grille()
 	_remplir_equipement()
 
 

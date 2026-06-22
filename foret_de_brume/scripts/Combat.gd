@@ -163,11 +163,11 @@ func _tour_joueur() -> void:
 
 
 func _action_attaquer() -> void:
-	await _jouer_tour_joueur(_hero["force"] + randi() % 5, false)
+	await _jouer_tour_joueur(_hero["force"] + CharacterData.bonus_atk() + randi() % 5, false)
 
 
 func _action_frappe() -> void:
-	await _jouer_tour_joueur(int(_hero["force"] * 1.7) + randi() % 4, false)
+	await _jouer_tour_joueur(int((_hero["force"] + CharacterData.bonus_atk()) * 1.7) + randi() % 4, false)
 
 
 func _action_defendre() -> void:
@@ -237,6 +237,8 @@ func _attaque(att: Dictionary, cible: Dictionary, degats: int, est_hero: bool) -
 
 
 func _appliquer_degats(cible: Dictionary, degats: int) -> void:
+	if cible == _hero:
+		degats = maxi(1, degats - CharacterData.bonus_def())
 	if cible["defense"]:
 		degats = maxi(1, degats / 2)
 		cible["defense"] = false
