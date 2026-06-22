@@ -372,7 +372,7 @@ func _remplir_grille() -> void:
 		b.ignore_texture_size = true
 		b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
 		b.custom_minimum_size = Vector2(88, 88)
-		var info := obj["nom"]
+		var info: String = obj["nom"]
 		if obj.get("slot", "") != "":
 			info += "  (Atq +%d / Def +%d)\nCliquer pour equiper" % [obj.get("atk", 0), obj.get("def", 0)]
 		b.tooltip_text = info
