@@ -13,6 +13,26 @@ var chevalier_index: int = 0
 # Destination choisie sur la carte (nom du village a visiter)
 var destination: String = "Village"
 
+# Bourse, inventaire, equipement, quetes
+var gold: int = 80
+var inventaire: Array = [         # objets : {"id": int, "nom": String, "type": String}
+	{"id": 12, "nom": "Tome de Soin", "type": "Tome"},
+	{"id": 44, "nom": "Vieux Journal", "type": "Tome"},
+]
+var equipement: Dictionary = {"Arme": null, "Armure": null, "Focaliseur": null}
+var quetes: Array = []            # quetes acceptees : {"nom": String, "texte": String}
+
+
+func ajouter_objet(obj: Dictionary) -> void:
+	inventaire.append(obj)
+
+
+func possede_quete(nom: String) -> bool:
+	for q in quetes:
+		if q["nom"] == nom:
+			return true
+	return false
+
 # Caracteristiques D&D : FOR, DEX, CON, INT, SAG, CHA
 var stats: Dictionary = {
 	"Force": 8,

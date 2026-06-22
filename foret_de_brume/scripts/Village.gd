@@ -1,138 +1,360 @@
-extends Control
-## Scene de village en diorama isometrique medieval (pieces Kenney).
-## Batiments fermes (4 murs + toit) + sol pave + marche + garde anime.
+extends Node2D
+## Village top-down vivant : le heros se balade, parle aux PNJ (E),
+## marchand (boutique de grimoires), aubergiste, donneur de quetes,
+## et inventaire (I) avec or et equipement.
 
-# --- Parametres isometriques (ajustables) ---
-const SCALE := 0.5
-const ISO_W := 64.0
-const ISO_H := 32.0
-const ORIGINE := Vector2(540, 150)
-const ANCRE_Y := 30.0
+const VITESSE := 200.0
+const RAYON := 95.0
 
-const SOLS := ["stone_E", "stoneTile_E", "dirt_E", "planks_E"]
-
-# Recettes de batiments fermes (murs sur les 4 cotes + toit).
-const MAISON_BOIS := ["woodWall_W", "woodWall_N", "woodWallDoorClosed_E", "woodWallWindow_S", "roof_E"]
-const MAISON_PIERRE := ["stoneWall_W", "stoneWallWindow_N", "stoneWallDoorClosed_E", "stoneWall_S", "roof_N"]
-const TOUR := ["stoneWallRound_W", "stoneWallRound_N", "stoneWallRound_E", "stoneWallRound_S", "roof_E"]
-const PORTE := ["stoneWall_W", "stoneWall_N", "stoneWallGateOpen_E", "stoneWall_S"]
-
-# Batiments : nom, cellule, recette, cliquable, description.
+# Batiments (yourtes) et decor.
 const BATIMENTS := [
-	{"nom": "Taverne du Sanglier", "cell": Vector2(1, 0), "recette": MAISON_BOIS,
-		"clic": true, "desc": "On y boit, on y chante, et l'aubergiste connait toutes les rumeurs du pays."},
-	{"nom": "Forge de Maitre Aldric", "cell": Vector2(4, 1), "recette": MAISON_PIERRE,
-		"clic": true, "desc": "Le martele du forgeron resonne jour et nuit. Armes et armures sur commande."},
-	{"nom": "Echoppe du Marche", "cell": Vector2(5, 4), "recette": MAISON_PIERRE,
-		"clic": true, "desc": "Potions, parchemins et babioles venues des quatre coins du royaume."},
-	{"nom": "Maison", "cell": Vector2(0, 4), "recette": MAISON_BOIS, "clic": false, "desc": ""},
-	{"nom": "Tour de Guet", "cell": Vector2(5, 0), "recette": TOUR,
-		"clic": true, "desc": "Du haut de la tour, les sentinelles surveillent les routes brumeuses."},
-	{"nom": "Porte du village", "cell": Vector2(2, 5), "recette": PORTE, "clic": false, "desc": ""},
+	{"f": "Yurt1_grass_shadow", "p": Vector2(260, 180), "e": 1.3},
+	{"f": "Yurt2_grass_shadow", "p": Vector2(620, 150), "e": 1.2},
+	{"f": "Yurt1_grass_shadow", "p": Vector2(910, 190), "e": 1.0},
+]
+const ARBRES := [Vector2(70, 150), Vector2(1090, 130), Vector2(60, 430),
+	Vector2(1100, 440), Vector2(440, 110), Vector2(780, 120)]
+const ROCHERS := [Vector2(160, 360), Vector2(1000, 360), Vector2(540, 250)]
+
+# PNJ : nom, sprite, position, type, texte.
+const PNJS := [
+	{"nom": "Marchand Aldric", "sprite": "Male_1_Idle0", "p": Vector2(450, 330), "type": "vendeur",
+		"texte": "Bienvenue ! J'ai les meilleurs grimoires de la contree. Jette un oeil a mes etals."},
+	{"nom": "Aubergiste Brigitte", "sprite": "Male_3_Idle0", "p": Vector2(770, 360), "type": "aubergiste",
+		"texte": "Une chambre pour la nuit, voyageur ? Repose-toi donc, l'aventure attendra bien."},
+	{"nom": "Garde Cedric", "sprite": "Male_5_Idle0", "p": Vector2(250, 410), "type": "quete",
+		"texte": "Des gobelins infestent la Caverne d'Ombre. Aiderais-tu notre village a s'en debarrasser ?"},
 ]
 
-# Decor isometrique : piece, cellule.
-const DECOR := [
-	{"piece": "sacksCrate_E", "cell": Vector2(2, 2)},
-	{"piece": "hayBales_E", "cell": Vector2(3, 3)},
-	{"piece": "chestClosed_E", "cell": Vector2(1, 2)},
-	{"piece": "sack_E", "cell": Vector2(4, 3)},
-	{"piece": "stoneColumn_E", "cell": Vector2(0, 1)},
+# Catalogue de la boutique (icones = grimoires).
+const CATALOGUE := [
+	{"id": 1, "nom": "Grimoire des Flammes", "prix": 40},
+	{"id": 7, "nom": "Codex Glacial", "prix": 45},
+	{"id": 33, "nom": "Parchemin Foudroyant", "prix": 35},
+	{"id": 20, "nom": "Manuel du Roublard", "prix": 25},
+	{"id": 3, "nom": "Tome de Sagesse", "prix": 30},
+	{"id": 25, "nom": "Bestiaire Ancien", "prix": 20},
 ]
 
-var _garde: Sprite2D
-var _anim_t := 0.0
-var _sprites_bat := {}
+var _pnj_proche := -1
+var _ouvert := false
+var _tex_idle: Texture2D
+var _tex_walk: Texture2D
+var _marche := false
+var _frame_t := 0.0
+var _facing := 1
+
+@onready var _hero: Node2D = $Monde/Hero
+@onready var _sprite: Sprite2D = $Monde/Hero/Sprite
+@onready var _invite: Label = $UI/Invite
 
 
 func _ready() -> void:
-	$Titre.text = CharacterData.destination
-	_construire_sol()
+	$UI/Titre.text = CharacterData.destination
+	var n := CharacterData.chevalier_index + 1
+	_tex_idle = load("res://assets/knights/knight%d_idle.png" % n)
+	_tex_walk = load("res://assets/knights/knight%d_walk.png" % n)
+	_sprite.texture = _tex_idle
+	_sprite.hframes = 4
+
 	_construire_village()
-	_ajouter_garde()
-	$BtnRetour.pressed.connect(_on_retour)
-	$BtnRetour.mouse_entered.connect(Audio.play_hover)
+	_construire_pnjs()
+
+	$UI/BtnRetour.pressed.connect(_on_retour)
+	$UI/BtnRetour.mouse_entered.connect(Audio.play_hover)
+	$UI/Boutique/BtnFermerBoutique.pressed.connect(_fermer_tout)
+	$UI/Inventaire/BtnFermerInv.pressed.connect(_fermer_tout)
 
 
-func _process(delta: float) -> void:
-	if _garde:
-		_anim_t += delta
-		if _anim_t >= 0.18:
-			_anim_t = 0.0
-			_garde.frame = (_garde.frame + 1) % 4
+# --- Construction ----------------------------------------------------------
 
-
-func iso(cell: Vector2) -> Vector2:
-	return ORIGINE + Vector2((cell.x - cell.y) * ISO_W, (cell.x + cell.y) * ISO_H + ANCRE_Y)
-
-
-func _piece(nom: String, cell: Vector2) -> Sprite2D:
+func _ajouter(chemin: String, pos: Vector2, echelle := 1.0, off_y := 0.0) -> Sprite2D:
 	var s := Sprite2D.new()
-	s.texture = load("res://assets/iso/%s.png" % nom)
-	s.scale = Vector2(SCALE, SCALE)
-	s.position = iso(cell)
-	s.set_meta("base_y", s.position.y)
-	$IsoVillage.add_child(s)
+	s.texture = load(chemin)
+	s.position = pos + Vector2(0, off_y)
+	s.scale = Vector2(echelle, echelle)
+	$Monde.add_child(s)
 	return s
 
 
-func _construire_sol() -> void:
-	for c in range(6):
-		for r in range(6):
-			_piece(SOLS[(c + r) % SOLS.size()], Vector2(c, r))
-
-
 func _construire_village() -> void:
-	for d in DECOR:
-		_piece(d["piece"], d["cell"])
-	for i in BATIMENTS.size():
-		var b: Dictionary = BATIMENTS[i]
-		var sprites := []
-		for p in b["recette"]:
-			sprites.append(_piece(p, b["cell"]))
-		_sprites_bat[i] = sprites
-		if b.get("clic", false):
-			_creer_hotspot(i, b["cell"])
+	for v in ARBRES:
+		_ajouter("res://assets/terrain/trees/Tree1.png", v, 1.0)
+	for v in ROCHERS:
+		_ajouter("res://assets/terrain/rocks/Rock1_grass_shadow1.png", v, 1.0)
+	for b in BATIMENTS:
+		_ajouter("res://assets/terrain/objects/%s.png" % b["f"], b["p"], b["e"])
 
 
-func _ajouter_garde() -> void:
-	_garde = Sprite2D.new()
-	_garde.texture = load("res://assets/knights/knight%d_idle.png" % (CharacterData.chevalier_index + 1))
-	_garde.hframes = 4
-	_garde.scale = Vector2(1.6, 1.6)
-	_garde.position = iso(Vector2(2.5, 3.5))
-	_garde.z_index = 50
-	$IsoVillage.add_child(_garde)
+func _construire_pnjs() -> void:
+	for i in PNJS.size():
+		var pnj: Dictionary = PNJS[i]
+		var s := _ajouter("res://assets/npc/%s.png" % pnj["sprite"], pnj["p"], 0.5, -70.0)
+		var etiquette := Label.new()
+		etiquette.text = pnj["nom"]
+		etiquette.add_theme_font_size_override("font_size", 14)
+		etiquette.add_theme_color_override("font_color", Color(1, 0.97, 0.85))
+		etiquette.add_theme_color_override("font_outline_color", Color(0.1, 0.07, 0.03))
+		etiquette.add_theme_constant_override("outline_size", 4)
+		etiquette.position = pnj["p"] + Vector2(-80, -120)
+		etiquette.size = Vector2(160, 20)
+		etiquette.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		$Monde.add_child(etiquette)
 
 
-func _creer_hotspot(idx: int, cell: Vector2) -> void:
-	var p := iso(cell)
-	var b := Button.new()
-	b.flat = true
-	b.focus_mode = Control.FOCUS_NONE
-	b.size = Vector2(130, 180)
-	b.position = p + Vector2(-65, -150)
-	b.mouse_entered.connect(_survol.bind(idx, true))
-	b.mouse_exited.connect(_survol.bind(idx, false))
-	b.pressed.connect(_selectionner.bind(idx))
-	$Hotspots.add_child(b)
+# --- Deplacement du heros --------------------------------------------------
+
+func _process(delta: float) -> void:
+	if not _ouvert:
+		var dir := _direction()
+		if dir != Vector2.ZERO:
+			_hero.position += dir * VITESSE * delta
+			_hero.position.x = clampf(_hero.position.x, 40, 1112)
+			_hero.position.y = clampf(_hero.position.y, 130, 600)
+			if not _marche:
+				_changer_anim(true)
+			if dir.x < -0.1:
+				_facing = -1
+			elif dir.x > 0.1:
+				_facing = 1
+		elif _marche:
+			_changer_anim(false)
+		_maj_proximite()
+
+	_frame_t += delta
+	var periode := 0.085 if _marche else 0.18
+	if _frame_t >= periode:
+		_frame_t = 0.0
+		_sprite.frame = (_sprite.frame + 1) % _sprite.hframes
+	_sprite.flip_h = _facing < 0
 
 
-func _survol(idx: int, entre: bool) -> void:
-	if entre:
-		Audio.play_hover()
-	var dy := -12.0 if entre else 0.0
-	for s in _sprites_bat[idx]:
-		var base: float = s.get_meta("base_y")
-		var tw := create_tween()
-		tw.tween_property(s, "position:y", base + dy, 0.12).set_trans(Tween.TRANS_BACK)
+func _direction() -> Vector2:
+	var d := Vector2.ZERO
+	if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP):
+		d.y -= 1
+	if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN):
+		d.y += 1
+	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT):
+		d.x -= 1
+	if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT):
+		d.x += 1
+	return d.normalized()
 
 
-func _selectionner(idx: int) -> void:
+func _changer_anim(marche: bool) -> void:
+	_marche = marche
+	_sprite.texture = _tex_walk if marche else _tex_idle
+	_sprite.hframes = 8 if marche else 4
+	_sprite.frame = 0
+
+
+func _maj_proximite() -> void:
+	var meilleur := -1
+	var dmin := RAYON
+	for i in PNJS.size():
+		var d: float = _hero.position.distance_to(PNJS[i]["p"])
+		if d < dmin:
+			dmin = d
+			meilleur = i
+	_pnj_proche = meilleur
+	if meilleur < 0:
+		_invite.visible = false
+	else:
+		_invite.text = "[E] Parler a %s" % PNJS[meilleur]["nom"]
+		_invite.visible = true
+
+
+# --- Entrees ---------------------------------------------------------------
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	match event.keycode:
+		KEY_E:
+			if not _ouvert and _pnj_proche >= 0:
+				_ouvrir_dialogue(_pnj_proche)
+		KEY_I:
+			if _ouvert and $UI/Inventaire.visible:
+				_fermer_tout()
+			elif not _ouvert:
+				_ouvrir_inventaire()
+		KEY_ESCAPE:
+			_fermer_tout()
+
+
+# --- Dialogue --------------------------------------------------------------
+
+func _ouvrir_dialogue(idx: int) -> void:
 	Audio.play_click()
-	$PanneauInfo/NomLieu.text = BATIMENTS[idx]["nom"]
-	$PanneauInfo/Desc.text = BATIMENTS[idx]["desc"]
-	$PanneauInfo.visible = true
+	_ouvert = true
+	_invite.visible = false
+	var pnj: Dictionary = PNJS[idx]
+	$UI/Dialogue/NomPNJ.text = pnj["nom"]
+	$UI/Dialogue/Texte.text = pnj["texte"]
+	_definir_actions(pnj["type"])
+	$UI/Dialogue.visible = true
+
+
+func _definir_actions(type: String) -> void:
+	for c in $UI/Dialogue/Actions.get_children():
+		c.queue_free()
+	match type:
+		"vendeur":
+			_bouton_action("Voir les grimoires", _ouvrir_boutique)
+			_bouton_action("Au revoir", _fermer_tout)
+		"aubergiste":
+			_bouton_action("Se reposer", _se_reposer)
+			_bouton_action("Au revoir", _fermer_tout)
+		"quete":
+			if CharacterData.possede_quete("Les gobelins de la Caverne"):
+				$UI/Dialogue/Texte.text = "Reviens quand les gobelins de la Caverne d'Ombre seront chasses."
+				_bouton_action("Au revoir", _fermer_tout)
+			else:
+				_bouton_action("Accepter la quete", _accepter_quete)
+				_bouton_action("Plus tard", _fermer_tout)
+
+
+func _bouton_action(texte: String, cible: Callable) -> void:
+	var b := Button.new()
+	b.text = texte
+	b.custom_minimum_size = Vector2(0, 38)
+	b.pressed.connect(cible)
+	b.mouse_entered.connect(Audio.play_hover)
+	$UI/Dialogue/Actions.add_child(b)
+
+
+func _se_reposer() -> void:
+	Audio.play_click()
+	$UI/Dialogue/Texte.text = "Vous vous reposez a l'auberge. Vous voila frais et dispos !"
+	_definir_actions("")
+	_bouton_action("Au revoir", _fermer_tout)
+
+
+func _accepter_quete() -> void:
+	Audio.play_click()
+	CharacterData.quetes.append({
+		"nom": "Les gobelins de la Caverne",
+		"texte": "Chasser les gobelins de la Caverne d'Ombre."})
+	$UI/Dialogue/Texte.text = "Quete acceptee ! Que les anciens te protegent, brave heros."
+	for c in $UI/Dialogue/Actions.get_children():
+		c.queue_free()
+	_bouton_action("Au revoir", _fermer_tout)
+
+
+# --- Boutique --------------------------------------------------------------
+
+func _ouvrir_boutique() -> void:
+	Audio.play_click()
+	$UI/Dialogue.visible = false
+	_remplir_boutique()
+	$UI/Boutique.visible = true
+
+
+func _remplir_boutique() -> void:
+	$UI/Boutique/OrBoutique.text = "Or : %d" % CharacterData.gold
+	for c in $UI/Boutique/Liste.get_children():
+		c.queue_free()
+	for art in CATALOGUE:
+		var ligne := HBoxContainer.new()
+		ligne.add_theme_constant_override("separation", 10)
+
+		var icone := TextureRect.new()
+		icone.texture = load("res://assets/items/%d.png" % art["id"])
+		icone.custom_minimum_size = Vector2(40, 40)
+		icone.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		ligne.add_child(icone)
+
+		var nom := Label.new()
+		nom.text = art["nom"]
+		nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		nom.add_theme_color_override("font_color", Color(0.25, 0.16, 0.08))
+		nom.add_theme_font_size_override("font_size", 16)
+		nom.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		ligne.add_child(nom)
+
+		var prix := Label.new()
+		prix.text = "%d or" % art["prix"]
+		prix.custom_minimum_size = Vector2(70, 0)
+		prix.add_theme_color_override("font_color", Color(0.55, 0.4, 0.05))
+		prix.add_theme_font_size_override("font_size", 16)
+		prix.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		ligne.add_child(prix)
+
+		var btn := Button.new()
+		btn.text = "Acheter"
+		btn.custom_minimum_size = Vector2(110, 36)
+		btn.pressed.connect(_acheter.bind(art))
+		btn.mouse_entered.connect(Audio.play_hover)
+		ligne.add_child(btn)
+
+		$UI/Boutique/Liste.add_child(ligne)
+
+
+func _acheter(art: Dictionary) -> void:
+	if CharacterData.gold < art["prix"]:
+		$UI/Boutique/OrBoutique.text = "Or insuffisant ! (%d)" % CharacterData.gold
+		return
+	Audio.play_click()
+	CharacterData.gold -= art["prix"]
+	CharacterData.ajouter_objet({"id": art["id"], "nom": art["nom"], "type": "Tome"})
+	$UI/Boutique/OrBoutique.text = "Or : %d" % CharacterData.gold
+
+
+# --- Inventaire ------------------------------------------------------------
+
+func _ouvrir_inventaire() -> void:
+	Audio.play_click()
+	_ouvert = true
+	_invite.visible = false
+	$UI/Inventaire/OrInv.text = "Or : %d" % CharacterData.gold
+	_remplir_grille()
+	_remplir_equipement()
+	$UI/Inventaire.visible = true
+
+
+func _remplir_grille() -> void:
+	for c in $UI/Inventaire/Grille.get_children():
+		c.queue_free()
+	for obj in CharacterData.inventaire:
+		var b := TextureButton.new()
+		b.texture_normal = load("res://assets/items/%d.png" % obj["id"])
+		b.ignore_texture_size = true
+		b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		b.custom_minimum_size = Vector2(88, 88)
+		b.tooltip_text = obj["nom"]
+		b.pressed.connect(_equiper.bind(obj))
+		b.mouse_entered.connect(Audio.play_hover)
+		$UI/Inventaire/Grille.add_child(b)
+
+
+func _remplir_equipement() -> void:
+	for c in $UI/Inventaire/Equip.get_children():
+		c.queue_free()
+	for slot in ["Arme", "Armure", "Focaliseur"]:
+		var l := Label.new()
+		var obj = CharacterData.equipement[slot]
+		l.text = "%s : %s" % [slot, obj["nom"] if obj else "—"]
+		l.add_theme_color_override("font_color", Color(0.3, 0.2, 0.1))
+		l.add_theme_font_size_override("font_size", 16)
+		$UI/Inventaire/Equip.add_child(l)
+
+
+func _equiper(obj: Dictionary) -> void:
+	Audio.play_click()
+	CharacterData.equipement["Focaliseur"] = obj
+	_remplir_equipement()
+
+
+# --- Divers ----------------------------------------------------------------
+
+func _fermer_tout() -> void:
+	Audio.play_click()
+	$UI/Dialogue.visible = false
+	$UI/Boutique.visible = false
+	$UI/Inventaire.visible = false
+	_ouvert = false
 
 
 func _on_retour() -> void:

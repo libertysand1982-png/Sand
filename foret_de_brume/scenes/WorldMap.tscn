@@ -21,8 +21,8 @@ y_sort_enabled = true
 position = Vector2(820, 1050)
 
 [node name="Sprite" type="Sprite2D" parent="Monde/Hero"]
-position = Vector2(0, -34)
-scale = Vector2(1.4, 1.4)
+position = Vector2(0, -28)
+scale = Vector2(1.05, 1.05)
 hframes = 4
 
 [node name="Camera2D" type="Camera2D" parent="Monde/Hero"]
