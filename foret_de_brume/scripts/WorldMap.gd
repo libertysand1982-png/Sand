@@ -14,13 +14,13 @@ const LIEUX := [
 		"desc": "Un paisible hameau de la cote ouest, repute pour ses pecheurs et ses conteurs."},
 	{"nom": "Camp des Errants", "f": "Yurt1_grass_shadow", "p": Vector2(832, 576), "e": 1.1, "village": true,
 		"desc": "Un campement de nomades dresse dans les vallees du nord. On y troque de tout."},
-	{"nom": "Caverne d'Ombre", "f": "Cave_entrance1_grass_shadow", "p": Vector2(1088, 352), "e": 1.3, "village": false,
+	{"nom": "Caverne d'Ombre", "f": "Cave_entrance1_grass_shadow", "p": Vector2(1088, 352), "e": 1.3, "village": false, "combat": true,
 		"desc": "Une bouche sombre dans les montagnes enneigees. Un donjon dont nul n'est ressorti indemne."},
-	{"nom": "Pyramide Engloutie", "f": "Stone_pyramid1_grass_shadow", "p": Vector2(1056, 1920), "e": 3.0, "village": false,
+	{"nom": "Pyramide Engloutie", "f": "Stone_pyramid1_grass_shadow", "p": Vector2(1056, 1920), "e": 3.0, "village": false, "combat": true,
 		"desc": "Un monument ancien des deserts du sud, garde par d'antiques sortileges."},
 	{"nom": "Sanctuaire de Pierre", "f": "Rock_statue_mother_grass_shadow", "p": Vector2(368, 896), "e": 0.85, "village": false,
 		"desc": "Une statue maternelle erodee par les ages, perdue dans les forets de l'ouest."},
-	{"nom": "Cimetiere du Dragon", "f": "Dragon_bones_full_grass_shadow", "p": Vector2(1216, 896), "e": 0.95, "village": false,
+	{"nom": "Cimetiere du Dragon", "f": "Dragon_bones_full_grass_shadow", "p": Vector2(1216, 896), "e": 0.95, "village": false, "combat": true,
 		"desc": "Les ossements colossaux d'un dragon dechu. Un tresor doit sommeiller sous ses cotes."},
 ]
 
@@ -146,7 +146,12 @@ func _maj_proximite() -> void:
 		_info.visible = false
 	else:
 		var l: Dictionary = LIEUX[_proche]
-		_invite.text = "[E] Entrer dans %s" % l["nom"] if l["village"] else "[E] Examiner %s" % l["nom"]
+		if l["village"]:
+			_invite.text = "[E] Entrer dans %s" % l["nom"]
+		elif l.get("combat", false):
+			_invite.text = "[E] Explorer %s (combat)" % l["nom"]
+		else:
+			_invite.text = "[E] Examiner %s" % l["nom"]
 		_invite.visible = true
 		_info.visible = false
 
@@ -165,6 +170,10 @@ func _interagir() -> void:
 		$Musique.stop()
 		CharacterData.destination = l["nom"]
 		get_tree().change_scene_to_file("res://scenes/Village.tscn")
+	elif l.get("combat", false):
+		$Musique.stop()
+		CharacterData.destination = l["nom"]
+		get_tree().change_scene_to_file("res://scenes/Combat.tscn")
 	else:
 		$UI/PanneauInfo/NomLieu.text = l["nom"]
 		$UI/PanneauInfo/Desc.text = l["desc"]

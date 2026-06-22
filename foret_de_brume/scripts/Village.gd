@@ -77,7 +77,22 @@ func _ajouter(chemin: String, pos: Vector2, echelle := 1.0, off_y := 0.0) -> Spr
 	return s
 
 
+func _route(pos: Vector2, taille: Vector2) -> void:
+	var s := Sprite2D.new()
+	s.texture = load("res://assets/terrain/ground/trail.png")
+	s.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	s.region_enabled = true
+	s.region_rect = Rect2(Vector2.ZERO, taille)
+	s.position = pos
+	s.z_index = -1
+	s.modulate = Color(0.92, 0.86, 0.74, 1)
+	$Monde.add_child(s)
+
+
 func _construire_village() -> void:
+	# Routes (sous les personnages)
+	_route(Vector2(576, 420), Vector2(150, 420))   # axe vertical
+	_route(Vector2(530, 300), Vector2(720, 130))   # axe horizontal vers les maisons
 	for v in ARBRES:
 		_ajouter("res://assets/terrain/trees/Tree1.png", v, 1.0)
 	for v in ROCHERS:
