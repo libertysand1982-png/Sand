@@ -2,30 +2,25 @@ extends Node2D
 ## Carte du monde parcourable : le heros (chevalier) se balade au clavier,
 ## la camera le suit, et la touche E pres d'un village permet d'y entrer.
 
-const WORLD := Vector2(2000, 1300)
+const WORLD := Vector2(1736, 2320)
 const VITESSE := 240.0
 const RAYON := 130.0
 
-const TREES := ["Tree1", "Tree2", "Tree3", "Fruit_tree1", "Flower_tree1", "Moss_tree1", "Autumn_tree1"]
-const ROCKS := ["Rock1_grass_shadow1", "Rock2_grass_shadow1", "Rock4_grass_shadow2",
-	"Rock5_grass_shadow1", "Rock6_grass_shadow3"]
-const CHAMPI := ["Black_mushrooms1_grass_shadow", "Orange_mushrooms1_grass_shadow"]
-
 # Lieux : nom, fichier, position monde, echelle, village, description.
 const LIEUX := [
-	{"nom": "Bourg de Boisclair", "f": "Yurt1_grass_shadow", "p": Vector2(660, 540), "e": 1.5, "village": true,
+	{"nom": "Bourg de Boisclair", "f": "Yurt1_grass_shadow", "p": Vector2(800, 1024), "e": 1.4, "village": true,
 		"desc": "Le plus grand village de la contree. Marche, taverne et forge t'y attendent."},
-	{"nom": "Hameau de Valombre", "f": "Yurt2_grass_shadow", "p": Vector2(1320, 860), "e": 1.2, "village": true,
-		"desc": "Un paisible hameau, repute pour ses pecheurs et ses conteurs."},
-	{"nom": "Camp des Errants", "f": "Yurt1_grass_shadow", "p": Vector2(1620, 360), "e": 1.1, "village": true,
-		"desc": "Un campement de nomades dresse a l'oree de la foret. On y troque de tout."},
-	{"nom": "Caverne d'Ombre", "f": "Cave_entrance1_grass_shadow", "p": Vector2(1500, 230), "e": 1.3, "village": false,
-		"desc": "Une bouche sombre creusee dans la roche. Un donjon dont nul n'est ressorti indemne."},
-	{"nom": "Pyramide Engloutie", "f": "Stone_pyramid1_grass_shadow", "p": Vector2(1040, 300), "e": 3.0, "village": false,
-		"desc": "Un monument ancien aux glyphes oublies, garde par d'antiques sortileges."},
-	{"nom": "Sanctuaire de Pierre", "f": "Rock_statue_mother_grass_shadow", "p": Vector2(360, 920), "e": 0.85, "village": false,
-		"desc": "Une statue maternelle erodee par les ages. On dit qu'elle exauce les voeux sinceres."},
-	{"nom": "Cimetiere du Dragon", "f": "Dragon_bones_full_grass_shadow", "p": Vector2(1240, 580), "e": 0.95, "village": false,
+	{"nom": "Hameau de Valombre", "f": "Yurt2_grass_shadow", "p": Vector2(400, 1360), "e": 1.2, "village": true,
+		"desc": "Un paisible hameau de la cote ouest, repute pour ses pecheurs et ses conteurs."},
+	{"nom": "Camp des Errants", "f": "Yurt1_grass_shadow", "p": Vector2(832, 576), "e": 1.1, "village": true,
+		"desc": "Un campement de nomades dresse dans les vallees du nord. On y troque de tout."},
+	{"nom": "Caverne d'Ombre", "f": "Cave_entrance1_grass_shadow", "p": Vector2(1088, 352), "e": 1.3, "village": false,
+		"desc": "Une bouche sombre dans les montagnes enneigees. Un donjon dont nul n'est ressorti indemne."},
+	{"nom": "Pyramide Engloutie", "f": "Stone_pyramid1_grass_shadow", "p": Vector2(1056, 1920), "e": 3.0, "village": false,
+		"desc": "Un monument ancien des deserts du sud, garde par d'antiques sortileges."},
+	{"nom": "Sanctuaire de Pierre", "f": "Rock_statue_mother_grass_shadow", "p": Vector2(368, 896), "e": 0.85, "village": false,
+		"desc": "Une statue maternelle erodee par les ages, perdue dans les forets de l'ouest."},
+	{"nom": "Cimetiere du Dragon", "f": "Dragon_bones_full_grass_shadow", "p": Vector2(1216, 896), "e": 0.95, "village": false,
 		"desc": "Les ossements colossaux d'un dragon dechu. Un tresor doit sommeiller sous ses cotes."},
 ]
 
@@ -51,7 +46,6 @@ func _ready() -> void:
 
 	$Monde/Hero/Camera2D.make_current()
 	_remplir_panneau_heros()
-	_construire_decor()
 	_construire_lieux()
 	_lancer_musique()
 	$UI/BtnRetour.pressed.connect(_on_menu)
@@ -82,39 +76,6 @@ func _ajouter(chemin: String, pos: Vector2, echelle := 1.0) -> Sprite2D:
 	s.scale = Vector2(echelle, echelle)
 	$Monde.add_child(s)
 	return s
-
-
-func _trop_pres(pos: Vector2) -> bool:
-	if pos.distance_to(_hero.position) < 180.0:
-		return true
-	if Rect2(1440, 900, 600, 400).has_point(pos):  # le lac
-		return true
-	for l in LIEUX:
-		if pos.distance_to(l["p"]) < 150.0:
-			return true
-	return false
-
-
-func _construire_decor() -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 20260622
-	for i in 70:
-		var pos := Vector2(rng.randf_range(40, WORLD.x - 40), rng.randf_range(110, WORLD.y - 40))
-		if _trop_pres(pos):
-			continue
-		_ajouter("res://assets/terrain/trees/%s.png" % TREES[rng.randi() % TREES.size()],
-			pos, rng.randf_range(0.85, 1.25))
-	for i in 22:
-		var pos := Vector2(rng.randf_range(40, WORLD.x - 40), rng.randf_range(110, WORLD.y - 40))
-		if _trop_pres(pos):
-			continue
-		_ajouter("res://assets/terrain/rocks/%s.png" % ROCKS[rng.randi() % ROCKS.size()],
-			pos, rng.randf_range(0.8, 1.2))
-	for i in 14:
-		var pos := Vector2(rng.randf_range(40, WORLD.x - 40), rng.randf_range(110, WORLD.y - 40))
-		if _trop_pres(pos):
-			continue
-		_ajouter("res://assets/terrain/objects/%s.png" % CHAMPI[rng.randi() % CHAMPI.size()], pos)
 
 
 func _construire_lieux() -> void:

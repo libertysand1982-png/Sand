@@ -1,8 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://foretworldmap01"]
 
 [ext_resource type="Script" path="res://scripts/WorldMap.gd" id="1_map"]
-[ext_resource type="Texture2D" path="res://assets/terrain/ground/grass.png" id="2_grass"]
-[ext_resource type="Texture2D" path="res://assets/terrain/ground/water.png" id="3_water"]
+[ext_resource type="Texture2D" path="res://assets/bg/worldmap.jpg" id="2_grass"]
 [ext_resource type="Texture2D" path="res://assets/ui/panel.png" id="4_panel"]
 [ext_resource type="Texture2D" path="res://assets/ui/panelInset_brown.png" id="5_inset"]
 [ext_resource type="FontFile" path="res://assets/fonts/lilita_one_regular.ttf" id="6_font"]
@@ -11,27 +10,15 @@
 script = ExtResource("1_map")
 
 [node name="Sol" type="Sprite2D" parent="."]
-texture_repeat = 2
 centered = false
 texture = ExtResource("2_grass")
-region_enabled = true
-region_rect = Rect2(0, 0, 2000, 1300)
-modulate = Color(0.78, 0.82, 0.74, 1)
-
-[node name="Lac" type="Sprite2D" parent="."]
-texture_repeat = 2
-centered = false
-position = Vector2(1480, 940)
-texture = ExtResource("3_water")
-region_enabled = true
-region_rect = Rect2(0, 0, 520, 360)
-modulate = Color(0.85, 0.92, 1, 0.96)
+scale = Vector2(1.6, 1.6)
 
 [node name="Monde" type="Node2D" parent="."]
 y_sort_enabled = true
 
 [node name="Hero" type="Node2D" parent="Monde"]
-position = Vector2(1000, 720)
+position = Vector2(820, 1050)
 
 [node name="Sprite" type="Sprite2D" parent="Monde/Hero"]
 position = Vector2(0, -34)
@@ -43,8 +30,8 @@ position_smoothing_enabled = true
 position_smoothing_speed = 6.0
 limit_left = 0
 limit_top = 0
-limit_right = 2000
-limit_bottom = 1300
+limit_right = 1736
+limit_bottom = 2320
 
 [node name="UI" type="CanvasLayer" parent="."]
 
