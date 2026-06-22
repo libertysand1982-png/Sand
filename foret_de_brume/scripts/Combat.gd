@@ -36,12 +36,24 @@ var _occupe := false
 
 
 func _ready() -> void:
+	_lancer_musique()
 	_creer_hero()
 	_creer_enemis()
 	$Message.text = "Les profondeurs de %s grouillent d'ennemis !" % CharacterData.destination
 	_construire_actions()
 	await get_tree().create_timer(0.8).timeout
 	_tour_joueur()
+
+
+func _lancer_musique() -> void:
+	var mus := AudioStreamPlayer.new()
+	var flux := load("res://assets/audio/battle.mp3")
+	if flux is AudioStreamMP3:
+		flux.loop = true
+	mus.stream = flux
+	mus.volume_db = -16.0
+	add_child(mus)
+	mus.play()
 
 
 func _process(delta: float) -> void:
@@ -141,6 +153,7 @@ func _creer_enemis() -> void:
 func _construire_actions() -> void:
 	_bouton("Attaquer", _action_attaquer)
 	_bouton("Sort magique", _action_sort)
+	_bouton("Potion", _action_potion)
 	_bouton("Defendre", _action_defendre)
 	_bouton("Fuir", _action_fuir)
 	for i in _enemis.size():
@@ -203,6 +216,33 @@ func _action_sort() -> void:
 	await _jouer_tour(int_ + 4 + randi() % 6, true)
 
 
+func _action_potion() -> void:
+	if _occupe:
+		return
+	var idx := -1
+	for i in CharacterData.inventaire.size():
+		if CharacterData.inventaire[i].get("type", "") == "potion":
+			idx = i
+			break
+	if idx < 0:
+		$Message.text = "Aucune potion dans ton sac !"
+		return
+	_occupe = true
+	_activer_actions(false)
+	var pot: Dictionary = CharacterData.inventaire[idx]
+	var soin: int = pot.get("soin", 20)
+	CharacterData.inventaire.remove_at(idx)
+	_hero["pv"] = mini(_hero["pv_max"], _hero["pv"] + soin)
+	_maj_barre(_hero)
+	_soin_flottant(_hero["node"].position, soin)
+	Audio.jouer("coins")
+	$Message.text = "%s boit %s (+%d PV) !" % [_hero["nom"], pot["nom"], soin]
+	await get_tree().create_timer(0.8).timeout
+	_occupe = false
+	await _tour_ennemis()
+	_tour_joueur()
+
+
 func _action_defendre() -> void:
 	_activer_actions(false)
 	_hero["defense"] = true
@@ -263,7 +303,7 @@ func _jouer_anim(f: Dictionary, etat: String) -> void:
 
 func _attaque(att: Dictionary, cible: Dictionary, degats: int, magique: bool) -> void:
 	$Message.text = "%s %s %s !" % [att["nom"], "lance un sort sur" if magique else "attaque", cible["nom"]]
-	Audio.jouer("hit" if magique else "swing")
+	Audio.jouer("magic" if magique else "swing")
 
 	var base: Vector2 = att["node"].position
 	var avant: Vector2 = base + (cible["node"].position - base).normalized() * (40.0 if magique else 75.0)
@@ -326,6 +366,21 @@ func _degats_flottants(pos: Vector2, degats: int) -> void:
 	var tw := create_tween()
 	tw.tween_property(l, "position", l.position + Vector2(0, -55), 0.7)
 	tw.parallel().tween_property(l, "modulate:a", 0.0, 0.7)
+	tw.tween_callback(l.queue_free)
+
+
+func _soin_flottant(pos: Vector2, soin: int) -> void:
+	var l := Label.new()
+	l.text = "+%d" % soin
+	l.add_theme_font_size_override("font_size", 30)
+	l.add_theme_color_override("font_color", Color(0.4, 1, 0.4))
+	l.add_theme_color_override("font_outline_color", Color(0, 0.2, 0))
+	l.add_theme_constant_override("outline_size", 5)
+	l.position = pos + Vector2(-20, -160)
+	$Combattants.add_child(l)
+	var tw := create_tween()
+	tw.tween_property(l, "position", l.position + Vector2(0, -55), 0.8)
+	tw.parallel().tween_property(l, "modulate:a", 0.0, 0.8)
 	tw.tween_callback(l.queue_free)
 
 

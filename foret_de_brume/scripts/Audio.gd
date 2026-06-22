@@ -14,6 +14,7 @@ func _ready() -> void:
 	_sons["death"] = _make_player("res://assets/audio/death.ogg", -2.0)
 	_sons["coins"] = _make_player("res://assets/audio/coins.ogg", -3.0)
 	_sons["swing"] = _make_player("res://assets/audio/swing.ogg", -5.0)
+	_sons["magic"] = _make_player("res://assets/audio/magic.ogg", -4.0)
 	_sons["step"] = _make_player("res://assets/audio/step.ogg", -16.0)
 
 
