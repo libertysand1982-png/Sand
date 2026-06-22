@@ -2,15 +2,19 @@ extends Node
 ## Gestionnaire audio global (autoload).
 ## Centralise les effets sonores du jeu a partir des assets .ogg embarques.
 
-var _hover: AudioStreamPlayer
-var _click: AudioStreamPlayer
-var _open: AudioStreamPlayer
+var _sons := {}
 
 
 func _ready() -> void:
-	_hover = _make_player("res://assets/audio/rollover1.ogg", -6.0)
-	_click = _make_player("res://assets/audio/click1.ogg", -2.0)
-	_open = _make_player("res://assets/audio/bookOpen.ogg", -4.0)
+	_sons["hover"] = _make_player("res://assets/audio/rollover1.ogg", -6.0)
+	_sons["click"] = _make_player("res://assets/audio/click1.ogg", -2.0)
+	_sons["open"] = _make_player("res://assets/audio/bookOpen.ogg", -4.0)
+	_sons["hit"] = _make_player("res://assets/audio/hit.ogg", -3.0)
+	_sons["hurt"] = _make_player("res://assets/audio/hurt.ogg", -3.0)
+	_sons["death"] = _make_player("res://assets/audio/death.ogg", -2.0)
+	_sons["coins"] = _make_player("res://assets/audio/coins.ogg", -3.0)
+	_sons["swing"] = _make_player("res://assets/audio/swing.ogg", -5.0)
+	_sons["step"] = _make_player("res://assets/audio/step.ogg", -16.0)
 
 
 func _make_player(path: String, volume_db: float) -> AudioStreamPlayer:
@@ -22,13 +26,18 @@ func _make_player(path: String, volume_db: float) -> AudioStreamPlayer:
 	return p
 
 
+func jouer(nom: String) -> void:
+	if _sons.has(nom):
+		_sons[nom].play()
+
+
 func play_hover() -> void:
-	_hover.play()
+	jouer("hover")
 
 
 func play_click() -> void:
-	_click.play()
+	jouer("click")
 
 
 func play_open() -> void:
-	_open.play()
+	jouer("open")

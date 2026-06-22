@@ -6,24 +6,24 @@ extends Node2D
 const VITESSE := 200.0
 const RAYON := 95.0
 
-# Batiments (yourtes) et decor.
-const BATIMENTS := [
-	{"f": "Yurt1_grass_shadow", "p": Vector2(260, 180), "e": 1.3},
-	{"f": "Yurt2_grass_shadow", "p": Vector2(620, 150), "e": 1.2},
-	{"f": "Yurt1_grass_shadow", "p": Vector2(910, 190), "e": 1.0},
-]
-const ARBRES := [Vector2(70, 150), Vector2(1090, 130), Vector2(60, 430),
-	Vector2(1100, 440), Vector2(440, 110), Vector2(780, 120)]
-const ROCHERS := [Vector2(160, 360), Vector2(1000, 360), Vector2(540, 250)]
+# --- Parametres isometriques de la ferme ---
+const ISO_W := 64.0
+const ISO_H := 32.0
+const ORIGINE := Vector2(576, 150)
+const SCALE_ISO := 0.5
+
+# Grange et maison (batiments fermes : murs + toit, meme cellule).
+const GRANGE := ["woodWall_W", "woodWall_N", "woodWallDoorClosed_E", "roofSingleWall_E"]
+const MAISON := ["woodWall_W", "woodWallWindow_N", "woodWall_E", "roof_E"]
 
 # PNJ : nom, sprite, position, type, texte.
 const PNJS := [
-	{"nom": "Marchand Aldric", "sprite": "Male_1_Idle0", "p": Vector2(450, 330), "type": "vendeur",
-		"texte": "Bienvenue ! J'ai les meilleurs grimoires de la contree. Jette un oeil a mes etals."},
-	{"nom": "Aubergiste Brigitte", "sprite": "Male_3_Idle0", "p": Vector2(770, 360), "type": "aubergiste",
+	{"nom": "Marchand Aldric", "sprite": "Male_1_Idle0", "p": Vector2(420, 500), "type": "vendeur",
+		"texte": "Bienvenue a la ferme ! J'ai armes et armures de qualite. Jette un oeil a mes etals."},
+	{"nom": "Aubergiste Brigitte", "sprite": "Male_3_Idle0", "p": Vector2(720, 520), "type": "aubergiste",
 		"texte": "Une chambre pour la nuit, voyageur ? Repose-toi donc, l'aventure attendra bien."},
-	{"nom": "Garde Cedric", "sprite": "Male_5_Idle0", "p": Vector2(250, 410), "type": "quete",
-		"texte": "Des gobelins infestent la Caverne d'Ombre. Aiderais-tu notre village a s'en debarrasser ?"},
+	{"nom": "Fermier Cedric", "sprite": "Male_5_Idle0", "p": Vector2(230, 470), "type": "quete",
+		"texte": "Des gobelins infestent la Caverne d'Ombre et pietinent mes champs. Aiderais-tu un pauvre fermier ?"},
 ]
 
 # Catalogue de la boutique (equipement).
@@ -48,6 +48,7 @@ var _tex_walk: Texture2D
 var _marche := false
 var _frame_t := 0.0
 var _facing := 1
+var _pas_t := 0.0
 
 @onready var _hero: Node2D = $Monde/Hero
 @onready var _sprite: Sprite2D = $Monde/Hero/Sprite
@@ -82,28 +83,50 @@ func _ajouter(chemin: String, pos: Vector2, echelle := 1.0, off_y := 0.0) -> Spr
 	return s
 
 
-func _route(pos: Vector2, taille: Vector2) -> void:
+func iso(cell: Vector2) -> Vector2:
+	return ORIGINE + Vector2((cell.x - cell.y) * ISO_W, (cell.x + cell.y) * ISO_H)
+
+
+func _piece_iso(nom: String, cell: Vector2) -> void:
 	var s := Sprite2D.new()
-	s.texture = load("res://assets/terrain/ground/trail.png")
-	s.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-	s.region_enabled = true
-	s.region_rect = Rect2(Vector2.ZERO, taille)
-	s.position = pos
-	s.z_index = -1
-	s.modulate = Color(0.92, 0.86, 0.74, 1)
+	s.texture = load("res://assets/iso/%s.png" % nom)
+	s.scale = Vector2(SCALE_ISO, SCALE_ISO)
+	s.position = iso(cell)
 	$Monde.add_child(s)
 
 
+func _batiment_iso(recette: Array, cell: Vector2) -> void:
+	for p in recette:
+		_piece_iso(p, cell)
+
+
 func _construire_village() -> void:
-	# Routes (sous les personnages)
-	_route(Vector2(576, 420), Vector2(150, 420))   # axe vertical
-	_route(Vector2(530, 300), Vector2(720, 130))   # axe horizontal vers les maisons
-	for v in ARBRES:
-		_ajouter("res://assets/terrain/trees/Tree1.png", v, 1.0)
-	for v in ROCHERS:
-		_ajouter("res://assets/terrain/rocks/Rock1_grass_shadow1.png", v, 1.0)
-	for b in BATIMENTS:
-		_ajouter("res://assets/terrain/objects/%s.png" % b["f"], b["p"], b["e"])
+	# Sol isometrique : champ cultive au centre, terre autour.
+	var cells := []
+	for c in range(7):
+		for r in range(6):
+			cells.append(Vector2(c, r))
+	cells.sort_custom(func(a, b): return (a.x + a.y) < (b.x + b.y))
+	var champ := func(cell): return cell.x >= 2 and cell.x <= 5 and cell.y >= 2 and cell.y <= 4
+	for cell in cells:
+		_piece_iso("dirtFarmland_E" if champ.call(cell) else "dirt_E", cell)
+	# Rangees de mais sur le champ.
+	var field := []
+	for c in range(2, 6):
+		for r in range(2, 5):
+			field.append(Vector2(c, r))
+	field.sort_custom(func(a, b): return (a.x + a.y) < (b.x + b.y))
+	for cell in field:
+		_piece_iso("corn_E", cell)
+	# Clotures autour du champ.
+	for r in range(2, 5):
+		_piece_iso("fenceHigh_N", Vector2(1, r))
+	for c in range(2, 6):
+		_piece_iso("fenceLow_E", Vector2(c, 5))
+	# Batiments : grange et maison (en haut).
+	_batiment_iso(GRANGE, Vector2(0, 0))
+	_batiment_iso(MAISON, Vector2(3, 0))
+	_batiment_iso(GRANGE, Vector2(6, 1))
 
 
 func _construire_pnjs() -> void:
@@ -137,6 +160,10 @@ func _process(delta: float) -> void:
 				_facing = -1
 			elif dir.x > 0.1:
 				_facing = 1
+			_pas_t += delta
+			if _pas_t >= 0.34:
+				_pas_t = 0.0
+				Audio.jouer("step")
 		elif _marche:
 			_changer_anim(false)
 		_maj_proximite()

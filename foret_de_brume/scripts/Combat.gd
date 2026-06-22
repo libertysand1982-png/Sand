@@ -212,6 +212,7 @@ func _tour_ennemis() -> void:
 
 func _attaque(att: Dictionary, cible: Dictionary, degats: int, est_hero: bool) -> void:
 	$Message.text = "%s attaque %s !" % [att["nom"], cible["nom"]]
+	Audio.jouer("swing")
 	if est_hero:
 		att["sprite"].texture = att["attack"]
 		att["sprite"].hframes = 5
@@ -245,7 +246,7 @@ func _appliquer_degats(cible: Dictionary, degats: int) -> void:
 	cible["pv"] = maxi(0, cible["pv"] - degats)
 	_maj_barre(cible)
 	_degats_flottants(cible["node"].position, degats)
-	Audio.play_click()
+	Audio.jouer("hurt" if cible == _hero else "hit")
 
 	var flash := create_tween()
 	cible["sprite"].modulate = Color(2, 0.6, 0.6)
@@ -253,6 +254,7 @@ func _appliquer_degats(cible: Dictionary, degats: int) -> void:
 
 	if cible["pv"] <= 0 and not cible["mort"]:
 		cible["mort"] = true
+		Audio.jouer("death")
 		var mort := create_tween()
 		mort.tween_property(cible["sprite"], "modulate", Color(0.3, 0.3, 0.35, 0.4), 0.4)
 		$Message.text = "%s est vaincu !" % cible["nom"]
@@ -299,6 +301,7 @@ func _fin(victoire: bool) -> void:
 	if victoire:
 		var butin := 40
 		CharacterData.gold += butin
+		Audio.jouer("coins")
 		$Message.text = "Victoire ! Tu empoches %d pieces d'or." % butin
 	else:
 		$Message.text = "Tu es vaincu... tu bats en retraite."
