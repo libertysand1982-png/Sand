@@ -194,7 +194,7 @@ func _tour_joueur() -> void:
 
 
 func _action_attaquer() -> void:
-	var deg := _hero["force"] + CharacterData.bonus_atk() + randi() % 5
+	var deg: int = _hero["force"] + CharacterData.bonus_atk() + randi() % 5
 	await _jouer_tour(deg, false)
 
 
