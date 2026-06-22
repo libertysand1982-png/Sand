@@ -114,7 +114,7 @@ func _construire_lignes_stats() -> void:
 		nom.text = ABBR[s]
 		nom.custom_minimum_size = Vector2(130, 0)
 		nom.add_theme_font_size_override("font_size", 18)
-		nom.add_theme_color_override("font_color", Color(0.9, 0.86, 0.72))
+		nom.add_theme_color_override("font_color", Color(0.32, 0.22, 0.12))
 		nom.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		ligne.add_child(nom)
 
@@ -125,7 +125,7 @@ func _construire_lignes_stats() -> void:
 		var valeur := Label.new()
 		valeur.custom_minimum_size = Vector2(44, 0)
 		valeur.add_theme_font_size_override("font_size", 20)
-		valeur.add_theme_color_override("font_color", Color(1, 1, 1))
+		valeur.add_theme_color_override("font_color", Color(0.18, 0.11, 0.05))
 		valeur.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		valeur.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		ligne.add_child(valeur)
@@ -138,7 +138,7 @@ func _construire_lignes_stats() -> void:
 		var bonus := Label.new()
 		bonus.custom_minimum_size = Vector2(70, 0)
 		bonus.add_theme_font_size_override("font_size", 15)
-		bonus.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
+		bonus.add_theme_color_override("font_color", Color(0.13, 0.42, 0.13))
 		bonus.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		ligne.add_child(bonus)
 		_labels_bonus[s] = bonus
@@ -196,7 +196,7 @@ func _maj_stats() -> void:
 	var reste := _points_restants()
 	_label_points.text = "Points : %d" % reste
 	_label_points.add_theme_color_override(
-		"font_color", Color(0.7, 0.95, 0.7) if reste > 0 else Color(0.95, 0.85, 0.5))
+		"font_color", Color(0.13, 0.42, 0.13) if reste > 0 else Color(0.6, 0.4, 0.05))
 
 
 # --- Portrait / chevalier / race / classe ----------------------------------

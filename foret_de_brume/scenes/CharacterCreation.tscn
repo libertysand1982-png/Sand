@@ -102,7 +102,7 @@ offset_left = 64.0
 offset_top = 262.0
 offset_right = 296.0
 offset_bottom = 286.0
-theme_override_colors/font_color = Color(0.82, 0.8, 0.74, 1)
+theme_override_colors/font_color = Color(0.35, 0.26, 0.16, 1)
 theme_override_font_sizes/font_size = 15
 text = "Portrait 1 / 50"
 horizontal_alignment = 1
@@ -122,7 +122,7 @@ offset_left = 64.0
 offset_top = 344.0
 offset_right = 296.0
 offset_bottom = 366.0
-theme_override_colors/font_color = Color(0.82, 0.8, 0.74, 1)
+theme_override_colors/font_color = Color(0.35, 0.26, 0.16, 1)
 theme_override_font_sizes/font_size = 15
 text = "Apparence"
 horizontal_alignment = 1
@@ -183,7 +183,7 @@ theme_override_constants/separation = 10
 [node name="Etiquette" type="Label" parent="PanneauDroit/Marges/Colonne/LigneRace"]
 custom_minimum_size = Vector2(110, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.95, 0.88, 0.6, 1)
+theme_override_colors/font_color = Color(0.5, 0.32, 0.08, 1)
 theme_override_font_sizes/font_size = 20
 text = "Race"
 vertical_alignment = 1
@@ -199,7 +199,7 @@ stretch_mode = 5
 [node name="Valeur" type="Label" parent="PanneauDroit/Marges/Colonne/LigneRace"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.98, 0.96, 0.9, 1)
+theme_override_colors/font_color = Color(0.22, 0.14, 0.06, 1)
 theme_override_font_sizes/font_size = 20
 text = "Humain"
 horizontal_alignment = 1
@@ -220,7 +220,7 @@ theme_override_constants/separation = 10
 [node name="Etiquette" type="Label" parent="PanneauDroit/Marges/Colonne/LigneClasse"]
 custom_minimum_size = Vector2(110, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.95, 0.88, 0.6, 1)
+theme_override_colors/font_color = Color(0.5, 0.32, 0.08, 1)
 theme_override_font_sizes/font_size = 20
 text = "Classe"
 vertical_alignment = 1
@@ -236,7 +236,7 @@ stretch_mode = 5
 [node name="Valeur" type="Label" parent="PanneauDroit/Marges/Colonne/LigneClasse"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.98, 0.96, 0.9, 1)
+theme_override_colors/font_color = Color(0.22, 0.14, 0.06, 1)
 theme_override_font_sizes/font_size = 20
 text = "Guerrier"
 horizontal_alignment = 1
@@ -253,7 +253,7 @@ stretch_mode = 5
 [node name="DescriptionClasse" type="Label" parent="PanneauDroit/Marges/Colonne"]
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.84, 0.84, 0.82, 1)
+theme_override_colors/font_color = Color(0.32, 0.22, 0.12, 1)
 theme_override_font_sizes/font_size = 15
 text = "Description"
 autowrap_mode = 3
@@ -270,13 +270,13 @@ layout_mode = 2
 [node name="Titre" type="Label" parent="PanneauDroit/Marges/Colonne/EnteteStats"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.95, 0.88, 0.6, 1)
+theme_override_colors/font_color = Color(0.5, 0.32, 0.08, 1)
 theme_override_font_sizes/font_size = 19
 text = "Caracteristiques"
 
 [node name="Points" type="Label" parent="PanneauDroit/Marges/Colonne/EnteteStats"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.95, 0.7, 1)
+theme_override_colors/font_color = Color(0.15, 0.45, 0.15, 1)
 theme_override_font_sizes/font_size = 18
 text = "Points : 27"
 
@@ -310,7 +310,7 @@ offset_left = -300.0
 offset_top = -30.0
 offset_right = 300.0
 offset_bottom = 30.0
-theme_override_colors/font_color = Color(0.7, 0.95, 0.7, 1)
+theme_override_colors/font_color = Color(0.15, 0.45, 0.15, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.1, 0.05, 1)
 theme_override_constants/outline_size = 8
 theme_override_fonts/font = ExtResource("7_font")
