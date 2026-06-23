@@ -121,6 +121,7 @@ func _ouvrir_dialogue(idx: int) -> void:
 		c.queue_free()
 	match pnj["type"]:
 		"auberge":
+			_bouton_action("Contrats", _ouvrir_contrats)
 			_bouton_action("Se reposer (10 or)", _se_reposer)
 			_bouton_action("Au revoir", _fermer_tout)
 		"forge":
@@ -161,6 +162,92 @@ func _ouvrir_armurerie() -> void:
 
 func _ouvrir_potions() -> void:
 	_ouvrir_boutique("Echoppe de Yara", POTIONS)
+
+
+# --- Contrats (quetes) -----------------------------------------------------
+
+func _ouvrir_contrats() -> void:
+	Audio.play_click()
+	$Dialogue.visible = false
+	$Boutique/TitreBoutique.text = "Contrats du village"
+	$Boutique/OrBoutique.text = "Quetes actives : %d" % CharacterData.quetes_actives.size()
+	for c in $Boutique/Liste.get_children():
+		c.queue_free()
+	for q in CharacterData.quetes_actives:
+		_ligne_quete_active(q)
+	for id in CharacterData.quetes_disponibles("auberge"):
+		_ligne_quete_dispo(id)
+	if $Boutique/Liste.get_child_count() == 0:
+		var vide := Label.new()
+		vide.text = "Aucun contrat disponible pour l'instant."
+		vide.add_theme_color_override("font_color", Color(0.3, 0.2, 0.1))
+		vide.add_theme_font_size_override("font_size", 16)
+		$Boutique/Liste.add_child(vide)
+	$Boutique.visible = true
+
+
+func _ligne_quete_dispo(id: String) -> void:
+	var q: Dictionary = CharacterData.CATALOGUE_QUETES[id]
+	var ligne := HBoxContainer.new()
+	ligne.add_theme_constant_override("separation", 10)
+	var txt := Label.new()
+	txt.text = "%s - %s" % [q["nom"], q["desc"]]
+	txt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	txt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	txt.add_theme_color_override("font_color", Color(0.25, 0.16, 0.08))
+	txt.add_theme_font_size_override("font_size", 14)
+	ligne.add_child(txt)
+	var b := Button.new()
+	b.text = "Accepter"
+	b.custom_minimum_size = Vector2(110, 36)
+	b.pressed.connect(_accepter_q.bind(id))
+	b.mouse_entered.connect(Audio.play_hover)
+	ligne.add_child(b)
+	$Boutique/Liste.add_child(ligne)
+
+
+func _ligne_quete_active(q: Dictionary) -> void:
+	var prete: bool = CharacterData.quete_prete(q)
+	var ligne := HBoxContainer.new()
+	ligne.add_theme_constant_override("separation", 10)
+	var objs := ""
+	for o in q["objectifs"]:
+		objs += "  [" + CharacterData.progression_objectif(o) + "]"
+	var txt := Label.new()
+	txt.text = "%s%s" % [q["nom"], objs]
+	txt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	txt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	txt.add_theme_color_override("font_color", Color(0.2, 0.5, 0.2) if prete else Color(0.4, 0.3, 0.18))
+	txt.add_theme_font_size_override("font_size", 14)
+	ligne.add_child(txt)
+	if prete:
+		var b := Button.new()
+		b.text = "Rendre"
+		b.custom_minimum_size = Vector2(110, 36)
+		b.pressed.connect(_rendre_q.bind(q["id"]))
+		b.mouse_entered.connect(Audio.play_hover)
+		ligne.add_child(b)
+	else:
+		var l := Label.new()
+		l.text = "en cours"
+		l.custom_minimum_size = Vector2(110, 0)
+		l.add_theme_color_override("font_color", Color(0.5, 0.4, 0.2))
+		l.add_theme_font_size_override("font_size", 13)
+		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		ligne.add_child(l)
+	$Boutique/Liste.add_child(ligne)
+
+
+func _accepter_q(id: String) -> void:
+	Audio.play_click()
+	CharacterData.accepter_quete(id)
+	_ouvrir_contrats()
+
+
+func _rendre_q(id: String) -> void:
+	if CharacterData.terminer_quete(id):
+		Audio.jouer("coins")
+	_ouvrir_contrats()
 
 
 func _ouvrir_boutique(titre: String, catalogue: Array) -> void:
@@ -253,7 +340,7 @@ func _remplir_grille() -> void:
 		b.custom_minimum_size = Vector2(88, 88)
 		var info: String = obj["nom"]
 		if obj.get("type", "") == "potion":
-			info += "  (Soin +%d) — s'utilise en combat" % obj.get("soin", 0)
+			info += "  (Soin +%d) - s'utilise en combat" % obj.get("soin", 0)
 		elif obj.get("slot", "") != "":
 			info += "  (Atq +%d / Def +%d)\nCliquer pour equiper" % [obj.get("atk", 0), obj.get("def", 0)]
 		b.tooltip_text = info
@@ -268,7 +355,7 @@ func _remplir_equipement() -> void:
 	for slot in ["Arme", "Armure", "Casque", "Accessoire"]:
 		var l := Label.new()
 		var obj = CharacterData.equipement[slot]
-		l.text = "%s : %s" % [slot, obj["nom"] if obj else "—"]
+		l.text = "%s : %s" % [slot, obj["nom"] if obj else "-"]
 		l.add_theme_color_override("font_color", Color(0.3, 0.2, 0.1))
 		l.add_theme_font_size_override("font_size", 15)
 		$Inventaire/Equip.add_child(l)

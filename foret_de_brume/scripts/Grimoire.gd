@@ -150,19 +150,26 @@ func _onglet_competences() -> void:
 
 func _onglet_quetes() -> void:
 	_ajouter(_label("Quetes en cours", 19, OR))
-	if CharacterData.quetes.is_empty():
+	if CharacterData.quetes_actives.is_empty():
 		_ajouter(_label("    Aucune quete en cours."))
 	else:
-		for q in CharacterData.quetes:
-			_ajouter(_label("  - %s" % q["nom"], 17))
-			_ajouter(_label("      " + q.get("texte", ""), 14))
+		for q in CharacterData.quetes_actives:
+			var prete: bool = CharacterData.quete_prete(q)
+			_ajouter(_label("  - %s%s" % [q["nom"], "  (a rendre !)" if prete else ""], 17,
+				Color(0.2, 0.5, 0.2) if prete else ENCRE))
+			_ajouter(_label("      " + q["desc"], 13))
+			for o in q["objectifs"]:
+				_ajouter(_label("        - " + CharacterData.progression_objectif(o), 13))
 	_ajouter(_label("", 8))
 	_ajouter(_label("Quetes accomplies", 19, OR))
 	if CharacterData.quetes_reussies.is_empty():
 		_ajouter(_label("    Aucune pour l'instant."))
 	else:
-		for q in CharacterData.quetes_reussies:
-			_ajouter(_label("  (v) %s" % str(q), 16, Color(0.2, 0.5, 0.2)))
+		for id in CharacterData.quetes_reussies:
+			var titre: String = str(id)
+			if CharacterData.CATALOGUE_QUETES.has(id):
+				titre = CharacterData.CATALOGUE_QUETES[id]["nom"]
+			_ajouter(_label("  (v) %s" % titre, 16, Color(0.2, 0.5, 0.2)))
 
 
 func _onglet_lieux() -> void:

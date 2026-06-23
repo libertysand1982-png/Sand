@@ -20,7 +20,12 @@ func _ready() -> void:
 		bouton.focus_entered.connect(Audio.play_hover)
 
 	_bouton_commencer.pressed.connect(_on_commencer)
-	_bouton_options.pressed.connect(_on_options)
+	if CharacterData.a_sauvegarde():
+		_bouton_options.text = "Continuer"
+		_bouton_options.pressed.connect(_on_continuer)
+		_bouton_commencer.text = "Nouvelle partie"
+	else:
+		_bouton_options.pressed.connect(_on_options)
 	_bouton_quitter.pressed.connect(_on_quitter)
 
 	_bouton_commencer.grab_focus()
@@ -62,6 +67,13 @@ func _on_commencer() -> void:
 	Audio.play_click()
 	await get_tree().create_timer(0.12).timeout
 	get_tree().change_scene_to_file("res://scenes/CharacterCreation.tscn")
+
+
+func _on_continuer() -> void:
+	Audio.play_click()
+	if CharacterData.charger():
+		await get_tree().create_timer(0.12).timeout
+		get_tree().change_scene_to_file("res://scenes/WorldMap.tscn")
 
 
 func _on_options() -> void:

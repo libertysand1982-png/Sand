@@ -405,6 +405,8 @@ func _appliquer_degats(cible: Dictionary, degats: int) -> void:
 	if cible["pv"] <= 0 and not cible["mort"]:
 		cible["mort"] = true
 		cible["node"].scale = Vector2.ONE
+		if cible != _hero:
+			CharacterData.progresser("tuer", cible["nom"], 1)
 		Audio.jouer("death")
 		await _jouer_anim(cible, "dead")
 		cible["etat"] = "mort"
@@ -494,6 +496,7 @@ func _fin(victoire: bool) -> void:
 			msg += " + %s" % objet["nom"]
 		Audio.jouer("coins")
 		$Message.text = msg
+		CharacterData.sauvegarder()
 	else:
 		$Message.text = "Tu es vaincu... tu bats en retraite."
 	await get_tree().create_timer(2.4).timeout

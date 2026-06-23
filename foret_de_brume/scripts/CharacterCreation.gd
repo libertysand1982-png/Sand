@@ -272,5 +272,6 @@ func _on_valider() -> void:
 		CharacterData.nom, RACES[_race_idx]["nom"], CLASSES[_classe_idx]["nom"]]
 	$BtnValider.disabled = true
 	print("Personnage cree : ", CharacterData.resume(), " | stats=", CharacterData.stats)
+	CharacterData.sauvegarder()
 	await get_tree().create_timer(1.0).timeout
 	get_tree().change_scene_to_file("res://scenes/WorldMap.tscn")
