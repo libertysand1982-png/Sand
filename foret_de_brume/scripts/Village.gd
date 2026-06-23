@@ -50,13 +50,14 @@ func _ready() -> void:
 # --- Portraits des PNJ -----------------------------------------------------
 
 func _construire_pnjs() -> void:
-	var largeur := 220.0
-	var ecart := 60.0
+	var largeur := 150.0
+	var hauteur := 172.0
+	var ecart := 90.0
 	var total := PNJS.size() * largeur + (PNJS.size() - 1) * ecart
 	var x0 := (1152.0 - total) / 2.0
 	for i in PNJS.size():
 		var pnj: Dictionary = PNJS[i]
-		var pos := Vector2(x0 + i * (largeur + ecart), 170)
+		var pos := Vector2(x0 + i * (largeur + ecart), 210)
 
 		var cadre := NinePatchRect.new()
 		cadre.texture = INSET
@@ -65,14 +66,14 @@ func _construire_pnjs() -> void:
 		cadre.patch_margin_right = 16
 		cadre.patch_margin_bottom = 16
 		cadre.position = pos
-		cadre.size = Vector2(largeur, 240)
-		cadre.pivot_offset = Vector2(largeur, 240) * 0.5
+		cadre.size = Vector2(largeur, hauteur)
+		cadre.pivot_offset = Vector2(largeur, hauteur) * 0.5
 		$NPCs.add_child(cadre)
 
 		var portrait := TextureRect.new()
 		portrait.texture = load("res://assets/portraits/%d.png" % pnj["portrait"])
-		portrait.position = Vector2(18, 18)
-		portrait.size = Vector2(largeur - 36, 204)
+		portrait.position = Vector2(14, 14)
+		portrait.size = Vector2(largeur - 28, hauteur - 28)
 		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -80,9 +81,9 @@ func _construire_pnjs() -> void:
 
 		var nom := Label.new()
 		nom.text = pnj["nom"]
-		nom.position = Vector2(pos.x - 10, pos.y + 248)
-		nom.size = Vector2(largeur + 20, 26)
-		nom.add_theme_font_size_override("font_size", 17)
+		nom.position = Vector2(pos.x - 30, pos.y + hauteur + 6)
+		nom.size = Vector2(largeur + 60, 24)
+		nom.add_theme_font_size_override("font_size", 16)
 		nom.add_theme_color_override("font_color", Color(1, 0.97, 0.85))
 		nom.add_theme_color_override("font_outline_color", Color(0.1, 0.07, 0.03))
 		nom.add_theme_constant_override("outline_size", 5)
@@ -93,7 +94,7 @@ func _construire_pnjs() -> void:
 		var bouton := Button.new()
 		bouton.flat = true
 		bouton.position = pos
-		bouton.size = Vector2(largeur, 240)
+		bouton.size = Vector2(largeur, hauteur)
 		bouton.pressed.connect(_ouvrir_dialogue.bind(i))
 		bouton.mouse_entered.connect(_survol.bind(cadre, true))
 		bouton.mouse_exited.connect(_survol.bind(cadre, false))

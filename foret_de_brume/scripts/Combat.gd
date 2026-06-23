@@ -9,13 +9,15 @@ const BESTIAIRE := {
 	"orc_berserk": {"nom": "Orc Berserker", "base": "Orc_Berserk", "pv": 34, "force": 10, "magie": false},
 	"orc_shaman": {"nom": "Chaman Orc", "base": "Orc_Shaman", "pv": 20, "force": 7, "magie": true},
 	"skeleton": {"nom": "Squelette", "base": "Skeleton", "pv": 18, "force": 6, "magie": false},
+	"goblin": {"nom": "Gobelin", "base": "Goblin", "pv": 16, "force": 6, "magie": false},
+	"mushroom": {"nom": "Champignon Geant", "base": "Mushroom", "pv": 22, "force": 7, "magie": false},
 }
 
 # Rencontres par donjon.
 const RENCONTRES := {
-	"Caverne d'Ombre": ["skeleton", "skeleton", "orc_warrior"],
+	"Caverne d'Ombre": ["goblin", "goblin", "skeleton"],
 	"Pyramide Engloutie": ["orc_warrior", "orc_shaman"],
-	"Cimetiere du Dragon": ["orc_berserk", "skeleton", "orc_warrior"],
+	"Cimetiere du Dragon": ["orc_berserk", "skeleton", "mushroom"],
 }
 const POS_ENNEMIS := [Vector2(760, 360), Vector2(950, 420), Vector2(870, 280)]
 
@@ -28,6 +30,17 @@ const BUTIN := [
 ]
 
 const HAUTEUR_CIBLE := 170.0
+
+# Barre de competences (icone dans assets/equip, cout en mana).
+const SKILLS := [
+	{"nom": "Frappe", "icone": "katana", "kind": "melee", "mult": 1.0, "cout": 0},
+	{"nom": "Taillade", "icone": "scimitar", "kind": "melee", "mult": 1.7, "cout": 2},
+	{"nom": "Boule de feu", "icone": "spell_staff", "kind": "magic", "cout": 4},
+	{"nom": "Soin", "icone": "heal_medallion", "kind": "heal", "soin": 25, "cout": 4},
+	{"nom": "Garde", "icone": "shield", "kind": "defense", "cout": 0},
+	{"nom": "Potion", "icone": "heal_medallion", "kind": "potion", "cout": 0},
+	{"nom": "Fuir", "icone": "iron-helmet", "kind": "fuir", "cout": 0},
+]
 
 var _hero := {}
 var _enemis := []
@@ -131,7 +144,22 @@ func _creer_hero() -> void:
 	}
 	var con: int = CharacterData.stats.get("Constitution", 10)
 	var force: int = CharacterData.stats.get("Force", 10)
+	var intel: int = CharacterData.stats.get("Intelligence", 10)
 	_hero = _creer_combattant(CharacterData.nom, texs, Vector2(290, 400), false, 26 + con * 2, force)
+	_hero["mana_max"] = 6 + intel
+	_hero["mana"] = _hero["mana_max"]
+	# Barre de mana (bleue) sous la barre de PV.
+	var mfond := ColorRect.new()
+	mfond.color = Color(0.05, 0.05, 0.15, 0.9)
+	mfond.size = Vector2(100, 8)
+	mfond.position = Vector2(-50, -104)
+	_hero["node"].add_child(mfond)
+	var mfill := ColorRect.new()
+	mfill.color = Color(0.3, 0.5, 1.0)
+	mfill.size = Vector2(100, 8)
+	mfill.position = Vector2(-50, -104)
+	_hero["node"].add_child(mfill)
+	_hero["mana_fill"] = mfill
 
 
 func _creer_enemis() -> void:
@@ -151,29 +179,41 @@ func _creer_enemis() -> void:
 # --- Actions ---------------------------------------------------------------
 
 func _construire_actions() -> void:
-	_bouton("Attaquer", _action_attaquer)
-	_bouton("Sort magique", _action_sort)
-	_bouton("Potion", _action_potion)
-	_bouton("Defendre", _action_defendre)
-	_bouton("Fuir", _action_fuir)
+	for s in SKILLS:
+		_skill_bouton(s)
 	for i in _enemis.size():
 		var b := Button.new()
 		b.flat = true
 		b.focus_mode = Control.FOCUS_NONE
-		b.size = Vector2(130, 180)
-		b.position = POS_ENNEMIS[i] + Vector2(-65, -150)
+		b.size = Vector2(130, 200)
+		b.position = POS_ENNEMIS[i] + Vector2(-65, -160)
 		b.pressed.connect(_choisir_cible.bind(i))
 		$Cibles.add_child(b)
 
 
-func _bouton(texte: String, cible: Callable) -> void:
-	var b := Button.new()
-	b.text = texte
-	b.custom_minimum_size = Vector2(0, 46)
-	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.pressed.connect(cible)
+func _skill_bouton(skill: Dictionary) -> void:
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.set_meta("skill", skill)
+	var b := TextureButton.new()
+	b.texture_normal = load("res://assets/equip/%s.png" % skill["icone"])
+	b.ignore_texture_size = true
+	b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+	b.custom_minimum_size = Vector2(54, 54)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.pressed.connect(_executer.bind(skill))
 	b.mouse_entered.connect(Audio.play_hover)
-	$Panneau/Actions.add_child(b)
+	col.add_child(b)
+	var l := Label.new()
+	var txt: String = skill["nom"]
+	if skill.get("cout", 0) > 0:
+		txt += " (%d)" % skill["cout"]
+	l.text = txt
+	l.add_theme_font_size_override("font_size", 12)
+	l.add_theme_color_override("font_color", Color(0.96, 0.92, 0.78))
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(l)
+	$Panneau/Actions.add_child(col)
 
 
 func _choisir_cible(i: int) -> void:
@@ -191,8 +231,13 @@ func _maj_marqueur() -> void:
 
 
 func _activer_actions(actif: bool) -> void:
-	for b in $Panneau/Actions.get_children():
-		b.disabled = not actif
+	for col in $Panneau/Actions.get_children():
+		var s: Dictionary = col.get_meta("skill")
+		(col.get_child(0) as BaseButton).disabled = (not actif) or (_hero["mana"] < int(s.get("cout", 0)))
+
+
+func _maj_mana() -> void:
+	_hero["mana_fill"].size.x = 100.0 * (float(_hero["mana"]) / float(_hero["mana_max"]))
 
 
 func _tour_joueur() -> void:
@@ -202,33 +247,82 @@ func _tour_joueur() -> void:
 		return _fin(true)
 	_cible = _premier_vivant()
 	_maj_marqueur()
-	$Message.text = "%s, a toi de jouer !" % _hero["nom"]
+	$Message.text = "%s — PV %d/%d   Mana %d/%d" % [_hero["nom"], _hero["pv"], _hero["pv_max"], _hero["mana"], _hero["mana_max"]]
 	_activer_actions(true)
 
 
-func _action_attaquer() -> void:
-	var deg: int = _hero["force"] + CharacterData.bonus_atk() + randi() % 5
-	await _jouer_tour(deg, false)
-
-
-func _action_sort() -> void:
-	var int_: int = CharacterData.stats.get("Intelligence", 10)
-	await _jouer_tour(int_ + 4 + randi() % 6, true)
-
-
-func _action_potion() -> void:
+func _executer(skill: Dictionary) -> void:
 	if _occupe:
 		return
+	var cout: int = int(skill.get("cout", 0))
+	if _hero["mana"] < cout:
+		$Message.text = "Pas assez de mana !"
+		return
+	match skill["kind"]:
+		"fuir":
+			Audio.play_click()
+			get_tree().change_scene_to_file("res://scenes/WorldMap.tscn")
+			return
+		"potion":
+			if not _a_une_potion():
+				$Message.text = "Aucune potion dans ton sac !"
+				return
+
+	_occupe = true
+	_activer_actions(false)
+	_hero["mana"] -= cout
+	_maj_mana()
+
+	match skill["kind"]:
+		"melee":
+			if _enemis[_cible]["mort"]:
+				_cible = _premier_vivant()
+			var deg: int = int((_hero["force"] + CharacterData.bonus_atk() + randi() % 5) * float(skill.get("mult", 1.0)))
+			await _attaque(_hero, _enemis[_cible], deg, false)
+		"magic":
+			if _enemis[_cible]["mort"]:
+				_cible = _premier_vivant()
+			var dm: int = CharacterData.stats.get("Intelligence", 10) + 5 + randi() % 6
+			await _attaque(_hero, _enemis[_cible], dm, true)
+		"heal":
+			var soin: int = int(skill.get("soin", 25))
+			_hero["pv"] = mini(_hero["pv_max"], _hero["pv"] + soin)
+			_maj_barre(_hero)
+			_soin_flottant(_hero["node"].position, soin)
+			Audio.jouer("magic")
+			$Message.text = "%s invoque un soin (+%d PV)." % [_hero["nom"], soin]
+			await get_tree().create_timer(0.7).timeout
+		"defense":
+			_hero["defense"] = true
+			$Message.text = "%s leve sa garde." % _hero["nom"]
+			await get_tree().create_timer(0.5).timeout
+		"potion":
+			await _utiliser_potion()
+
+	_occupe = false
+	if _tous_morts():
+		return _fin(true)
+	await _tour_ennemis()
+	_hero["mana"] = mini(_hero["mana_max"], _hero["mana"] + 1)
+	_maj_mana()
+	_tour_joueur()
+
+
+func _a_une_potion() -> bool:
+	for o in CharacterData.inventaire:
+		if o.get("type", "") == "potion":
+			return true
+	return false
+
+
+func _utiliser_potion() -> void:
 	var idx := -1
 	for i in CharacterData.inventaire.size():
 		if CharacterData.inventaire[i].get("type", "") == "potion":
 			idx = i
 			break
 	if idx < 0:
-		$Message.text = "Aucune potion dans ton sac !"
 		return
-	_occupe = true
-	_activer_actions(false)
 	var pot: Dictionary = CharacterData.inventaire[idx]
 	var soin: int = pot.get("soin", 20)
 	CharacterData.inventaire.remove_at(idx)
@@ -238,38 +332,6 @@ func _action_potion() -> void:
 	Audio.jouer("coins")
 	$Message.text = "%s boit %s (+%d PV) !" % [_hero["nom"], pot["nom"], soin]
 	await get_tree().create_timer(0.8).timeout
-	_occupe = false
-	await _tour_ennemis()
-	_tour_joueur()
-
-
-func _action_defendre() -> void:
-	_activer_actions(false)
-	_hero["defense"] = true
-	$Message.text = "%s leve sa garde." % _hero["nom"]
-	await get_tree().create_timer(0.5).timeout
-	await _tour_ennemis()
-	_tour_joueur()
-
-
-func _action_fuir() -> void:
-	Audio.play_click()
-	get_tree().change_scene_to_file("res://scenes/WorldMap.tscn")
-
-
-func _jouer_tour(degats: int, magique: bool) -> void:
-	if _occupe:
-		return
-	_occupe = true
-	_activer_actions(false)
-	if _enemis[_cible]["mort"]:
-		_cible = _premier_vivant()
-	await _attaque(_hero, _enemis[_cible], degats, magique)
-	_occupe = false
-	if _tous_morts():
-		return _fin(true)
-	await _tour_ennemis()
-	_tour_joueur()
 
 
 func _tour_ennemis() -> void:
@@ -418,6 +480,7 @@ func _tous_morts() -> bool:
 func _fin(victoire: bool) -> void:
 	_activer_actions(false)
 	if victoire:
+		CharacterData.debloquer_haut_fait("Premier sang", "Remporter un premier combat")
 		var butin := 30 + randi() % 26
 		CharacterData.gold += butin
 		var msg := "Victoire ! Butin : %d or" % butin

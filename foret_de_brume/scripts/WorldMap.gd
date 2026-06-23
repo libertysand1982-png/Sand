@@ -166,6 +166,7 @@ func _interagir() -> void:
 		return
 	Audio.play_click()
 	var l: Dictionary = LIEUX[_proche]
+	CharacterData.visiter(l["nom"])
 	if l["village"]:
 		$Musique.stop()
 		CharacterData.destination = l["nom"]

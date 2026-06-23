@@ -23,6 +23,25 @@ var inventaire: Array = [         # objets : {nom, icone, slot, atk, def}
 var equipement: Dictionary = {"Arme": null, "Armure": null, "Casque": null, "Accessoire": null}
 var quetes: Array = []            # quetes acceptees : {"nom": String, "texte": String}
 
+# Journal / grimoire
+var points_attributs: int = 0
+var lieux_visites: Array = []     # noms des lieux visites
+var quetes_reussies: Array = []   # noms des quetes terminees
+var hauts_faits: Array = []       # {"nom": String, "desc": String}
+
+
+func visiter(lieu: String) -> void:
+	if not lieux_visites.has(lieu):
+		lieux_visites.append(lieu)
+
+
+func debloquer_haut_fait(nom: String, desc: String) -> bool:
+	for h in hauts_faits:
+		if h["nom"] == nom:
+			return false
+	hauts_faits.append({"nom": nom, "desc": desc})
+	return true
+
 
 func ajouter_objet(obj: Dictionary) -> void:
 	inventaire.append(obj)
