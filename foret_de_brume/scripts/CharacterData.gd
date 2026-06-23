@@ -25,9 +25,33 @@ var quetes: Array = []            # quetes acceptees : {"nom": String, "texte": 
 
 # Journal / grimoire
 var points_attributs: int = 0
+var niveau: int = 1
+var xp: int = 0
+var xp_suivant: int = 50
 var lieux_visites: Array = []     # noms des lieux visites
 var quetes_reussies: Array = []   # noms des quetes terminees
 var hauts_faits: Array = []       # {"nom": String, "desc": String}
+
+
+func pv_max() -> int:
+	return 26 + int(stats.get("Constitution", 10)) * 2
+
+
+func mana_max() -> int:
+	return 6 + int(stats.get("Intelligence", 10))
+
+
+func gagner_xp(n: int) -> int:
+	# Renvoie le nombre de niveaux gagnes.
+	xp += n
+	var gagnes := 0
+	while xp >= xp_suivant:
+		xp -= xp_suivant
+		niveau += 1
+		points_attributs += 2
+		xp_suivant = int(xp_suivant * 1.4)
+		gagnes += 1
+	return gagnes
 
 
 func visiter(lieu: String) -> void:

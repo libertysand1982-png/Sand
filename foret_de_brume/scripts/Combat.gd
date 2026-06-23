@@ -481,9 +481,13 @@ func _fin(victoire: bool) -> void:
 	_activer_actions(false)
 	if victoire:
 		CharacterData.debloquer_haut_fait("Premier sang", "Remporter un premier combat")
+		var xp_gagnee := 25 + _enemis.size() * 10
+		var niv := CharacterData.gagner_xp(xp_gagnee)
 		var butin := 30 + randi() % 26
 		CharacterData.gold += butin
-		var msg := "Victoire ! Butin : %d or" % butin
+		var msg := "Victoire ! Butin : %d or  (+%d XP)" % [butin, xp_gagnee]
+		if niv > 0:
+			msg += "  —  Niveau %d !" % CharacterData.niveau
 		if randf() < 0.6:
 			var objet: Dictionary = BUTIN[randi() % BUTIN.size()].duplicate()
 			CharacterData.ajouter_objet(objet)

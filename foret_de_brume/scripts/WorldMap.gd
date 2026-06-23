@@ -36,6 +36,8 @@ var _facing := 1
 @onready var _invite: Label = $UI/Invite
 @onready var _info: NinePatchRect = $UI/PanneauInfo
 
+var _journal: Control = null
+
 
 func _ready() -> void:
 	var n := CharacterData.chevalier_index + 1
@@ -49,6 +51,23 @@ func _ready() -> void:
 	_construire_lieux()
 	_lancer_musique()
 	$UI/BtnRetour.pressed.connect(_on_menu)
+
+	var bj := Button.new()
+	bj.text = "Grimoire (J)"
+	bj.position = Vector2(196, 586)
+	bj.size = Vector2(160, 46)
+	bj.pressed.connect(_ouvrir_journal)
+	bj.mouse_entered.connect(Audio.play_hover)
+	$UI.add_child(bj)
+
+
+func _ouvrir_journal() -> void:
+	if _journal != null:
+		return
+	Audio.play_click()
+	_journal = load("res://scenes/Grimoire.tscn").instantiate() as Control
+	$UI.add_child(_journal)
+	_journal.tree_exited.connect(func(): _journal = null)
 
 
 func _remplir_panneau_heros() -> void:
@@ -86,6 +105,8 @@ func _construire_lieux() -> void:
 # --- Boucle de jeu ---------------------------------------------------------
 
 func _process(delta: float) -> void:
+	if _journal != null:
+		return
 	var dir := _direction()
 	if dir != Vector2.ZERO:
 		_hero.position += dir * VITESSE * delta
@@ -157,8 +178,11 @@ func _maj_proximite() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
-		_interagir()
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_E:
+			_interagir()
+		elif event.keycode == KEY_J:
+			_ouvrir_journal()
 
 
 func _interagir() -> void:

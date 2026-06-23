@@ -36,6 +36,7 @@ const POTIONS := [
 ]
 
 var _ouvert := false
+var _journal: Control = null
 
 
 func _ready() -> void:
@@ -296,6 +297,11 @@ func _unhandled_input(event: InputEvent) -> void:
 				_fermer_tout()
 			elif not _ouvert:
 				_ouvrir_inventaire()
+		elif event.keycode == KEY_J:
+			if _journal == null and not _ouvert:
+				_journal = load("res://scenes/Grimoire.tscn").instantiate() as Control
+				add_child(_journal)
+				_journal.tree_exited.connect(func(): _journal = null)
 		elif event.keycode == KEY_ESCAPE:
 			_fermer_tout()
 
