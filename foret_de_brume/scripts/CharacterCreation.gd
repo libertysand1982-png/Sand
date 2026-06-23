@@ -10,6 +10,15 @@ const KNIGHTS := [
 	"res://assets/knights/knight1_idle.png",
 	"res://assets/knights/knight2_idle.png",
 	"res://assets/knights/knight3_idle.png",
+	"res://assets/knights/knight4_idle.png",
+	"res://assets/knights/knight5_idle.png",
+	"res://assets/knights/knight6_idle.png",
+	"res://assets/knights/knight7_idle.png",
+	"res://assets/knights/knight8_idle.png",
+	"res://assets/knights/knight9_idle.png",
+	"res://assets/knights/knight10_idle.png",
+	"res://assets/knights/knight11_idle.png",
+	"res://assets/knights/knight12_idle.png",
 ]
 
 # Achat par points facon D&D 5e.
