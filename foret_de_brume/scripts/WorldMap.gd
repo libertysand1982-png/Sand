@@ -6,6 +6,11 @@ const WORLD := Vector2(1736, 2320)
 const VITESSE := 240.0
 const RAYON := 130.0
 
+# Rencontres aleatoires : tous les PAS_RENCONTRE pixels parcourus, on tente
+# un jet ; si reussi, une embuscade demarre un combat.
+const PAS_RENCONTRE := 620.0
+const PROBA_RENCONTRE := 0.4
+
 # Lieux : nom, fichier, position monde, echelle, village, description.
 const LIEUX := [
 	{"nom": "Bourg de Boisclair", "f": "Yurt1_grass_shadow", "p": Vector2(800, 1024), "e": 1.4, "village": true,
@@ -30,6 +35,7 @@ var _tex_walk: Texture2D
 var _marche := false
 var _frame_t := 0.0
 var _facing := 1
+var _dist := 0.0
 
 @onready var _hero: Node2D = $Monde/Hero
 @onready var _sprite: Sprite2D = $Monde/Hero/Sprite
@@ -40,6 +46,7 @@ var _journal: Control = null
 
 
 func _ready() -> void:
+	CharacterData.rencontre = []
 	var n := CharacterData.chevalier_index + 1
 	_tex_idle = load("res://assets/knights/knight%d_idle.png" % n)
 	_tex_walk = load("res://assets/knights/knight%d_walk.png" % n)
@@ -112,6 +119,12 @@ func _process(delta: float) -> void:
 		_hero.position += dir * VITESSE * delta
 		_hero.position.x = clampf(_hero.position.x, 40, WORLD.x - 40)
 		_hero.position.y = clampf(_hero.position.y, 70, WORLD.y - 40)
+		_dist += VITESSE * delta
+		if _dist >= PAS_RENCONTRE:
+			_dist = 0.0
+			if _proche < 0 and randf() < PROBA_RENCONTRE:
+				_declencher_rencontre()
+				return
 		if not _marche:
 			_changer_anim(true)
 		if dir.x < -0.1:
@@ -204,6 +217,27 @@ func _interagir() -> void:
 		$UI/PanneauInfo/Desc.text = l["desc"]
 		_invite.visible = false
 		_info.visible = true
+
+
+func _declencher_rencontre() -> void:
+	Audio.jouer("swing")
+	CharacterData.rencontre = _enemis_sauvages()
+	CharacterData.destination = "les terres sauvages"
+	$Musique.stop()
+	get_tree().change_scene_to_file("res://scenes/Combat.tscn")
+
+
+func _enemis_sauvages() -> Array:
+	# Embuscades calibrees sur le niveau du heros (region 1).
+	var niv: int = CharacterData.niveau
+	var pool: Array
+	if niv <= 2:
+		pool = [["goblin"], ["goblin", "goblin"], ["skeleton", "goblin"]]
+	elif niv <= 4:
+		pool = [["skeleton", "goblin"], ["goblin", "goblin", "skeleton"], ["orc_warrior", "goblin"]]
+	else:
+		pool = [["orc_warrior", "skeleton"], ["orc_berserk", "mushroom"], ["orc_warrior", "orc_shaman", "goblin"]]
+	return pool[randi() % pool.size()]
 
 
 func _on_menu() -> void:

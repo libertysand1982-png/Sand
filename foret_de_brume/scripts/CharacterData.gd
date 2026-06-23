@@ -15,6 +15,9 @@ var chevalier_index: int = 0
 # Destination choisie sur la carte (nom du village a visiter)
 var destination: String = "Village"
 
+# Rencontre aleatoire en cours : cles du bestiaire (transitoire, non sauvegardee).
+var rencontre: Array = []
+
 # Bourse, inventaire, equipement
 var gold: int = 80
 var inventaire: Array = [         # objets : {nom, icone, slot, atk, def}

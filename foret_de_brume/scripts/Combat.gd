@@ -46,13 +46,17 @@ var _hero := {}
 var _enemis := []
 var _cible := 0
 var _occupe := false
+var _sauvage := false
 
 
 func _ready() -> void:
 	_lancer_musique()
 	_creer_hero()
 	_creer_enemis()
-	$Message.text = "Les profondeurs de %s grouillent d'ennemis !" % CharacterData.destination
+	if _sauvage:
+		$Message.text = "Une embuscade ! Des creatures surgissent sur ta route !"
+	else:
+		$Message.text = "Les profondeurs de %s grouillent d'ennemis !" % CharacterData.destination
 	_construire_actions()
 	await get_tree().create_timer(0.8).timeout
 	_tour_joueur()
@@ -163,7 +167,13 @@ func _creer_hero() -> void:
 
 
 func _creer_enemis() -> void:
-	var liste: Array = RENCONTRES.get(CharacterData.destination, ["orc_warrior", "skeleton"])
+	var liste: Array
+	if not CharacterData.rencontre.is_empty():
+		_sauvage = true
+		liste = CharacterData.rencontre
+		CharacterData.rencontre = []
+	else:
+		liste = RENCONTRES.get(CharacterData.destination, ["orc_warrior", "skeleton"])
 	for i in mini(liste.size(), 3):
 		var d: Dictionary = BESTIAIRE[liste[i]]
 		var b: String = d["base"]
@@ -242,9 +252,11 @@ func _maj_mana() -> void:
 
 func _tour_joueur() -> void:
 	if _hero["mort"]:
-		return _fin(false)
+		await _fin(false)
+		return
 	if _tous_morts():
-		return _fin(true)
+		await _fin(true)
+		return
 	_cible = _premier_vivant()
 	_maj_marqueur()
 	$Message.text = "%s — PV %d/%d   Mana %d/%d" % [_hero["nom"], _hero["pv"], _hero["pv_max"], _hero["mana"], _hero["mana_max"]]
@@ -301,7 +313,8 @@ func _executer(skill: Dictionary) -> void:
 
 	_occupe = false
 	if _tous_morts():
-		return _fin(true)
+		await _fin(true)
+		return
 	await _tour_ennemis()
 	_hero["mana"] = mini(_hero["mana_max"], _hero["mana"] + 1)
 	_maj_mana()
@@ -395,7 +408,7 @@ func _appliquer_degats(cible: Dictionary, degats: int) -> void:
 	if cible == _hero:
 		degats = maxi(1, degats - CharacterData.bonus_def())
 	if cible["defense"]:
-		degats = maxi(1, degats / 2)
+		degats = maxi(1, int(degats / 2.0))
 		cible["defense"] = false
 	cible["pv"] = maxi(0, cible["pv"] - degats)
 	_maj_barre(cible)
