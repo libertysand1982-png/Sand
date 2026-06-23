@@ -184,6 +184,7 @@ func _creer_enemis() -> void:
 			"dead": load("res://assets/enemies/%s_dead.png" % b),
 		}
 		_enemis.append(_creer_combattant(d["nom"], texs, POS_ENNEMIS[i], true, d["pv"], d["force"], d["magie"]))
+		CharacterData.monstre_rencontre(d["nom"])
 
 
 # --- Actions ---------------------------------------------------------------
@@ -420,6 +421,7 @@ func _appliquer_degats(cible: Dictionary, degats: int) -> void:
 		cible["node"].scale = Vector2.ONE
 		if cible != _hero:
 			CharacterData.progresser("tuer", cible["nom"], 1)
+			CharacterData.monstre_vaincu(cible["nom"])
 		Audio.jouer("death")
 		await _jouer_anim(cible, "dead")
 		cible["etat"] = "mort"

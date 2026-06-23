@@ -44,6 +44,8 @@ var lieux_visites: Array = []
 var quetes_reussies: Array = []     # identifiants des quetes terminees
 var hauts_faits: Array = []         # {"nom", "desc"}
 var quetes_actives: Array = []      # copies du catalogue avec objectifs mutables
+var monstres_vus: Array = []        # noms des monstres rencontres
+var monstres_vaincus: Dictionary = {}   # nom -> nombre vaincus
 
 # --- Catalogue de quetes (region 1) ----------------------------------------
 const CATALOGUE_QUETES := {
@@ -96,6 +98,17 @@ func visiter(lieu: String) -> void:
 	if not lieux_visites.has(lieu):
 		lieux_visites.append(lieu)
 	progresser("visiter", lieu, 1)
+
+
+func monstre_rencontre(nom_m: String) -> void:
+	if not monstres_vus.has(nom_m):
+		monstres_vus.append(nom_m)
+
+
+func monstre_vaincu(nom_m: String) -> void:
+	if not monstres_vus.has(nom_m):
+		monstres_vus.append(nom_m)
+	monstres_vaincus[nom_m] = int(monstres_vaincus.get(nom_m, 0)) + 1
 
 
 func debloquer_haut_fait(nom_hf: String, desc: String) -> bool:
@@ -232,6 +245,7 @@ func sauvegarder() -> void:
 		"points_attributs": points_attributs, "niveau": niveau, "xp": xp, "xp_suivant": xp_suivant,
 		"region": region_courante, "artefacts": artefacts, "lieux_visites": lieux_visites,
 		"quetes_reussies": quetes_reussies, "hauts_faits": hauts_faits, "quetes_actives": quetes_actives,
+		"monstres_vus": monstres_vus, "monstres_vaincus": monstres_vaincus,
 	}
 	var f := FileAccess.open(CHEMIN_SAUVEGARDE, FileAccess.WRITE)
 	if f != null:
@@ -298,6 +312,11 @@ func charger() -> bool:
 		for o in q.get("objectifs", []):
 			o["actuel"] = int(o.get("actuel", 0))
 			o["requis"] = int(o["requis"])
+
+	monstres_vus = d.get("monstres_vus", [])
+	monstres_vaincus = d.get("monstres_vaincus", {})
+	for cle in monstres_vaincus.keys():
+		monstres_vaincus[cle] = int(monstres_vaincus[cle])
 	return true
 
 
