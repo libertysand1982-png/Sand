@@ -3,7 +3,7 @@ extends Node
 ## Inclut le systeme de quetes et la sauvegarde.
 
 const CHEMIN_SAUVEGARDE := "user://sauvegarde_foret.json"
-const NB_HEROS := 5   # nombre de heros jouables (knight1..knight5)
+const NB_HEROS := 6   # nombre de heros jouables (knight1..knight6)
 
 var nom: String = "Heros"
 var race_index: int = 0
