@@ -54,6 +54,9 @@ func _ready() -> void:
 	_sprite.hframes = 4
 
 	$Monde/Hero/Camera2D.make_current()
+	# Reapparaitre la ou on avait quitte la carte (et non au point de depart).
+	if CharacterData.position_monde != Vector2.ZERO:
+		_hero.position = CharacterData.position_monde
 	_remplir_panneau_heros()
 	_construire_lieux()
 	_lancer_musique()
@@ -204,13 +207,15 @@ func _interagir() -> void:
 	Audio.play_click()
 	var l: Dictionary = LIEUX[_proche]
 	CharacterData.visiter(l["nom"])
-	if l["village"]:
+	if l["village"] or l.get("combat", false):
+		# Memoriser la position et sauvegarder automatiquement en entrant.
+		CharacterData.position_monde = _hero.position
 		$Musique.stop()
 		CharacterData.destination = l["nom"]
+		CharacterData.sauvegarder()
+	if l["village"]:
 		get_tree().change_scene_to_file("res://scenes/Village.tscn")
 	elif l.get("combat", false):
-		$Musique.stop()
-		CharacterData.destination = l["nom"]
 		get_tree().change_scene_to_file("res://scenes/Combat.tscn")
 	else:
 		$UI/PanneauInfo/NomLieu.text = l["nom"]
@@ -221,8 +226,10 @@ func _interagir() -> void:
 
 func _declencher_rencontre() -> void:
 	Audio.jouer("swing")
+	CharacterData.position_monde = _hero.position
 	CharacterData.rencontre = _enemis_sauvages()
 	CharacterData.destination = "les terres sauvages"
+	CharacterData.sauvegarder()
 	$Musique.stop()
 	get_tree().change_scene_to_file("res://scenes/Combat.tscn")
 

@@ -3,15 +3,17 @@ extends Control
 ## sur un habitant (aubergiste, donneur de quetes, armurier, marchande) pour lui
 ## parler, acheter, prendre des contrats, se reposer. Inventaire (I).
 
-# PNJ : nom, sprite (assets/npc), type, texte d'accueil.
+const INSET := preload("res://assets/ui/panelInset_brown.png")
+
+# PNJ : nom, portrait (assets/portraits), type, texte d'accueil.
 const PNJS := [
-	{"nom": "Aubergiste Brigitte", "sprite": "aubergiste", "type": "auberge",
+	{"nom": "Aubergiste Brigitte", "portrait": 5, "type": "auberge",
 		"texte": "Bienvenue a l'auberge, voyageur ! Une chambre, un repas chaud et toutes les rumeurs du pays."},
-	{"nom": "Maitre des contrats", "sprite": "donneur_quete", "type": "quetes",
+	{"nom": "Maitre des contrats", "portrait": 8, "type": "quetes",
 		"texte": "Le village a besoin de bras solides. Jette un oeil aux contrats affiches au tableau."},
-	{"nom": "Maitre d'armes Aldric", "sprite": "garde", "type": "forge",
+	{"nom": "Maitre d'armes Aldric", "portrait": 33, "type": "forge",
 		"texte": "Besoin d'acier ? J'ai les meilleures armes et armures de la region, forgees a la main."},
-	{"nom": "Marchande Yara", "sprite": "marchand", "type": "potions",
+	{"nom": "Marchande Yara", "portrait": 15, "type": "potions",
 		"texte": "Potions, elixirs et remedes ! De quoi survivre aux donjons les plus sombres."},
 ]
 
@@ -52,44 +54,45 @@ func _ready() -> void:
 # --- Portraits des PNJ -----------------------------------------------------
 
 func _construire_pnjs() -> void:
-	# Petits villageois debout sur la rue : points de clique pour leur parler.
-	var taille := 132.0
-	var pieds := 414.0                       # ligne de sol (au-dessus du panneau dialogue)
-	var marge := 90.0
-	var ecart := (1152.0 - 2.0 * marge - taille) / float(maxi(1, PNJS.size() - 1))
+	# Villageois representes par un portrait encadre (taille d'un personnage),
+	# poses sur la rue : points de clique pour leur parler.
+	var larg := 116.0
+	var haut := 134.0
+	var pieds := 416.0                       # bas des cadres (au-dessus du panneau dialogue)
+	var marge := 96.0
+	var ecart := (1152.0 - 2.0 * marge - larg) / float(maxi(1, PNJS.size() - 1))
 	for i in PNJS.size():
 		var pnj: Dictionary = PNJS[i]
 		var groupe := Control.new()
-		groupe.position = Vector2(marge + i * ecart, pieds - taille)
-		groupe.size = Vector2(taille, taille)
-		groupe.pivot_offset = Vector2(taille * 0.5, taille)
+		groupe.position = Vector2(marge + i * ecart, pieds - haut)
+		groupe.size = Vector2(larg, haut)
+		groupe.pivot_offset = Vector2(larg * 0.5, haut)
 		$NPCs.add_child(groupe)
 
-		# Ombre au sol (disque sombre translucide).
-		var ombre := TextureRect.new()
-		ombre.texture = load("res://assets/npc/%s.png" % pnj["sprite"])
-		ombre.position = Vector2(taille * 0.18, taille - 16)
-		ombre.size = Vector2(taille * 0.64, 18)
-		ombre.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		ombre.stretch_mode = TextureRect.STRETCH_SCALE
-		ombre.modulate = Color(0, 0, 0, 0.28)
-		ombre.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		groupe.add_child(ombre)
+		var cadre := NinePatchRect.new()
+		cadre.texture = INSET
+		cadre.patch_margin_left = 16
+		cadre.patch_margin_top = 16
+		cadre.patch_margin_right = 16
+		cadre.patch_margin_bottom = 16
+		cadre.position = Vector2.ZERO
+		cadre.size = Vector2(larg, haut)
+		cadre.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		groupe.add_child(cadre)
 
-		var spr := TextureRect.new()
-		spr.texture = load("res://assets/npc/%s.png" % pnj["sprite"])
-		spr.position = Vector2.ZERO
-		spr.size = Vector2(taille, taille)
-		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		groupe.add_child(spr)
+		var portrait := TextureRect.new()
+		portrait.texture = load("res://assets/portraits/%d.png" % pnj["portrait"])
+		portrait.position = Vector2(12, 12)
+		portrait.size = Vector2(larg - 24, haut - 24)
+		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		groupe.add_child(portrait)
 
-		# Etiquette du nom au-dessus de la tete.
+		# Etiquette du nom au-dessus du cadre.
 		var nom := Label.new()
 		nom.text = pnj["nom"]
-		nom.position = Vector2(taille * 0.5 - 130, -28)
+		nom.position = Vector2(larg * 0.5 - 130, -30)
 		nom.size = Vector2(260, 24)
 		nom.add_theme_font_size_override("font_size", 16)
 		nom.add_theme_color_override("font_color", Color(1, 0.97, 0.85))
@@ -103,7 +106,7 @@ func _construire_pnjs() -> void:
 		var bouton := Button.new()
 		bouton.flat = true
 		bouton.position = Vector2.ZERO
-		bouton.size = Vector2(taille, taille)
+		bouton.size = Vector2(larg, haut)
 		bouton.pressed.connect(_ouvrir_dialogue.bind(i))
 		bouton.mouse_entered.connect(_survol.bind(groupe, true))
 		bouton.mouse_exited.connect(_survol.bind(groupe, false))
@@ -111,8 +114,8 @@ func _construire_pnjs() -> void:
 
 		# Leger balancement de repos.
 		var t := create_tween().set_loops()
-		t.tween_property(spr, "position:y", -6.0, 1.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		t.tween_property(spr, "position:y", 0.0, 1.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		t.tween_property(groupe, "position:y", groupe.position.y - 6.0, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		t.tween_property(groupe, "position:y", groupe.position.y, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func _survol(groupe: Control, entre: bool) -> void:

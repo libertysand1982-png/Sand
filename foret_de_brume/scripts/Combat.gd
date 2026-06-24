@@ -371,7 +371,8 @@ func _set_anim(f: Dictionary, etat: String) -> void:
 
 func _jouer_anim(f: Dictionary, etat: String) -> void:
 	_set_anim(f, etat)
-	var n: int = f["frames"][etat]
+	var reel: String = f["etat"]          # _set_anim retombe sur "idle" si l'anim manque
+	var n: int = f["frames"][reel]
 	for i in n:
 		f["sprite"].frame = i
 		await get_tree().create_timer(0.06).timeout
@@ -512,7 +513,9 @@ func _fin(victoire: bool) -> void:
 		Audio.jouer("coins")
 		$Message.text = msg
 		CharacterData.sauvegarder()
+		await get_tree().create_timer(2.4).timeout
+		get_tree().change_scene_to_file("res://scenes/WorldMap.tscn")
 	else:
-		$Message.text = "Tu es vaincu... tu bats en retraite."
-	await get_tree().create_timer(2.4).timeout
-	get_tree().change_scene_to_file("res://scenes/WorldMap.tscn")
+		$Message.text = "Tu es tombe au combat..."
+		await get_tree().create_timer(2.0).timeout
+		get_tree().change_scene_to_file("res://scenes/GameOver.tscn")

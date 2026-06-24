@@ -3,6 +3,7 @@ extends Node
 ## Inclut le systeme de quetes et la sauvegarde.
 
 const CHEMIN_SAUVEGARDE := "user://sauvegarde_foret.json"
+const NB_HEROS := 5   # nombre de heros jouables (knight1..knight5)
 
 var nom: String = "Heros"
 var race_index: int = 0
@@ -14,6 +15,10 @@ var chevalier_index: int = 0
 
 # Destination choisie sur la carte (nom du village a visiter)
 var destination: String = "Village"
+
+# Position du heros sur la carte du monde (pour reapparaitre au bon endroit).
+# Vector2.ZERO = pas encore defini (on utilise alors le point de depart).
+var position_monde: Vector2 = Vector2.ZERO
 
 # Rencontre aleatoire en cours : cles du bestiaire (transitoire, non sauvegardee).
 var rencontre: Array = []
@@ -246,6 +251,7 @@ func sauvegarder() -> void:
 		"region": region_courante, "artefacts": artefacts, "lieux_visites": lieux_visites,
 		"quetes_reussies": quetes_reussies, "hauts_faits": hauts_faits, "quetes_actives": quetes_actives,
 		"monstres_vus": monstres_vus, "monstres_vaincus": monstres_vaincus,
+		"pos_x": position_monde.x, "pos_y": position_monde.y,
 	}
 	var f := FileAccess.open(CHEMIN_SAUVEGARDE, FileAccess.WRITE)
 	if f != null:
@@ -283,7 +289,8 @@ func charger() -> bool:
 	race_nom = str(d.get("race_nom", race_nom))
 	classe_nom = str(d.get("classe_nom", classe_nom))
 	portrait_index = int(d.get("portrait_index", portrait_index))
-	chevalier_index = int(d.get("chevalier_index", chevalier_index))
+	chevalier_index = clampi(int(d.get("chevalier_index", chevalier_index)), 0, NB_HEROS - 1)
+	position_monde = Vector2(float(d.get("pos_x", 0.0)), float(d.get("pos_y", 0.0)))
 	gold = int(d.get("gold", gold))
 	points_attributs = int(d.get("points_attributs", points_attributs))
 	niveau = int(d.get("niveau", niveau))
