@@ -85,8 +85,7 @@ func _ouvrir_journal() -> void:
 
 
 func _remplir_panneau_heros() -> void:
-	($UI/PanneauHeros/CadrePortrait/Portrait as TextureRect).texture = \
-		load("res://assets/portraits/%d.png" % CharacterData.portrait_index)
+	($UI/PanneauHeros/CadrePortrait/Portrait as TextureRect).texture = CharacterData.face_heros()
 	$UI/PanneauHeros/Nom.text = CharacterData.nom
 	$UI/PanneauHeros/Classe.text = "%s %s" % [CharacterData.race_nom, CharacterData.classe_nom]
 
@@ -256,7 +255,7 @@ func _interagir() -> void:
 	if l["village"]:
 		get_tree().change_scene_to_file("res://scenes/Village.tscn")
 	elif l.get("combat", false):
-		get_tree().change_scene_to_file("res://scenes/Combat.tscn")
+		get_tree().change_scene_to_file("res://scenes/CombatAction.tscn")
 	else:
 		$UI/PanneauInfo/NomLieu.text = l["nom"]
 		$UI/PanneauInfo/Desc.text = l["desc"]
@@ -271,7 +270,7 @@ func _declencher_rencontre() -> void:
 	CharacterData.destination = "les terres sauvages"
 	CharacterData.sauvegarder()
 	$Musique.stop()
-	get_tree().change_scene_to_file("res://scenes/Combat.tscn")
+	get_tree().change_scene_to_file("res://scenes/CombatAction.tscn")
 
 
 func _enemis_sauvages() -> Array:

@@ -1,0 +1,58 @@
+[gd_scene load_steps=3 format=3 uid="uid://foretcombatact01"]
+
+[ext_resource type="Script" path="res://scripts/CombatAction.gd" id="1_act"]
+[ext_resource type="Texture2D" path="res://assets/bg/nature_aurora.png" id="2_bg"]
+
+[node name="CombatAction" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_act")
+
+[node name="Fond" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Voile" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.04, 0.09, 0.25)
+
+[node name="Arene" type="Node2D" parent="."]
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Message" type="Label" parent="UI"]
+anchor_right = 1.0
+offset_top = 20.0
+offset_bottom = 64.0
+theme_override_colors/font_color = Color(0.98, 0.95, 0.8, 1)
+theme_override_colors/font_outline_color = Color(0.1, 0.07, 0.03, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+
+[node name="Hints" type="Label" parent="UI"]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -34.0
+theme_override_colors/font_color = Color(0.92, 0.9, 0.8, 1)
+theme_override_colors/font_outline_color = Color(0.1, 0.07, 0.03, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 16
+text = "Deplacer: A/D ou fleches/stick    Sauter: Espace/W/(A)    Esquive: Maj/(B)    Attaque: J/clic/(X)"
+horizontal_alignment = 1

@@ -79,6 +79,16 @@ const CATALOGUE_QUETES := {
 }
 
 
+func face_heros() -> Texture2D:
+	# Premiere image (carre) du sprite idle du heros choisi, pour les portraits d'UI.
+	var strip: Texture2D = load("res://assets/knights/knight%d_idle.png" % (chevalier_index + 1))
+	var at := AtlasTexture.new()
+	at.atlas = strip
+	var h := strip.get_height()
+	at.region = Rect2(0, 0, h, h)
+	return at
+
+
 func pv_max() -> int:
 	return 26 + int(stats.get("Constitution", 10)) * 2
 

@@ -115,7 +115,7 @@ func _onglet_heros() -> void:
 	var entete := HBoxContainer.new()
 	entete.add_theme_constant_override("separation", 18)
 	var portrait := TextureRect.new()
-	portrait.texture = load("res://assets/portraits/%d.png" % CharacterData.portrait_index)
+	portrait.texture = CharacterData.face_heros()
 	portrait.custom_minimum_size = Vector2(150, 150)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

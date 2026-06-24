@@ -15,6 +15,11 @@ const KNIGHTS := [
 	"res://assets/knights/knight6_idle.png",
 ]
 
+const HERO_NOMS := [
+	"Chevalier d'Argent", "Chevalier Cramoisi", "Chevalier Sombre",
+	"Hero Knight", "Mage Noir", "Chasseresse Shadow",
+]
+
 # Achat par points facon D&D 5e.
 const POINTS_MAX := 27
 const COUT := {8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9}
@@ -73,9 +78,10 @@ func _ready() -> void:
 
 	_construire_lignes_stats()
 
-	# Connexions des fleches portrait / chevalier.
-	$PanneauGauche/FlechePortraitG.pressed.connect(func(): _changer_portrait(-1))
-	$PanneauGauche/FlechePortraitD.pressed.connect(func(): _changer_portrait(1))
+	# Plus de carrousel de portraits : on choisit directement le heros.
+	$PanneauGauche/CadrePortrait.visible = false
+	$PanneauGauche/FlechePortraitG.visible = false
+	$PanneauGauche/FlechePortraitD.visible = false
 	$PanneauGauche/FlecheChevalierG.pressed.connect(func(): _changer_chevalier(-1))
 	$PanneauGauche/FlecheChevalierD.pressed.connect(func(): _changer_chevalier(1))
 
@@ -91,7 +97,6 @@ func _ready() -> void:
 	for b in [$BtnRetour, $BtnValider]:
 		b.mouse_entered.connect(Audio.play_hover)
 
-	_maj_portrait()
 	_maj_chevalier()
 	_maj_race()
 	_maj_classe()
@@ -225,6 +230,8 @@ func _maj_chevalier() -> void:
 	_chevalier.texture = load(KNIGHTS[_knight_idx])
 	_chevalier.hframes = 4
 	_chevalier.frame = 0
+	var titre: String = HERO_NOMS[_knight_idx] if _knight_idx < HERO_NOMS.size() else "Heros %d" % (_knight_idx + 1)
+	_label_portrait.text = "%s   (%d / %d)" % [titre, _knight_idx + 1, KNIGHTS.size()]
 
 
 func _changer_race(sens: int) -> void:
@@ -265,7 +272,7 @@ func _on_valider() -> void:
 	CharacterData.classe_index = _classe_idx
 	CharacterData.race_nom = RACES[_race_idx]["nom"]
 	CharacterData.classe_nom = CLASSES[_classe_idx]["nom"]
-	CharacterData.portrait_index = _portrait_idx
+	CharacterData.portrait_index = 1
 	CharacterData.chevalier_index = _knight_idx
 	var bonus := _bonus_race()
 	for s in STAT_ORDRE:
