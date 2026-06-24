@@ -11,6 +11,10 @@ const RAYON := 130.0
 const PAS_RENCONTRE := 620.0
 const PROBA_RENCONTRE := 0.4
 
+const BANNIERE := preload("res://assets/ui/banner_nom.png")
+const FONT_BAN := preload("res://assets/fonts/lilita_one_regular.ttf")
+const TEINTE_BANNIERE := Color(0.86, 0.70, 0.42)
+
 # Lieux : nom, fichier, position monde, echelle, village, description.
 const LIEUX := [
 	{"nom": "Bourg de Boisclair", "f": "village1", "p": Vector2(800, 1024), "e": 0.5, "village": true,
@@ -108,8 +112,44 @@ func _ajouter(chemin: String, pos: Vector2, echelle := 1.0) -> Sprite2D:
 
 
 func _construire_lieux() -> void:
+	# Couche au-dessus des batiments pour les bannieres de noms.
+	var couche := Node2D.new()
+	couche.z_index = 5
+	$Monde.add_child(couche)
 	for l in LIEUX:
 		_ajouter("res://assets/terrain/objects/%s.png" % l["f"], l["p"], l["e"])
+		_ajouter_banniere(couche, l["nom"], l["p"])
+
+
+func _ajouter_banniere(couche: Node2D, nom_lieu: String, centre: Vector2) -> void:
+	var larg: float = maxf(132.0, float(nom_lieu.length()) * 12.0 + 50.0)
+	var haut := 36.0
+	var origine := centre + Vector2(-larg * 0.5, 74.0)
+
+	var np := NinePatchRect.new()
+	np.texture = BANNIERE
+	np.patch_margin_left = 16
+	np.patch_margin_right = 16
+	np.patch_margin_top = 8
+	np.patch_margin_bottom = 8
+	np.modulate = TEINTE_BANNIERE
+	np.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	np.size = Vector2(larg, haut)
+	np.position = origine
+	np.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	couche.add_child(np)
+
+	var lbl := Label.new()
+	lbl.text = nom_lieu
+	lbl.size = Vector2(larg, haut)
+	lbl.position = origine + Vector2(0, -1)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_override("font", FONT_BAN)
+	lbl.add_theme_font_size_override("font_size", 15)
+	lbl.add_theme_color_override("font_color", Color(0.28, 0.16, 0.05))
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	couche.add_child(lbl)
 
 
 # --- Boucle de jeu ---------------------------------------------------------
