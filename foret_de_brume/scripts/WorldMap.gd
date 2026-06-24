@@ -13,11 +13,11 @@ const PROBA_RENCONTRE := 0.4
 
 # Lieux : nom, fichier, position monde, echelle, village, description.
 const LIEUX := [
-	{"nom": "Bourg de Boisclair", "f": "Yurt1_grass_shadow", "p": Vector2(800, 1024), "e": 1.4, "village": true,
+	{"nom": "Bourg de Boisclair", "f": "village1", "p": Vector2(800, 1024), "e": 0.5, "village": true,
 		"desc": "Le plus grand village de la contree. Marche, taverne et forge t'y attendent."},
-	{"nom": "Hameau de Valombre", "f": "Yurt2_grass_shadow", "p": Vector2(400, 1360), "e": 1.2, "village": true,
+	{"nom": "Hameau de Valombre", "f": "village2", "p": Vector2(400, 1360), "e": 0.62, "village": true,
 		"desc": "Un paisible hameau de la cote ouest, repute pour ses pecheurs et ses conteurs."},
-	{"nom": "Camp des Errants", "f": "Yurt1_grass_shadow", "p": Vector2(832, 576), "e": 1.1, "village": true,
+	{"nom": "Camp des Errants", "f": "village3", "p": Vector2(832, 576), "e": 0.55, "village": true,
 		"desc": "Un campement de nomades dresse dans les vallees du nord. On y troque de tout."},
 	{"nom": "Caverne d'Ombre", "f": "Cave_entrance1_grass_shadow", "p": Vector2(1088, 352), "e": 1.3, "village": false, "combat": true,
 		"desc": "Une bouche sombre dans les montagnes enneigees. Un donjon dont nul n'est ressorti indemne."},
