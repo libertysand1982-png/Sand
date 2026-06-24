@@ -11,17 +11,17 @@ const BANNIERE := preload("res://assets/ui/banner_nom.png")
 # affiche dans la boite de dialogue.
 const PNJS := [
 	{"nom": "Aubergiste Brigitte", "lieu": "Auberge", "portrait": 5, "type": "auberge",
-		"rel": Vector2(0.26, 0.40),
+		"rel": Vector2(0.42, 0.30),
 		"texte": "Bienvenue a l'auberge, voyageur ! Une chambre, un repas chaud et toutes les rumeurs du pays."},
-	{"nom": "Maitre des contrats", "lieu": "Tableau des contrats", "portrait": 8, "type": "quetes",
-		"rel": Vector2(0.5, 0.58),
-		"texte": "Le village a besoin de bras solides. Jette un oeil aux contrats affiches au tableau."},
-	{"nom": "Maitre d'armes Aldric", "lieu": "Forge", "portrait": 33, "type": "forge",
-		"rel": Vector2(0.72, 0.42),
-		"texte": "Besoin d'acier ? J'ai les meilleures armes et armures de la region, forgees a la main."},
 	{"nom": "Marchande Yara", "lieu": "Marche", "portrait": 15, "type": "potions",
-		"rel": Vector2(0.5, 0.30),
+		"rel": Vector2(0.50, 0.43),
 		"texte": "Potions, elixirs et remedes ! De quoi survivre aux donjons les plus sombres."},
+	{"nom": "Maitre d'armes Aldric", "lieu": "Forge", "portrait": 33, "type": "forge",
+		"rel": Vector2(0.69, 0.47),
+		"texte": "Besoin d'acier ? J'ai les meilleures armes et armures de la region, forgees a la main."},
+	{"nom": "Maitre des contrats", "lieu": "Tableau des contrats", "portrait": 8, "type": "quetes",
+		"rel": Vector2(0.60, 0.70),
+		"texte": "Le village a besoin de bras solides. Jette un oeil aux contrats affiches au tableau."},
 ]
 
 # Decor de fond par village (depose tes illustrations ici ; sinon fond par defaut).
