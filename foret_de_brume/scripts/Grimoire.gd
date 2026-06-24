@@ -2,8 +2,10 @@ extends Control
 ## Grimoire du heros : journal a onglets (Heros, Attributs, Competences,
 ## Quetes, Histoire, Lieux, Bestiaire, Hauts faits). S'ouvre via la touche J.
 
-const ONGLETS := ["Heros", "Attributs", "Competences", "Quetes", "Histoire", "Lieux", "Bestiaire", "Hauts faits"]
+const ONGLETS := ["Heros", "Sac", "Attributs", "Competences", "Quetes", "Histoire", "Lieux", "Bestiaire", "Hauts faits"]
 const STAT_ORDRE := ["Force", "Dexterite", "Constitution", "Intelligence", "Sagesse", "Charisme"]
+const SLOTS_EQUIP := ["Casque", "Arme", "Armure", "Accessoire"]
+const SLOT_TEX := preload("res://assets/ui/slot.png")
 
 const COMPETENCES := [
 	{"nom": "Frappe", "cout": "gratuit", "desc": "Coup d'arme de base. Degats = Force + bonus d'arme + un peu de hasard."},
@@ -54,7 +56,7 @@ func _ready() -> void:
 	for nom in ONGLETS:
 		var b := Button.new()
 		b.text = nom
-		b.add_theme_font_size_override("font_size", 15)
+		b.add_theme_font_size_override("font_size", 13)
 		b.pressed.connect(_changer_onglet.bind(nom))
 		b.mouse_entered.connect(Audio.play_hover)
 		$Livre/Onglets.add_child(b)
@@ -97,6 +99,7 @@ func _afficher() -> void:
 	_vider()
 	match _onglet:
 		"Heros": _onglet_heros()
+		"Sac": _onglet_sac()
 		"Attributs": _onglet_attributs()
 		"Competences": _onglet_competences()
 		"Quetes": _onglet_quetes()
@@ -134,6 +137,94 @@ func _onglet_heros() -> void:
 		var obj = CharacterData.equipement[slot]
 		_ajouter(_label("  %s : %s" % [slot, obj["nom"] if obj else "-"]))
 	_ajouter(_label("  Bonus : Atq +%d   Def +%d" % [CharacterData.bonus_atk(), CharacterData.bonus_def()], 15, OR))
+
+
+func _onglet_sac() -> void:
+	# En-tete : or + bonus total.
+	var entete := HBoxContainer.new()
+	entete.add_theme_constant_override("separation", 24)
+	entete.add_child(_label("Or : %d" % CharacterData.gold, 18, OR))
+	entete.add_child(_label("Bonus  Atq +%d   Def +%d" % [CharacterData.bonus_atk(), CharacterData.bonus_def()], 16, ENCRE))
+	_ajouter(entete)
+
+	_ajouter(_label("Equipement", 19, OR))
+	var rangee := HBoxContainer.new()
+	rangee.add_theme_constant_override("separation", 16)
+	for slot in SLOTS_EQUIP:
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", 2)
+		var obj_eq = CharacterData.equipement[slot]
+		var tex_eq: Texture2D = load(obj_eq["icone"]) if obj_eq != null else null
+		var info_eq: String = (obj_eq["nom"] + "\nCliquer pour retirer") if obj_eq != null else "Emplacement vide"
+		col.add_child(_slot(72.0, tex_eq, _clic_equip.bind(slot), info_eq))
+		var cap := _label(slot, 13, ENCRE)
+		cap.custom_minimum_size = Vector2(72, 0)
+		cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col.add_child(cap)
+		rangee.add_child(col)
+	_ajouter(rangee)
+
+	_ajouter(_label("", 6))
+	_ajouter(_label("Sac", 19, OR))
+	if CharacterData.inventaire.is_empty():
+		_ajouter(_label("    Ton sac est vide.", 15))
+		return
+	var grille := GridContainer.new()
+	grille.columns = 8
+	grille.add_theme_constant_override("h_separation", 8)
+	grille.add_theme_constant_override("v_separation", 8)
+	for it in CharacterData.inventaire:
+		var tex_it: Texture2D = load(it["icone"])
+		var info_it: String = it["nom"]
+		if it.get("type", "") == "potion":
+			info_it += "  (Soin +%d)\nS'utilise en combat" % it.get("soin", 0)
+		elif it.get("slot", "") != "":
+			info_it += "  (Atq +%d / Def +%d)\nCliquer pour equiper" % [it.get("atk", 0), it.get("def", 0)]
+		grille.add_child(_slot(70.0, tex_it, _clic_sac.bind(it), info_it))
+	_ajouter(grille)
+
+
+func _slot(taille: float, icone: Texture2D, on_click: Callable, info: String) -> Control:
+	var box := Control.new()
+	box.custom_minimum_size = Vector2(taille, taille)
+	var bg := NinePatchRect.new()
+	bg.texture = SLOT_TEX
+	bg.patch_margin_left = 8
+	bg.patch_margin_top = 8
+	bg.patch_margin_right = 8
+	bg.patch_margin_bottom = 8
+	bg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(bg)
+
+	var btn := TextureButton.new()
+	if icone != null:
+		btn.texture_normal = icone
+	btn.ignore_texture_size = true
+	btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+	btn.position = Vector2(8, 8)
+	btn.size = Vector2(taille - 16, taille - 16)
+	btn.tooltip_text = info
+	btn.pressed.connect(on_click)
+	btn.mouse_entered.connect(Audio.play_hover)
+	box.add_child(btn)
+	return box
+
+
+func _clic_equip(slot: String) -> void:
+	if CharacterData.equipement[slot] == null:
+		return
+	Audio.play_click()
+	CharacterData.desequiper(slot)
+	_afficher()
+
+
+func _clic_sac(obj: Dictionary) -> void:
+	if obj.get("slot", "") != "":
+		Audio.play_click()
+		CharacterData.equiper(obj)
+		_afficher()
 
 
 func _onglet_attributs() -> void:

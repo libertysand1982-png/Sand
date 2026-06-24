@@ -139,6 +139,12 @@ func equiper(obj: Dictionary) -> void:
 		inventaire.append(ancien)
 
 
+func desequiper(slot: String) -> void:
+	if equipement.has(slot) and equipement[slot] != null:
+		inventaire.append(equipement[slot])
+		equipement[slot] = null
+
+
 func bonus_atk() -> int:
 	var t := 0
 	for slot in equipement:
