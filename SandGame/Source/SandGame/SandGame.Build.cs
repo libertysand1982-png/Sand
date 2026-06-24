@@ -23,7 +23,6 @@ public class SandGame : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
-			"Niagara",
 		});
 	}
 }

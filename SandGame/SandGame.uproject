@@ -28,16 +28,8 @@
 			"Enabled": true
 		},
 		{
-			"Name": "GameplayAbilities",
+			"Name": "Niagara",
 			"Enabled": true
-		},
-		{
-			"Name": "NiagaraParticleSystem",
-			"Enabled": true
-		},
-		{
-			"Name": "ChaosVehiclesPlugin",
-			"Enabled": false
 		}
 	]
 }
