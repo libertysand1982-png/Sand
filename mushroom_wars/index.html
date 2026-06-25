@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Mushroom Wars</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d1b0e; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: Georgia, serif; user-select: none; }
+h1 { color: #c8e6a0; font-size: 26px; margin-bottom: 8px; text-shadow: 0 2px 8px #000; letter-spacing: 2px; }
+canvas { display: block; border: 3px solid #3a5a2a; border-radius: 6px; box-shadow: 0 0 30px #000a; cursor: pointer; }
+#hint { color: #a0b880; font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<h1>🍄 Mushroom Wars</h1>
+<canvas id="c" width="900" height="580"></canvas>
+<div id="hint">Cliquez sur votre forteresse (bleue), puis sur une cible pour envoyer des troupes</div>
+<script>
+const C = document.getElementById('c');
+const ctx = C.getContext('2d');
+const W = C.width, H = C.height;
+const A = '../assets/';
+
+// ── Image loader ──────────────────────────────────────────────────────────────
+const IMG = {};
+let loaded = 0;
+const SRC = {
+  bg:      A + 'backgrounds/nature_1/6.png',
+  idle:    A + 'Monsters_Creatures_Fantasy/Mushroom/Idle.png',
+  run:     A + 'Monsters_Creatures_Fantasy/Mushroom/Run.png',
+  attack:  A + 'Monsters_Creatures_Fantasy/Mushroom/Attack.png',
+  tent:    A + 'buildings/army-camp-tent-001.png',
+  tower:   A + 'buildings/stone-watchtower-001.png',
+  castle:  A + 'buildings/clan-castle-001.png',
+};
+const TOTAL = Object.keys(SRC).length;
+for (const [k,v] of Object.entries(SRC)) {
+  IMG[k] = new Image();
+  IMG[k].onload = IMG[k].onerror = () => { if (++loaded >= TOTAL) init(); };
+  IMG[k].src = v;
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const NODE_R = 44;
+const SPEED  = 110; // px/s
+const COL = {
+  player:  { fill:'#2255cc', glow:'#4488ff', label:'#ddeeff' },
+  enemy:   { fill:'#cc2222', glow:'#ff5555', label:'#ffeedd' },
+  neutral: { fill:'#557744', glow:'#88aa66', label:'#ddeecc' },
+};
+const ANIM = {
+  idle:   { sheet:'idle',   frames:4, fw:150, fh:150, fps:7  },
+  run:    { sheet:'run',    frames:8, fw:150, fh:150, fps:12 },
+  attack: { sheet:'attack', frames:8, fw:150, fh:150, fps:10 },
+};
+const NTYPES = {
+  small:  { maxU:12, rate:0.6, img:'tent',   sz:58 },
+  medium: { maxU:22, rate:0.9, img:'tower',  sz:72 },
+  large:  { maxU:35, rate:1.4, img:'castle', sz:88 },
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let nodes, squads, particles, selected, phase, winner;
+let t = 0, aiTimer = 0;
+const AI_INTERVAL = 3.2;
+
+function init() {
+  nodes = [
+    // Player
+    { id:0, x:110, y:120, owner:'player',  units:18, type:'large'  },
+    { id:1, x:110, y:420, owner:'player',  units:10, type:'medium' },
+    // Neutral ring
+    { id:2, x:280, y:240, owner:'neutral', units:5,  type:'small'  },
+    { id:3, x:280, y:380, owner:'neutral', units:4,  type:'small'  },
+    { id:4, x:450, y:100, owner:'neutral', units:8,  type:'medium' },
+    { id:5, x:450, y:290, owner:'neutral', units:3,  type:'small'  },
+    { id:6, x:450, y:480, owner:'neutral', units:6,  type:'small'  },
+    { id:7, x:620, y:200, owner:'neutral', units:9,  type:'medium' },
+    { id:8, x:620, y:390, owner:'neutral', units:5,  type:'small'  },
+    // Enemy
+    { id:9,  x:790, y:120, owner:'enemy',  units:18, type:'large'  },
+    { id:10, x:790, y:420, owner:'enemy',  units:10, type:'medium' },
+  ];
+  squads = [];
+  particles = [];
+  selected = null;
+  phase = 'playing';
+  winner = null;
+  t = 0; aiTimer = 0;
+  requestAnimationFrame(loop);
+}
+
+// ── Squad launch ──────────────────────────────────────────────────────────────
+function sendSquad(from, to) {
+  const send = Math.max(1, Math.floor(from.units * 0.6));
+  from.units -= send;
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const dist = Math.hypot(dx, dy);
+  squads.push({
+    x: from.x, y: from.y,
+    tx: to.x, ty: to.y,
+    toId: to.id,
+    owner: from.owner,
+    count: send,
+    vx: dx/dist * SPEED, vy: dy/dist * SPEED,
+    dist, traveled: 0,
+    animT: 0, frame: 0, animState:'run',
+    flip: dx < 0,
+  });
+}
+
+// ── Combat ────────────────────────────────────────────────────────────────────
+function resolveArrival(sq) {
+  const node = nodes[sq.toId];
+  if (node.owner === sq.owner) {
+    node.units = Math.min(node.units + sq.count, NTYPES[node.type].maxU);
+  } else {
+    if (sq.count > node.units) {
+      const leftover = sq.count - node.units;
+      node.owner = sq.owner;
+      node.units = leftover;
+      spawnBurst(node.x, node.y, sq.owner);
+    } else {
+      node.units -= sq.count;
+    }
+  }
+}
+
+// ── AI ────────────────────────────────────────────────────────────────────────
+function aiTurn() {
+  const mine = nodes.filter(n => n.owner === 'enemy' && n.units > 4);
+  if (!mine.length) return;
+  // Pick richest node
+  mine.sort((a,b) => b.units - a.units);
+  const src = mine[0];
+  // Target: prefer weakest neutral or player node
+  const targets = nodes.filter(n => n.owner !== 'enemy');
+  if (!targets.length) return;
+  targets.sort((a,b) => a.units - b.units);
+  sendSquad(src, targets[0]);
+}
+
+// ── Particles ─────────────────────────────────────────────────────────────────
+function spawnBurst(x, y, owner) {
+  const c = COL[owner].glow;
+  for (let i = 0; i < 18; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const s = 40 + Math.random() * 80;
+    particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, life:1, maxLife:1, col:c });
+  }
+}
+
+// ── Win check ────────────────────────────────────────────────────────────────
+function checkWin() {
+  const alive = new Set(nodes.map(n => n.owner));
+  // Also count squads
+  squads.forEach(s => alive.add(s.owner));
+  if (!alive.has('player'))  { phase='end'; winner='enemy';  }
+  if (!alive.has('enemy'))   { phase='end'; winner='player'; }
+}
+
+// ── Update ────────────────────────────────────────────────────────────────────
+function update(dt) {
+  // Accumulate
+  for (const n of nodes) {
+    if (n.owner !== 'neutral') {
+      n.units = Math.min(n.units + NTYPES[n.type].rate * dt, NTYPES[n.type].maxU);
+    }
+  }
+
+  // Move squads
+  for (let i = squads.length - 1; i >= 0; i--) {
+    const sq = squads[i];
+    sq.x += sq.vx * dt;
+    sq.y += sq.vy * dt;
+    sq.traveled += Math.hypot(sq.vx * dt, sq.vy * dt);
+    sq.animT += dt;
+    const anim = ANIM[sq.animState];
+    sq.frame = Math.floor(sq.animT * anim.fps) % anim.frames;
+    if (sq.traveled >= sq.dist) {
+      resolveArrival(sq);
+      squads.splice(i, 1);
+    }
+  }
+
+  // Particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.vx *= 0.92; p.vy *= 0.92;
+    p.life -= dt * 1.5;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+
+  // AI
+  aiTimer += dt;
+  if (aiTimer >= AI_INTERVAL) { aiTimer = 0; aiTurn(); }
+
+  t += dt;
+  checkWin();
+}
+
+// ── Draw helpers ──────────────────────────────────────────────────────────────
+function drawSprite(sheet, frame, fw, fh, dx, dy, dw, dh, flip) {
+  const img = IMG[sheet];
+  if (!img || !img.naturalWidth) return;
+  ctx.save();
+  if (flip) {
+    ctx.translate(dx + dw, dy);
+    ctx.scale(-1, 1);
+    dx = 0; dy = 0;
+  }
+  ctx.drawImage(img, frame * fw, 0, fw, fh, dx, dy, dw, dh);
+  ctx.restore();
+}
+
+function drawNode(n) {
+  const nt = NTYPES[n.type];
+  const c  = COL[n.owner];
+  const isSelected = selected === n.id;
+
+  // Glow ring
+  if (isSelected) {
+    ctx.save();
+    ctx.shadowColor = '#ffff88';
+    ctx.shadowBlur  = 22;
+    ctx.strokeStyle = '#ffff88';
+    ctx.lineWidth   = 3;
+    ctx.beginPath(); ctx.arc(n.x, n.y, NODE_R + 4, 0, Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
+
+  // Ownership ring
+  ctx.save();
+  ctx.shadowColor = c.glow;
+  ctx.shadowBlur  = isSelected ? 24 : 12;
+  ctx.strokeStyle = c.fill;
+  ctx.lineWidth   = 5;
+  ctx.beginPath(); ctx.arc(n.x, n.y, NODE_R, 0, Math.PI*2); ctx.stroke();
+  ctx.restore();
+
+  // Building sprite
+  const half = nt.sz / 2;
+  const img = IMG[nt.img];
+  if (img && img.naturalWidth) {
+    ctx.drawImage(img, n.x - half, n.y - half - 10, nt.sz, nt.sz);
+  } else {
+    ctx.fillStyle = c.fill;
+    ctx.beginPath(); ctx.arc(n.x, n.y, NODE_R - 8, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Unit count badge
+  const u = Math.floor(n.units);
+  ctx.fillStyle = '#000a';
+  ctx.beginPath(); ctx.arc(n.x, n.y + NODE_R - 8, 14, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = c.label;
+  ctx.font = 'bold 13px Georgia';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(u, n.x, n.y + NODE_R - 8);
+}
+
+function drawSquad(sq) {
+  const anim = ANIM[sq.animState];
+  const s = 38;
+  // Shadow
+  ctx.fillStyle = '#0004';
+  ctx.beginPath(); ctx.ellipse(sq.x, sq.y + s/2 - 2, s*0.4, s*0.12, 0, 0, Math.PI*2); ctx.fill();
+  // Sprite
+  drawSprite(anim.sheet, sq.frame, anim.fw, anim.fh,
+    sq.x - s/2, sq.y - s/2, s, s, sq.flip);
+  // Color overlay tint via colored circle behind (subtle)
+  const c = COL[sq.owner];
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = c.fill;
+  ctx.beginPath(); ctx.arc(sq.x, sq.y, s/2 - 2, 0, Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 1;
+  // Count bubble
+  if (sq.count > 1) {
+    ctx.fillStyle = '#000b';
+    ctx.beginPath(); ctx.arc(sq.x + 14, sq.y - 14, 11, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = c.label;
+    ctx.font = 'bold 10px Georgia';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(sq.count, sq.x + 14, sq.y - 14);
+  }
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    ctx.globalAlpha = p.life / p.maxLife;
+    ctx.fillStyle = p.col;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 4 * (p.life/p.maxLife), 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawBackground() {
+  const bg = IMG['bg'];
+  if (bg && bg.naturalWidth) {
+    // tile the background
+    const pat = ctx.createPattern(bg, 'repeat');
+    const scale = Math.max(W/bg.naturalWidth, H/bg.naturalHeight);
+    ctx.save();
+    ctx.scale(scale, scale);
+    ctx.fillStyle = pat;
+    ctx.fillRect(0, 0, W/scale, H/scale);
+    ctx.restore();
+  } else {
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#1a3a10');
+    g.addColorStop(1,'#0d2008');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,H);
+  }
+  // Darkened overlay for readability
+  ctx.fillStyle = '#000000aa';
+  ctx.fillRect(0,0,W,H);
+}
+
+function drawUI() {
+  const pN = nodes.filter(n=>n.owner==='player').length;
+  const eN = nodes.filter(n=>n.owner==='enemy').length;
+  ctx.fillStyle = '#000a';
+  ctx.fillRect(0, 0, W, 32);
+  ctx.fillStyle = COL.player.label;
+  ctx.font = 'bold 14px Georgia';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(`🔵 Vous: ${pN} forteresses`, 12, 16);
+  ctx.fillStyle = COL.enemy.label;
+  ctx.textAlign = 'right';
+  ctx.fillText(`${eN} forteresses :Ennemi 🔴`, W - 12, 16);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#aac888';
+  ctx.fillText('Cliquez votre base → cible', W/2, 16);
+}
+
+function drawEndScreen() {
+  ctx.fillStyle = '#000000cc';
+  ctx.fillRect(0,0,W,H);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (winner === 'player') {
+    ctx.fillStyle = '#88ff44';
+    ctx.font = 'bold 52px Georgia';
+    ctx.fillText('VICTOIRE !', W/2, H/2 - 30);
+    ctx.font = '22px Georgia';
+    ctx.fillStyle = '#ccffaa';
+    ctx.fillText('Les champignons vous appartiennent 🍄', W/2, H/2 + 30);
+  } else {
+    ctx.fillStyle = '#ff4444';
+    ctx.font = 'bold 52px Georgia';
+    ctx.fillText('DÉFAITE', W/2, H/2 - 30);
+    ctx.font = '22px Georgia';
+    ctx.fillStyle = '#ffcccc';
+    ctx.fillText("L'ennemi contrôle tout... 💀", W/2, H/2 + 30);
+  }
+  ctx.fillStyle = '#ffffff88';
+  ctx.font = '16px Georgia';
+  ctx.fillText('Cliquez pour rejouer', W/2, H/2 + 80);
+}
+
+// ── Main loop ─────────────────────────────────────────────────────────────────
+let lastRaf = 0;
+function loop(ts) {
+  const dt = Math.min((ts - lastRaf) / 1000, 0.05);
+  lastRaf = ts;
+
+  if (phase === 'playing') update(dt);
+
+  drawBackground();
+  for (const n of nodes) drawNode(n);
+  for (const sq of squads) drawSquad(sq);
+  drawParticles();
+  drawUI();
+  if (phase === 'end') drawEndScreen();
+
+  requestAnimationFrame(loop);
+}
+
+// ── Input ─────────────────────────────────────────────────────────────────────
+C.addEventListener('click', e => {
+  if (phase === 'end') { init(); return; }
+
+  const rect = C.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (W / rect.width);
+  const my = (e.clientY - rect.top)  * (H / rect.height);
+
+  // Find clicked node
+  const hit = nodes.find(n => Math.hypot(n.x - mx, n.y - my) < NODE_R + 8);
+
+  if (!hit) { selected = null; return; }
+
+  if (selected !== null && selected !== hit.id) {
+    const from = nodes[selected];
+    if (from.owner === 'player' && Math.floor(from.units) >= 2) {
+      sendSquad(from, hit);
+    }
+    selected = null;
+  } else if (hit.owner === 'player') {
+    selected = hit.id;
+  } else {
+    selected = null;
+  }
+});
+
+// Start is triggered once all images loaded (or errored)
+</script>
+</body>
+</html>
