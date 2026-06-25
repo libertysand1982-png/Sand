@@ -299,7 +299,7 @@ func _update_fog(delta: float) -> void:
 
 func _update_torches() -> void:
 	for t in _torches:
-		var flicker := t.base + sin(_time * t.freq + t.phase) * t.amp * 0.5 + sin(_time * t.freq * 2.3 + t.phase) * t.amp * 0.5
+		var flicker: float = t.base + sin(_time * t.freq + t.phase) * t.amp * 0.5 + sin(_time * t.freq * 2.3 + t.phase) * t.amp * 0.5
 		t.rect.modulate.a = clampf(flicker, 0.0, 1.0)
 		# Random pop
 		if randf() < 0.004:
