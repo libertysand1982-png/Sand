@@ -263,9 +263,9 @@ func _draw() -> void:
 
 	# ── Fortress rings + buildings ──
 	for f in _forts:
-		var c   := OWNER_COL[f["owner"]]
-		var pos := f["pos"]
-		var sz  := float(TYPES[f["type"]]["sz"])
+		var c: Color   = OWNER_COL[f["owner"]]
+		var pos: Vector2 = f["pos"]
+		var sz: float  = float(TYPES[f["type"]]["sz"])
 
 		# Glow fill
 		draw_circle(pos, NODE_R + 3, Color(c.r, c.g, c.b, 0.14))
@@ -300,7 +300,8 @@ func _draw() -> void:
 	for sq in _squads:
 		var n = sq.get("node")
 		if n and is_instance_valid(n):
-			var badge := n.position + Vector2(12, -18)
+			var nd: Node2D = n
+			var badge: Vector2 = nd.position + Vector2(12, -18)
 			draw_circle(badge, 10.0, Color(0, 0, 0, 0.7))
 			var ct := str(sq["count"])
 			var tw := font.get_string_size(ct, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_sm).x
