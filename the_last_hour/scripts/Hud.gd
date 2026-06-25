@@ -6,6 +6,7 @@ signal start_pressed()
 signal continue_pressed()
 signal retry_pressed()
 signal quit_pressed()
+signal menu_principal_pressed()
 
 var _timer_lbl: Label
 var _hp_fill: ColorRect
@@ -16,6 +17,8 @@ var _alert_t := 0.0
 var _boss_container: Control
 var _boss_fill: ColorRect
 var _boss_phase_lbl: Label
+var _boss_lbl: Label
+var _revelation_panel: Control = null
 
 var _overlay: ColorRect
 var _menu_panel: Control
@@ -127,12 +130,12 @@ func build() -> void:
 	_boss_fill.color = Color(0.85, 0.15, 0.15)
 	_boss_container.add_child(_boss_fill)
 
-	var boss_lbl := Label.new()
-	boss_lbl.text = "LE GEÔLIER"
-	boss_lbl.add_theme_font_size_override("font_size", 13)
-	boss_lbl.add_theme_color_override("font_color", Color(1, 0.7, 0.7))
-	boss_lbl.position = Vector2(340, 0)
-	_boss_container.add_child(boss_lbl)
+	_boss_lbl = Label.new()
+	_boss_lbl.text = "LE GEÔLIER"
+	_boss_lbl.add_theme_font_size_override("font_size", 13)
+	_boss_lbl.add_theme_color_override("font_color", Color(1, 0.7, 0.7))
+	_boss_lbl.position = Vector2(340, 0)
+	_boss_container.add_child(_boss_lbl)
 
 	_boss_phase_lbl = Label.new()
 	_boss_phase_lbl.text = ""
@@ -184,8 +187,9 @@ func _build_death_panel() -> void:
 	_add_label(_death_panel, "Le timer continue. Ton fils attend.", 16,
 			Color(0.65, 0.65, 0.75), Vector2(0, -40))
 
-	_add_btn(_death_panel, "CONTINUER", Vector2(0, 50),  func(): emit_signal("continue_pressed"))
-	_add_btn(_death_panel, "QUITTER",   Vector2(0, 100), func(): emit_signal("quit_pressed"))
+	_add_btn(_death_panel, "CONTINUER",      Vector2(0, 50),  func(): emit_signal("continue_pressed"))
+	_add_btn(_death_panel, "MENU PRINCIPAL", Vector2(0, 100), func(): emit_signal("menu_principal_pressed"))
+	_add_btn(_death_panel, "QUITTER",        Vector2(0, 150), func(): emit_signal("quit_pressed"))
 
 func _build_victory_panel() -> void:
 	_victory_panel = _make_panel()
@@ -199,8 +203,9 @@ func _build_victory_panel() -> void:
 	var time_lbl := _add_label(_victory_panel, "", 26, Color(1.0, 0.9, 0.4), Vector2(0, -100))
 	time_lbl.name = "TimeLabel"
 
-	_add_btn(_victory_panel, "REJOUER",  Vector2(0, 50),  func(): emit_signal("retry_pressed"))
-	_add_btn(_victory_panel, "QUITTER",  Vector2(0, 100), func(): emit_signal("quit_pressed"))
+	_add_btn(_victory_panel, "REJOUER",       Vector2(0, 50),  func(): emit_signal("retry_pressed"))
+	_add_btn(_victory_panel, "MENU PRINCIPAL",Vector2(0, 100), func(): emit_signal("menu_principal_pressed"))
+	_add_btn(_victory_panel, "QUITTER",       Vector2(0, 150), func(): emit_signal("quit_pressed"))
 
 func _build_gameover_panel() -> void:
 	_gameover_panel = _make_panel()
@@ -213,8 +218,9 @@ func _build_gameover_panel() -> void:
 	_add_label(_gameover_panel, "Certains secrets ne pardonnent pas.", 16,
 			Color(0.65, 0.45, 0.45), Vector2(0, -90))
 
-	_add_btn(_gameover_panel, "REJOUER",  Vector2(0, 50),  func(): emit_signal("retry_pressed"))
-	_add_btn(_gameover_panel, "QUITTER",  Vector2(0, 100), func(): emit_signal("quit_pressed"))
+	_add_btn(_gameover_panel, "REJOUER",        Vector2(0, 50),  func(): emit_signal("retry_pressed"))
+	_add_btn(_gameover_panel, "MENU PRINCIPAL", Vector2(0, 100), func(): emit_signal("menu_principal_pressed"))
+	_add_btn(_gameover_panel, "QUITTER",        Vector2(0, 150), func(): emit_signal("quit_pressed"))
 
 # ── Public API ──────────────────────────────────────────────────────────────────
 
@@ -295,6 +301,41 @@ func update_boss_hp(pct: float) -> void:
 func show_boss_phase(n: int) -> void:
 	if is_instance_valid(_boss_phase_lbl):
 		_boss_phase_lbl.text = "Phase %d" % n
+
+func update_boss_name(name: String) -> void:
+	if is_instance_valid(_boss_lbl):
+		_boss_lbl.text = name
+		_boss_lbl.add_theme_color_override("font_color", Color(0.9, 0.6, 1.0))
+
+func show_revelation() -> void:
+	if _revelation_panel == null:
+		_build_revelation_panel()
+	_overlay.visible = true
+	_revelation_panel.visible = true
+	var t := create_tween()
+	t.tween_interval(5.2)
+	t.tween_callback(func():
+		if is_instance_valid(_revelation_panel):
+			_revelation_panel.visible = false
+		_overlay.visible = false
+	)
+
+func _build_revelation_panel() -> void:
+	_revelation_panel = _make_panel()
+	_revelation_panel.visible = false
+	_add_label(_revelation_panel, "...", 28, Color(0.65, 0.55, 0.75), Vector2(0, -220))
+	_add_label(_revelation_panel, "Le Geôlier n'était que le premier garde.", 24,
+			Color(0.80, 0.70, 0.90), Vector2(0, -160))
+	_add_label(_revelation_panel, "Une voix s'élève depuis l'obscurité :", 22,
+			Color(0.72, 0.62, 0.84), Vector2(0, -108))
+	_add_label(_revelation_panel, "« Mes fils... je vous attendais. »", 30,
+			Color(0.96, 0.92, 1.00), Vector2(0, -50))
+	_add_label(_revelation_panel, "VOTRE MÈRE EST UN VAMPIRE.", 46,
+			Color(0.72, 0.06, 0.86), Vector2(0, 28))
+	_add_label(_revelation_panel, "Elle a tout orchestré depuis le début.", 20,
+			Color(0.68, 0.58, 0.80), Vector2(0, 100))
+	_add_label(_revelation_panel, "Elle vous a abandonnés... pour devenir ceci.", 17,
+			Color(0.50, 0.42, 0.62), Vector2(0, 138))
 
 func show_alert(text: String) -> void:
 	_alert_lbl.text = text

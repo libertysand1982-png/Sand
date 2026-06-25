@@ -11,6 +11,7 @@ enum State { MENU, PLAYING, PAUSED, DEATH, VICTORY, GAMEOVER }
 var state: State = State.MENU
 var run_count := 0
 var total_kills := 0
+var auto_start := false
 
 func _ready() -> void:
 	GlobalTimer.expired.connect(_on_expired)

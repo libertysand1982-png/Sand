@@ -18,6 +18,7 @@ func _ready() -> void:
 	_hud.continue_pressed.connect(_on_continue)
 	_hud.retry_pressed.connect(_on_retry)
 	_hud.quit_pressed.connect(get_tree().quit)
+	_hud.menu_principal_pressed.connect(_on_menu_principal)
 
 	# Game events
 	GameManager.run_started.connect(_build_run)
@@ -30,8 +31,14 @@ func _ready() -> void:
 	GlobalTimer.threshold_reached.connect(_on_threshold)
 	GlobalTimer.expired.connect(func(): _hud.show_alert("TON FILS EST MORT."))
 
-	_hud.show_menu()
-	_hud.show_hud(false)
+	if GameManager.auto_start:
+		GameManager.auto_start = false
+		_hud.show_hud(false)
+		_hud.hide_overlays()
+		_build_run()
+	else:
+		_hud.show_menu()
+		_hud.show_hud(false)
 
 # ── Button callbacks ──────────────────────────────────────────────────────────
 
@@ -43,6 +50,14 @@ func _on_continue() -> void:
 
 func _on_retry() -> void:
 	GameManager.new_game()
+
+func _on_menu_principal() -> void:
+	_teardown()
+	GlobalTimer.pause()
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+
+func _on_revelation() -> void:
+	_hud.show_revelation()
 
 # ── Run lifecycle ─────────────────────────────────────────────────────────────
 
@@ -64,6 +79,8 @@ func _build_run() -> void:
 	_dungeon.boss_defeated.connect(_on_boss_defeated)
 	_dungeon.boss_hp_changed.connect(_hud.update_boss_hp)
 	_dungeon.boss_phase.connect(_hud.show_boss_phase)
+	_dungeon.revelation_started.connect(_on_revelation)
+	_dungeon.boss_name_changed.connect(_hud.update_boss_name)
 
 	# Camera limits
 	var total_w := int(TLHDungeon.BOSS_X) + 1700

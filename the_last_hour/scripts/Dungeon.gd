@@ -15,12 +15,16 @@ var _floats: Array = []
 var _zone_alive: Dictionary = {}
 var _zone_barriers: Array = []  # {body, door, zone, open}
 var _boss: TLHJailer = null
+var _boss_mother: TLHMother = null
 var _boss_entrance_body: StaticBody2D = null
 var _boss_entered := false
+var _drain_arrows: Array = []
 
 signal boss_hp_changed(pct: float)
 signal boss_defeated()
 signal boss_phase(n: int)
+signal revelation_started()
+signal boss_name_changed(name: String)
 
 func build(player: TLHPlayer) -> void:
 	_player = player
@@ -249,6 +253,7 @@ func _make_barrier(x: float, zone_idx: int) -> Dictionary:
 
 func _process(delta: float) -> void:
 	_update_arrows(delta)
+	_update_drain_arrows(delta)
 	_update_floats(delta)
 	_check_boss_entrance()
 
@@ -342,6 +347,20 @@ func _on_burst_bullet(from: Vector2, velocity_vec: Vector2, damage: int) -> void
 	add_child(arrow)
 	_arrows.append(arrow)
 
+func _on_drain_bullet(from: Vector2, velocity_vec: Vector2, damage: int) -> void:
+	var arrow := TLHArrow.new()
+	arrow.setup(from, velocity_vec, damage)
+	arrow.modulate = Color(0.65, 0.10, 0.85)
+	add_child(arrow)
+	_drain_arrows.append(arrow)
+
+func _on_bat_bullet(from: Vector2, velocity_vec: Vector2, damage: int) -> void:
+	var arrow := TLHArrow.new()
+	arrow.setup(from, velocity_vec, damage)
+	arrow.modulate = Color(0.12, 0.08, 0.18)
+	add_child(arrow)
+	_arrows.append(arrow)
+
 func _on_knife_fired(from_pos: Vector2, direction: int) -> void:
 	var knife := TLHKnife.new()
 	knife.setup(from_pos, direction, 530.0, RunData.knife_dmg, _enemies)
@@ -353,7 +372,31 @@ func _on_hit_landed(pos: Vector2, dmg: int) -> void:
 
 func _on_boss_died() -> void:
 	_spawn_float(_boss.global_position if is_instance_valid(_boss) else Vector2(BOSS_X + 700, 400),
-				 "VAINCU !", Color(1.0, 0.85, 0.2))
+				 "PHASE 2 !", Color(0.80, 0.30, 1.0))
+	GlobalTimer.pause()
+	emit_signal("revelation_started")
+	var t := create_tween()
+	t.tween_interval(5.5)
+	t.tween_callback(_spawn_mother)
+
+func _spawn_mother() -> void:
+	GlobalTimer.start()
+	_boss_mother = TLHMother.new()
+	_boss_mother.collision_layer = 2
+	_boss_mother.collision_mask  = 4
+	_boss_mother.setup(Vector2(BOSS_X + 700, GROUND_Y - 50), _player)
+	_boss_mother.died.connect(_on_mother_died)
+	_boss_mother.hp_changed.connect(func(c, _m): emit_signal("boss_hp_changed", float(c) / float(TLHMother.HP_MAX)))
+	_boss_mother.phase_changed.connect(func(n): emit_signal("boss_phase", n))
+	_boss_mother.drain_bullet.connect(_on_drain_bullet)
+	_boss_mother.bat_bullet.connect(_on_bat_bullet)
+	add_child(_boss_mother)
+	emit_signal("boss_name_changed", "LA MÈRE")
+	emit_signal("boss_hp_changed", 1.0)
+
+func _on_mother_died() -> void:
+	_spawn_float(_boss_mother.global_position if is_instance_valid(_boss_mother) else Vector2(BOSS_X + 700, 400),
+				 "VICTOIRE !", Color(1.0, 0.70, 1.0))
 	emit_signal("boss_defeated")
 
 # ── Projectile updates ──────────────────────────────────────────────────────────
@@ -369,6 +412,20 @@ func _update_arrows(delta: float) -> void:
 				_player.take_damage(arrow.dmg, arrow.vel.normalized() * 130.0)
 				arrow.queue_free()
 				_arrows.remove_at(i)
+
+func _update_drain_arrows(delta: float) -> void:
+	for i in range(_drain_arrows.size() - 1, -1, -1):
+		if not is_instance_valid(_drain_arrows[i]):
+			_drain_arrows.remove_at(i)
+			continue
+		var arrow: TLHArrow = _drain_arrows[i]
+		if _player and is_instance_valid(_player):
+			if arrow.global_position.distance_to(_player.global_position) < 22.0:
+				_player.take_damage(arrow.dmg, arrow.vel.normalized() * 80.0)
+				if is_instance_valid(_boss_mother):
+					_boss_mother.heal(25)
+				arrow.queue_free()
+				_drain_arrows.remove_at(i)
 
 # ── Floating numbers ────────────────────────────────────────────────────────────
 
@@ -397,6 +454,8 @@ func _update_floats(delta: float) -> void:
 			_floats.remove_at(i)
 
 func get_boss_hp_pct() -> float:
+	if is_instance_valid(_boss_mother):
+		return float(_boss_mother.hp) / float(TLHMother.HP_MAX)
 	if _boss == null or not is_instance_valid(_boss):
 		return -1.0
 	return float(_boss.hp) / TLHJailer.HP_MAX
