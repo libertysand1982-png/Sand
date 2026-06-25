@@ -1,15 +1,15 @@
-# Player.gd — le héros. Sprite + caméra. La logique de jeu est pilotée par Main.gd.
+# Player.gd — le héros (HeroKnight animé) : AnimatedSprite2D + caméra.
+# La logique est pilotée par Main.gd.
 class_name VSPlayer
 extends Node2D
 
-const SIZE := 46.0
-
-var sprite: Sprite2D
+var anim: AnimatedSprite2D
 var cam: Camera2D
-var base_scale: Vector2
+var disp_scale := 1.45
+var dying := false
 
 # Stats
-var radius := 15.0
+var radius := 16.0
 var speed := 205.0
 var maxhp := 100.0
 var hp := 100.0
@@ -19,7 +19,6 @@ var xp_to_next := 5
 var facing := 1
 var invuln := 0.0
 var pickup := 80.0
-var bob := 0.0
 var step_timer := 0.0
 
 # Arme (frappe automatique)
@@ -29,15 +28,13 @@ var proj_damage := 24.0
 var proj_speed := 430.0
 var proj_count := 1
 var pierce := 0
-var proj_size := 11.0
+var proj_size := 12.0
 
 func _ready() -> void:
-	base_scale = Vector2(SIZE / 64.0, SIZE / 64.0)
-	sprite = Sprite2D.new()
-	sprite.texture = load("res://assets/characters/hero.png")
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.scale = base_scale
-	add_child(sprite)
+	anim = AnimatedSprite2D.new()
+	anim.scale = Vector2(disp_scale, disp_scale)
+	anim.offset = Vector2(0, -6)
+	add_child(anim)
 
 	cam = Camera2D.new()
 	cam.position_smoothing_enabled = true
@@ -45,9 +42,14 @@ func _ready() -> void:
 	add_child(cam)
 	cam.make_current()
 
+func set_frames(sf: SpriteFrames) -> void:
+	anim.sprite_frames = sf
+	anim.play("idle")
+
 func reset(pos: Vector2) -> void:
 	position = pos
-	radius = 15.0
+	dying = false
+	radius = 16.0
 	speed = 205.0
 	maxhp = 100.0
 	hp = 100.0
@@ -57,7 +59,6 @@ func reset(pos: Vector2) -> void:
 	facing = 1
 	invuln = 0.0
 	pickup = 80.0
-	bob = 0.0
 	step_timer = 0.0
 	fire_cd = 0.0
 	fire_interval = 0.85
@@ -65,13 +66,21 @@ func reset(pos: Vector2) -> void:
 	proj_speed = 430.0
 	proj_count = 1
 	pierce = 0
-	proj_size = 11.0
-	sprite.scale = base_scale
-	sprite.position = Vector2.ZERO
-	sprite.modulate = Color(1, 1, 1, 1)
+	proj_size = 12.0
+	anim.scale = Vector2(disp_scale, disp_scale)
+	anim.modulate = Color(1, 1, 1, 1)
+	anim.flip_h = false
+	if anim.sprite_frames:
+		anim.play("idle")
 
 func xp_pct() -> float:
 	return float(xp) / float(xp_to_next)
 
 func hp_pct() -> float:
 	return hp / maxhp
+
+func _draw() -> void:
+	# ombre portée (ellipse aplatie sous les pieds)
+	draw_set_transform(Vector2(0, 30), 0.0, Vector2(1, 0.4))
+	draw_circle(Vector2.ZERO, 17, Color(0, 0, 0, 0.28))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

@@ -1,15 +1,21 @@
-# Hud.gd — interface : barres XP/PV, chrono, kills, et les écrans menu / niveau / fin / pause.
+# Hud.gd — interface : HUD de jeu + menus (accueil, options, niveau, fin, pause)
+# avec fond forêt crépusculaire et style soigné.
 class_name VSHud
 extends CanvasLayer
 
 signal play_pressed
 signal retry_pressed
+signal to_menu_pressed
 signal upgrade_chosen(id: String)
+signal music_changed(v: float)
+signal sfx_changed(v: float)
 
 const GOLD := Color(1.0, 0.847, 0.420)
 const CREAM := Color(0.957, 0.925, 0.776)
+const LILAC := Color(0.72, 0.66, 0.81)
 
 var bars: Control
+var menu_bg: Control
 var xp_fill: ColorRect
 var xp_label: Label
 var hp_fill: ColorRect
@@ -18,22 +24,54 @@ var timer_label: Label
 var kills_label: Label
 var mute_label: Label
 var hp_full_w := 240.0
-var xp_full_w := 700.0
+var xp_full_w := 720.0
 
 var overlay_menu: Control
+var overlay_options: Control
 var overlay_levelup: Control
 var overlay_gameover: Control
 var overlay_pause: Control
 var cards_box: HBoxContainer
 var go_stats: Label
+var music_pct: Label
+var sfx_pct: Label
 
-# ----- Construction -----
+# ============================================================
 func build() -> void:
+	_build_menu_bg()
+	_build_bars()
+	_build_menu()
+	_build_options()
+	_build_levelup()
+	_build_gameover()
+	_build_pause()
+	bars.visible = false
+
+func _build_menu_bg() -> void:
+	menu_bg = _full_control()
+	menu_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tex := TextureRect.new()
+	tex.texture = load("res://assets/bg/forest.png")
+	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	tex.anchor_right = 1.0
+	tex.anchor_bottom = 1.0
+	tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	menu_bg.add_child(tex)
+	var tint := ColorRect.new()        # voile crépusculaire
+	tint.color = Color(0.06, 0.05, 0.13, 0.58)
+	tint.anchor_right = 1.0
+	tint.anchor_bottom = 1.0
+	tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	menu_bg.add_child(tint)
+	add_child(menu_bg)
+	menu_bg.visible = false
+
+func _build_bars() -> void:
 	bars = _full_control()
 	bars.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bars)
 
-	# Barre d'XP (haut, centrée)
 	var xp_bg := ColorRect.new()
 	xp_bg.color = Color(0, 0, 0, 0.55)
 	_anchor(xp_bg, 0.5, 0.0, 0.5, 0.0, -xp_full_w / 2.0, 12.0, xp_full_w / 2.0, 36.0)
@@ -47,7 +85,6 @@ func build() -> void:
 	xp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bars.add_child(xp_label)
 
-	# Chrono + kills
 	timer_label = _label("00:00", 20, Color(1.0, 0.91, 0.66))
 	_anchor(timer_label, 0.5, 0.0, 0.5, 0.0, -120.0, 42.0, -10.0, 70.0)
 	timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -56,7 +93,6 @@ func build() -> void:
 	_anchor(kills_label, 0.5, 0.0, 0.5, 0.0, 14.0, 42.0, 140.0, 70.0)
 	bars.add_child(kills_label)
 
-	# Barre de vie (bas-gauche)
 	var hp_bg := ColorRect.new()
 	hp_bg.color = Color(0, 0, 0, 0.55)
 	_anchor(hp_bg, 0.0, 1.0, 0.0, 1.0, 18.0, -42.0, 18.0 + hp_full_w, -18.0)
@@ -69,62 +105,104 @@ func build() -> void:
 	_anchor(hp_label, 0.0, 1.0, 0.0, 1.0, 28.0, -41.0, 28.0 + hp_full_w, -19.0)
 	bars.add_child(hp_label)
 
-	# Indicateur muet (haut-droite)
-	mute_label = _label("Muet", 14, Color(0.72, 0.66, 0.81))
+	mute_label = _label("Muet", 14, LILAC)
 	_anchor(mute_label, 1.0, 0.0, 1.0, 0.0, -110.0, 12.0, -12.0, 34.0)
 	mute_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	mute_label.visible = false
 	bars.add_child(mute_label)
 
-	# ----- Overlays -----
-	overlay_menu = _overlay()
-	var mp := _panel(560, 360)
-	overlay_menu.add_child(mp)
-	var mv := _vbox(mp)
-	mv.add_child(_label("CRÉPUSCULE", 44, GOLD, true))
-	mv.add_child(_label("Survis aux vagues. Ton arme frappe toute seule :\nramasse les gemmes, monte en niveau, deviens surpuissant.", 16, CREAM, true))
-	mv.add_child(_label("Déplacement : WASD / ZQSD / flèches   ·   Pause : P   ·   Son : M", 13, Color(0.72, 0.66, 0.81), true))
-	var play_btn := _button("JOUER")
-	play_btn.pressed.connect(func(): play_pressed.emit())
-	mv.add_child(play_btn)
+func _build_menu() -> void:
+	overlay_menu = _overlay(false)
+	var p := _panel(600, 420)
+	overlay_menu.add_child(p)
+	var v := _vbox(p)
+	v.add_child(_title("CRÉPUSCULE"))
+	v.add_child(_label("Survis aux vagues. Ton arme frappe toute seule.", 16, CREAM, true))
+	v.add_child(_spacer(6))
+	var b1 := _button("NOUVELLE PARTIE")
+	b1.pressed.connect(func(): play_pressed.emit())
+	v.add_child(b1)
+	var b2 := _button("OPTIONS")
+	b2.pressed.connect(func(): show_options())
+	v.add_child(b2)
+	var b3 := _button("QUITTER")
+	b3.pressed.connect(func(): get_tree().quit())
+	v.add_child(b3)
+	v.add_child(_spacer(4))
+	v.add_child(_label("WASD / ZQSD / flèches  ·  Pause : P  ·  Son : M", 12, LILAC, true))
 	add_child(overlay_menu)
+	overlay_menu.visible = false
 
-	overlay_levelup = _overlay()
-	var lp := _panel(640, 320)
-	overlay_levelup.add_child(lp)
-	var lv := _vbox(lp)
-	lv.add_child(_label("NIVEAU SUPÉRIEUR !", 32, GOLD, true))
-	lv.add_child(_label("Choisis une amélioration", 16, CREAM, true))
+func _build_options() -> void:
+	overlay_options = _overlay(false)
+	var p := _panel(560, 380)
+	overlay_options.add_child(p)
+	var v := _vbox(p)
+	v.add_child(_title2("OPTIONS"))
+	v.add_child(_spacer(6))
+	music_pct = _label("Musique : 55%", 16, CREAM, true)
+	v.add_child(music_pct)
+	var ms := _slider(0.55)
+	ms.value_changed.connect(func(val):
+		music_pct.text = "Musique : %d%%" % int(round(val * 100))
+		music_changed.emit(val))
+	v.add_child(ms)
+	v.add_child(_spacer(8))
+	sfx_pct = _label("Effets : 85%", 16, CREAM, true)
+	v.add_child(sfx_pct)
+	var ss := _slider(0.85)
+	ss.value_changed.connect(func(val):
+		sfx_pct.text = "Effets : %d%%" % int(round(val * 100))
+		sfx_changed.emit(val))
+	v.add_child(ss)
+	v.add_child(_spacer(10))
+	var back := _button("RETOUR")
+	back.pressed.connect(func(): show_menu())
+	v.add_child(back)
+	add_child(overlay_options)
+	overlay_options.visible = false
+
+func _build_levelup() -> void:
+	overlay_levelup = _overlay(true)
+	var p := _panel(660, 320)
+	overlay_levelup.add_child(p)
+	var v := _vbox(p)
+	v.add_child(_title2("NIVEAU SUPÉRIEUR !"))
+	v.add_child(_label("Choisis une amélioration", 16, CREAM, true))
 	cards_box = HBoxContainer.new()
 	cards_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	cards_box.add_theme_constant_override("separation", 14)
-	lv.add_child(cards_box)
-	overlay_levelup.visible = false
+	v.add_child(cards_box)
 	add_child(overlay_levelup)
+	overlay_levelup.visible = false
 
-	overlay_gameover = _overlay()
-	var gp := _panel(520, 300)
-	overlay_gameover.add_child(gp)
-	var gv := _vbox(gp)
-	gv.add_child(_label("TU ES TOMBÉ", 32, GOLD, true))
+func _build_gameover() -> void:
+	overlay_gameover = _overlay(false)
+	var p := _panel(540, 360)
+	overlay_gameover.add_child(p)
+	var v := _vbox(p)
+	v.add_child(_title2("TU ES TOMBÉ"))
 	go_stats = _label("", 17, CREAM, true)
-	gv.add_child(go_stats)
-	var retry_btn := _button("REJOUER")
-	retry_btn.pressed.connect(func(): retry_pressed.emit())
-	gv.add_child(retry_btn)
-	overlay_gameover.visible = false
+	v.add_child(go_stats)
+	v.add_child(_spacer(8))
+	var r := _button("REJOUER")
+	r.pressed.connect(func(): retry_pressed.emit())
+	v.add_child(r)
+	var m := _button("MENU")
+	m.pressed.connect(func(): to_menu_pressed.emit())
+	v.add_child(m)
 	add_child(overlay_gameover)
+	overlay_gameover.visible = false
 
-	overlay_pause = _overlay()
-	var pp := _panel(420, 200)
-	overlay_pause.add_child(pp)
-	var pv := _vbox(pp)
-	pv.add_child(_label("PAUSE", 32, GOLD, true))
-	pv.add_child(_label("Appuie sur P pour reprendre", 16, CREAM, true))
-	overlay_pause.visible = false
+func _build_pause() -> void:
+	overlay_pause = _overlay(true)
+	var p := _panel(420, 200)
+	overlay_pause.add_child(p)
+	var v := _vbox(p)
+	v.add_child(_title2("PAUSE"))
+	v.add_child(_label("Appuie sur P pour reprendre", 16, CREAM, true))
 	add_child(overlay_pause)
-
-	bars.visible = false
+	overlay_pause.visible = false
 
 # ----- API appelée par Main -----
 func set_xp(pct: float, level: int) -> void:
@@ -148,7 +226,9 @@ func show_hud(b: bool) -> void:
 	bars.visible = b
 
 func hide_overlays() -> void:
+	menu_bg.visible = false
 	overlay_menu.visible = false
+	overlay_options.visible = false
 	overlay_levelup.visible = false
 	overlay_gameover.visible = false
 	overlay_pause.visible = false
@@ -156,51 +236,62 @@ func hide_overlays() -> void:
 func show_menu() -> void:
 	hide_overlays()
 	bars.visible = false
+	menu_bg.visible = true
 	overlay_menu.visible = true
+
+func show_options() -> void:
+	hide_overlays()
+	menu_bg.visible = true
+	overlay_options.visible = true
 
 func show_levelup(choices: Array) -> void:
 	for c in cards_box.get_children():
 		c.queue_free()
 	for choice in choices:
 		var card := _button("%s\n%s" % [choice["name"], choice["desc"]])
-		card.custom_minimum_size = Vector2(170, 96)
+		card.custom_minimum_size = Vector2(180, 100)
 		card.pressed.connect(func(): upgrade_chosen.emit(choice["id"]))
 		cards_box.add_child(card)
 	overlay_levelup.visible = true
 
 func show_gameover(time_str: String, level: int, kills: int) -> void:
+	hide_overlays()
+	menu_bg.visible = true
 	go_stats.text = "Temps survécu : %s\nNiveau atteint : %d\nMonstres vaincus : %d" % [time_str, level, kills]
 	overlay_gameover.visible = true
 
 func show_pause(b: bool) -> void:
 	overlay_pause.visible = b
 
-# ----- Helpers de construction -----
+# ----- Helpers -----
 func _full_control() -> Control:
 	var c := Control.new()
 	c.anchor_right = 1.0
 	c.anchor_bottom = 1.0
 	return c
 
-func _overlay() -> Control:
+func _overlay(with_dim: bool) -> Control:
 	var c := _full_control()
-	var dim := ColorRect.new()
-	dim.color = Color(0.03, 0.024, 0.055, 0.72)
-	dim.anchor_right = 1.0
-	dim.anchor_bottom = 1.0
-	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	c.add_child(dim)
+	if with_dim:
+		var dim := ColorRect.new()
+		dim.color = Color(0.03, 0.024, 0.055, 0.66)
+		dim.anchor_right = 1.0
+		dim.anchor_bottom = 1.0
+		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		c.add_child(dim)
 	return c
 
 func _panel(w: float, h: float) -> Panel:
 	var p := Panel.new()
 	_anchor(p, 0.5, 0.5, 0.5, 0.5, -w / 2.0, -h / 2.0, w / 2.0, h / 2.0)
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.141, 0.110, 0.180)
-	sb.border_color = Color(0.354, 0.282, 0.435)
-	sb.set_border_width_all(4)
-	sb.set_corner_radius_all(14)
-	sb.set_content_margin_all(18)
+	sb.bg_color = Color(0.118, 0.094, 0.157, 0.96)
+	sb.border_color = Color(0.45, 0.36, 0.22)
+	sb.set_border_width_all(3)
+	sb.set_corner_radius_all(16)
+	sb.set_content_margin_all(20)
+	sb.shadow_color = Color(0, 0, 0, 0.5)
+	sb.shadow_size = 14
 	p.add_theme_stylebox_override("panel", sb)
 	return p
 
@@ -208,14 +299,33 @@ func _vbox(parent: Control) -> VBoxContainer:
 	var v := VBoxContainer.new()
 	v.anchor_right = 1.0
 	v.anchor_bottom = 1.0
-	v.offset_left = 24
-	v.offset_top = 24
-	v.offset_right = -24
-	v.offset_bottom = -24
+	v.offset_left = 26
+	v.offset_top = 26
+	v.offset_right = -26
+	v.offset_bottom = -26
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
-	v.add_theme_constant_override("separation", 14)
+	v.add_theme_constant_override("separation", 12)
 	parent.add_child(v)
 	return v
+
+func _title(text: String) -> Label:
+	var l := _label(text, 52, GOLD, true)
+	l.add_theme_color_override("font_shadow_color", Color(0.48, 0.29, 0.08))
+	l.add_theme_constant_override("shadow_offset_x", 3)
+	l.add_theme_constant_override("shadow_offset_y", 3)
+	return l
+
+func _title2(text: String) -> Label:
+	var l := _label(text, 32, GOLD, true)
+	l.add_theme_color_override("font_shadow_color", Color(0.48, 0.29, 0.08))
+	l.add_theme_constant_override("shadow_offset_x", 2)
+	l.add_theme_constant_override("shadow_offset_y", 2)
+	return l
+
+func _spacer(h: int) -> Control:
+	var c := Control.new()
+	c.custom_minimum_size = Vector2(0, h)
+	return c
 
 func _label(text: String, size: int, color: Color, center: bool = false) -> Label:
 	var l := Label.new()
@@ -227,11 +337,21 @@ func _label(text: String, size: int, color: Color, center: bool = false) -> Labe
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	return l
 
+func _slider(v: float) -> HSlider:
+	var s := HSlider.new()
+	s.min_value = 0.0
+	s.max_value = 1.0
+	s.step = 0.05
+	s.value = v
+	s.custom_minimum_size = Vector2(320, 24)
+	s.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	return s
+
 func _button(text: String) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.add_theme_font_size_override("font_size", 18)
-	b.custom_minimum_size = Vector2(160, 48)
+	b.custom_minimum_size = Vector2(280, 50)
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = Color(0.196, 0.490, 0.819)
 	normal.set_corner_radius_all(10)

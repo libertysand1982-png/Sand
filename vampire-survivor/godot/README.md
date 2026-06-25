@@ -1,58 +1,67 @@
 # Crépuscule — version Godot 4
 
-Portage **Godot 4.x** (testé sur **Godot 4.7-stable**) du mini Vampire-Survivors.
-Même jeu que la version web, réécrit en **GDScript natif**. Les graphismes et les
-sons viennent de ton dépôt `Sand` (assets Kenney, CC0).
+Mini *Vampire Survivors* en **Godot 4.x** (testé sur **Godot 4.7-stable**), écrit en
+**GDScript natif**. Graphismes et sons issus de ta bibliothèque (dépôt `Sand`).
 
 ## Ouvrir et jouer
 
 1. Lance Godot (`Godot_v4.7-stable_win64.exe`).
-2. Dans le gestionnaire de projets : **Importer** → choisis le fichier
-   `E:\InkFlow\vampire-survivor-godot\project.godot` → **Importer & Éditer**.
+2. Gestionnaire de projets → **Importer** → `project.godot` → **Importer & Éditer**.
    (Au premier ouvrage, Godot ré-importe les images/sons : c'est normal.)
-3. Appuie sur **F5** (ou le bouton ▶ en haut à droite) pour lancer le jeu.
+3. **F5** (ou ▶) pour lancer.
 
 ## Commandes
 
 - **Déplacement :** WASD / ZQSD / flèches
 - **Attaque :** automatique (vise l'ennemi le plus proche)
-- **Pause :** P ou Échap · **Son :** M
+- **Pause :** P / Échap · **Son :** M
+- Menu : **Nouvelle Partie · Options** (volume musique/effets) **· Quitter**
 - Monte en niveau en ramassant les gemmes, puis choisis une amélioration.
+
+## Contenu visuel & audio
+
+- **Héros :** *HeroKnight* animé (idle / course / mort), retourné selon la direction.
+- **Monstres animés :** gobelin, œil volant, champignon, squelette (course + mort).
+- **Fond :** sol organique généré + **forêt crépusculaire** dans les menus.
+- **Audio :** musique de combat en boucle + SFX (coup, magie, pièces, mort, pas, clic).
 
 ## Comment c'est construit
 
-Tout est piloté par **`scripts/Main.gd`** (la boucle de jeu), à la manière de la
-version web. Les scènes sont créées par code pour rester simples et robustes ;
-la seule scène sur disque est `scenes/Main.tscn` (un `Node2D` + `Main.gd`).
+Tout est piloté par **`scripts/Main.gd`** ; la seule scène sur disque est
+`scenes/Main.tscn` (un `Node2D` + `Main.gd`). Le reste est créé par code.
 
 ```text
-vampire-survivor-godot/
-├─ project.godot            Configuration (scène principale, fenêtre, rendu net)
-├─ scenes/Main.tscn         Scène racine (lance Main.gd)
+godot/
+├─ project.godot
+├─ scenes/Main.tscn
 ├─ scripts/
-│  ├─ Main.gd               Contrôleur : boucle, spawn, collisions, niveaux, états, HUD
-│  ├─ Player.gd  (VSPlayer) Héros : sprite + Camera2D + stats
-│  ├─ Enemy.gd   (VSEnemy)  Monstres : gobelin / bandit / garde (+ barre de vie)
-│  ├─ Projectile.gd         Éclat de l'arme (dessiné via _draw)
-│  ├─ Gem.gd     (VSGem)    Gemme d'expérience
-│  ├─ Hud.gd     (VSHud)    Interface (barres, chrono, menus, choix d'amélioration)
-│  └─ Sfx.gd     (VSSfx)    Lecteur de sons (pool de voix)
-├─ assets/                  characters / ui / map / audio  (Kenney, CC0)
+│  ├─ Main.gd        Boucle, spawn, collisions, niveaux, états, audio, construction des anims
+│  ├─ Player.gd      Héros animé (AnimatedSprite2D) + Camera2D
+│  ├─ Enemy.gd       Monstre animé (feuilles découpées en AtlasTexture)
+│  ├─ Projectile.gd  Éclat de l'arme (dessiné via _draw)
+│  ├─ Gem.gd         Gemme d'expérience
+│  ├─ Hud.gd         Interface + menus (accueil/options/niveau/fin/pause)
+│  └─ Sfx.gd         Sons (pool de voix) + musique + volumes
+├─ assets/  knight/  monsters/  bg/  audio/  ui/  characters/
 └─ icon.svg
 ```
 
 ### Détails techniques
-- **Rendu net** (pixel-art) : filtre de texture *Nearest* par défaut + sur chaque sprite.
-- **Profondeur** : les ennemis et le héros sont sous un nœud `y_sort_enabled`
-  (celui devant l'autre selon la position verticale).
-- **Sol** : texture en damier générée par code (`Image`), répétée sur l'arène.
-- **Entrées** : actions ajoutées au démarrage (`InputMap`), compatibles QWERTY **et** AZERTY.
-- Astuce dev : lancer avec l'argument `--smoke` démarre une partie automatiquement
-  (utile pour tester rapidement, y compris en `--headless`).
+- **Animations** via `AnimatedSprite2D` + `SpriteFrames` construits en code
+  (frames individuelles pour le héros, feuilles horizontales découpées en
+  `AtlasTexture` pour les monstres).
+- **Rendu net** (pixel-art) : filtre *Nearest* par défaut.
+- **Profondeur** : héros + monstres sous un nœud `y_sort_enabled`.
+- **Sol** : tuile d'herbe générée (sans couture) répétée sur l'arène.
+- **Entrées** : `InputMap` configuré au démarrage, compatible QWERTY **et** AZERTY.
+- Astuce dev : argument `--smoke` = démarre une partie automatiquement (tests).
+
+## Crédits assets (tous CC0 / libres, via le dépôt `Sand`)
+- **HeroKnight** — pack de chevalier animé (Sven Thole).
+- **Monsters Creatures Fantasy** — gobelin / œil volant / champignon / squelette (LuizMelo).
+- **Fond forêt** — pack de décors nature pixel-art.
+- **Musique & SFX** — `foret_de_brume` (battle, hit, magic, coins, death) + clics Kenney.
 
 ## Aller plus loin
-- Découper les entités en vraies scènes `.tscn` si tu préfères l'éditeur visuel.
-- Ajouter d'autres armes, un boss (sprite `garde`/`marchand` agrandi), des objets.
-- Réutiliser ces scripts comme un mini-jeu intégré dans ton RPG « La Forêt de Brume ».
-
-Voir `CREDITS.md` (dans la version web) pour le détail des assets.
+- Ajouter un **boss** (le *Shadowed Wetlands Boss* est dans ta bibliothèque), d'autres armes, des objets.
+- Animer une attaque du héros (frames *Attack1/2/3* dispo) sur le tir.

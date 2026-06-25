@@ -1,10 +1,17 @@
-# Main.gd — contrôleur du jeu : boucle, spawn, collisions, niveaux, états.
+# Main.gd — contrôleur du jeu : boucle, spawn, collisions, niveaux, états, audio.
 extends Node2D
 
 const WORLD := 4000.0
 const MAX_ENEMIES := 280
 
 enum State { MENU, PLAYING, LEVELUP, PAUSED, GAMEOVER }
+
+const ENEMY_DEF := {
+	"goblin":    {"hp": 26.0,  "speed": 82.0, "dmg": 8.0,  "xp": 1, "radius": 18.0, "scale": 0.58, "bar": false},
+	"flyingeye": {"hp": 40.0,  "speed": 96.0, "dmg": 10.0, "xp": 3, "radius": 17.0, "scale": 0.52, "bar": false},
+	"mushroom":  {"hp": 60.0,  "speed": 52.0, "dmg": 13.0, "xp": 3, "radius": 20.0, "scale": 0.60, "bar": false},
+	"skeleton":  {"hp": 160.0, "speed": 46.0, "dmg": 20.0, "xp": 7, "radius": 22.0, "scale": 0.70, "bar": true},
+}
 
 const UPGRADES := [
 	{"name": "Lame jumelle",     "desc": "+1 projectile",        "id": "count"},
@@ -37,19 +44,22 @@ var enemies: Array[VSEnemy] = []
 var projectiles: Array[VSProjectile] = []
 var gems: Array[VSGem] = []
 var floats: Array = []
-var enemy_tex: Dictionary = {}
+var enemy_frames: Dictionary = {}
 
 # ============================================================
 func _ready() -> void:
 	randomize()
 	_setup_input()
 
-	enemy_tex = {
-		"gobelin": load("res://assets/characters/gobelin.png"),
-		"bandit": load("res://assets/characters/bandit.png"),
-		"garde": load("res://assets/characters/garde.png"),
+	# Animations
+	enemy_frames = {
+		"goblin":    _enemy_sf("res://assets/monsters/goblin/run.png", 8, "res://assets/monsters/goblin/death.png", 4),
+		"flyingeye": _enemy_sf("res://assets/monsters/flyingeye/flight.png", 8, "res://assets/monsters/flyingeye/death.png", 4),
+		"mushroom":  _enemy_sf("res://assets/monsters/mushroom/run.png", 8, "res://assets/monsters/mushroom/death.png", 4),
+		"skeleton":  _enemy_sf("res://assets/monsters/skeleton/walk.png", 4, "res://assets/monsters/skeleton/death.png", 4),
 	}
 
+	# Sol
 	ground = Sprite2D.new()
 	ground.texture = _make_ground_texture()
 	ground.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
@@ -78,6 +88,7 @@ func _ready() -> void:
 
 	player = VSPlayer.new()
 	world.add_child(player)
+	player.set_frames(_knight_sf())
 	player.cam.limit_left = 0
 	player.cam.limit_top = 0
 	player.cam.limit_right = int(WORLD)
@@ -90,9 +101,13 @@ func _ready() -> void:
 	hud.build()
 	hud.play_pressed.connect(start_game)
 	hud.retry_pressed.connect(start_game)
+	hud.to_menu_pressed.connect(_to_menu)
 	hud.upgrade_chosen.connect(_apply_upgrade)
+	hud.music_changed.connect(sfx.set_music_volume)
+	hud.sfx_changed.connect(sfx.set_sfx_volume)
 	hud.show_menu()
 	state = State.MENU
+	sfx.start_music()
 
 	# Test automatisé : l'argument `--smoke` (ligne de commande) auto-démarre une partie.
 	if "--smoke" in OS.get_cmdline_user_args():
@@ -116,21 +131,24 @@ func _mk(action: String, keys: Array) -> void:
 		InputMap.action_add_event(action, ev)
 
 # ============================================================
-func start_game() -> void:
-	sfx.play("click", 0.5)
-	for e in enemies:
-		e.queue_free()
-	for p in projectiles:
-		p.queue_free()
-	for g in gems:
-		g.queue_free()
-	for f in floats:
-		f["node"].queue_free()
+func _clear_entities() -> void:
+	for c in world.get_children():
+		if c is VSEnemy:
+			c.queue_free()
+	for c in proj_layer.get_children():
+		c.queue_free()
+	for c in gem_layer.get_children():
+		c.queue_free()
+	for c in fx_layer.get_children():
+		c.queue_free()
 	enemies.clear()
 	projectiles.clear()
 	gems.clear()
 	floats.clear()
 
+func start_game() -> void:
+	sfx.play("click", 0.5)
+	_clear_entities()
 	elapsed = 0.0
 	kills = 0
 	spawn_timer = 0.0
@@ -139,13 +157,21 @@ func start_game() -> void:
 	player.visible = true
 	hud.hide_overlays()
 	hud.show_hud(true)
+	sfx.start_music()
 	state = State.PLAYING
+
+func _to_menu() -> void:
+	state = State.MENU
+	_clear_entities()
+	player.visible = false
+	hud.show_hud(false)
+	hud.show_menu()
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("vs_pause"):
 		_toggle_pause()
 	elif event.is_action_pressed("vs_mute"):
-		sfx.muted = not sfx.muted
+		sfx.set_muted(not sfx.muted)
 		hud.set_muted(sfx.muted)
 
 func _toggle_pause() -> void:
@@ -166,27 +192,25 @@ func _update_playing(delta: float) -> void:
 	var p := player
 	elapsed += delta
 
-	# Déplacement
+	# Déplacement + animation
 	var dir := Input.get_vector("vs_left", "vs_right", "vs_up", "vs_down")
 	p.position.x = clampf(p.position.x + dir.x * p.speed * delta, 24.0, WORLD - 24.0)
 	p.position.y = clampf(p.position.y + dir.y * p.speed * delta, 24.0, WORLD - 24.0)
+	var moving := dir.length() > 0.01
 	if dir.x < 0.0:
 		p.facing = -1
 	elif dir.x > 0.0:
 		p.facing = 1
-	p.sprite.scale.x = p.base_scale.x * p.facing
-	if dir.length() > 0.01:
-		p.bob += delta * 10.0
-		p.sprite.position.y = -absf(sin(p.bob)) * 3.0
+	p.anim.flip_h = p.facing < 0
+	p.anim.play("run" if moving else "idle")
+	if moving:
 		p.step_timer -= delta
 		if p.step_timer <= 0.0:
-			sfx.play("step", 0.12)
+			sfx.play("step", 0.10)
 			p.step_timer = 0.33
-	else:
-		p.sprite.position.y = 0.0
 	if p.invuln > 0.0:
 		p.invuln -= delta
-	p.sprite.modulate.a = 0.45 if (p.invuln > 0.0 and int(time * 20.0) % 2 == 0) else 1.0
+	p.anim.modulate.a = 0.45 if (p.invuln > 0.0 and int(time * 20.0) % 2 == 0) else 1.0
 
 	# Arme automatique
 	p.fire_cd -= delta
@@ -232,7 +256,7 @@ func _fire() -> void:
 		pr.setup(p.position, Vector2.from_angle(a), p.proj_speed, p.proj_damage, p.pierce, p.proj_size)
 		proj_layer.add_child(pr)
 		projectiles.append(pr)
-	sfx.play("slice" if randf() < 0.5 else "slice2", 0.22)
+	sfx.play("magic", 0.30)
 
 # ----- Spawn -----
 func _spawns(delta: float) -> void:
@@ -247,29 +271,35 @@ func _spawns(delta: float) -> void:
 			break
 		_spawn_one()
 
-func _spawn_one() -> void:
+func _pick_type() -> String:
 	var t := elapsed
 	var r := randf()
-	var tkey := "gobelin"
-	if t < 30.0:
-		tkey = "gobelin"
-	elif t < 75.0:
-		tkey = "gobelin" if r < 0.7 else "bandit"
-	elif t < 150.0:
-		tkey = "gobelin" if r < 0.45 else ("bandit" if r < 0.85 else "garde")
+	if t < 25.0:
+		return "goblin"
+	elif t < 70.0:
+		return "goblin" if r < 0.6 else "flyingeye"
+	elif t < 140.0:
+		if r < 0.4: return "goblin"
+		elif r < 0.65: return "flyingeye"
+		else: return "mushroom"
 	else:
-		tkey = "gobelin" if r < 0.3 else ("bandit" if r < 0.7 else "garde")
+		if r < 0.25: return "goblin"
+		elif r < 0.45: return "flyingeye"
+		elif r < 0.72: return "mushroom"
+		else: return "skeleton"
 
+func _spawn_one() -> void:
+	var tkey := _pick_type()
 	var hp_scale := 1.0 + (elapsed / 60.0) * 0.22
 	var vsize := get_viewport_rect().size
-	var radius := maxf(vsize.x, vsize.y) / 2.0 + 70.0
+	var radius := maxf(vsize.x, vsize.y) / 2.0 + 80.0
 	var ang := randf() * TAU
 	var pos := player.position + Vector2.from_angle(ang) * radius
 	pos.x = clampf(pos.x, 20.0, WORLD - 20.0)
 	pos.y = clampf(pos.y, 20.0, WORLD - 20.0)
 
 	var e := VSEnemy.new()
-	e.setup(tkey, pos, hp_scale, enemy_tex[tkey])
+	e.setup(tkey, pos, hp_scale, enemy_frames[tkey], ENEMY_DEF[tkey])
 	world.add_child(e)
 	enemies.append(e)
 
@@ -283,26 +313,25 @@ func _update_enemies(delta: float) -> void:
 		var d := to.length()
 		if d > 0.001:
 			e.position += to / d * e.speed * delta
-		e.facing = -1 if to.x < 0.0 else 1
+		e.anim.flip_h = to.x < 0.0
 
 		var punch := 1.0
 		if e.hitflash > 0.0:
 			e.hitflash -= delta
 			var tt := clampf(e.hitflash / 0.12, 0.0, 1.0)
-			punch = lerpf(1.0, 1.25, tt)
-			e.sprite.self_modulate = Color(1, 1, 1).lerp(Color(2.4, 2.4, 2.4), tt)
+			punch = lerpf(1.0, 1.18, tt)
+			e.anim.self_modulate = Color(1, 1, 1).lerp(Color(2.2, 2.2, 2.2), tt)
 		else:
-			e.sprite.self_modulate = Color(1, 1, 1)
-		e.sprite.scale = Vector2(e.base_scale.x * punch * e.facing, e.base_scale.y * punch)
+			e.anim.self_modulate = Color(1, 1, 1)
+		e.anim.scale = Vector2(e.disp_scale * punch, e.disp_scale * punch)
 		if e.show_bar:
 			e.queue_redraw()
 
-		# Contact avec le joueur
 		if d < e.radius + p.radius and p.invuln <= 0.0:
 			p.hp -= e.dmg
 			p.invuln = 0.6
 			sfx.play("hurt", 0.4)
-			_spawn_text(p.position + Vector2(0, -28), "-" + str(int(e.dmg)), Color(1, 0.42, 0.42))
+			_spawn_text(p.position + Vector2(0, -34), "-" + str(int(e.dmg)), Color(1, 0.42, 0.42))
 
 func _cull_enemies() -> void:
 	for i in range(enemies.size() - 1, -1, -1):
@@ -328,7 +357,7 @@ func _update_projectiles(delta: float) -> void:
 				pr.hitset[e] = true
 				e.hp -= pr.dmg
 				e.hitflash = 0.12
-				_spawn_text(e.position + Vector2(0, -e.size * 0.4), str(int(pr.dmg)), Color(1, 0.91, 0.66))
+				_spawn_text(e.position + Vector2(0, -e.radius * 1.6), str(int(pr.dmg)), Color(1, 0.91, 0.66))
 				sfx.play("hit", 0.12)
 				if e.hp <= 0.0:
 					_kill_enemy(e)
@@ -347,7 +376,7 @@ func _kill_enemy(e: VSEnemy) -> void:
 	g.setup(e.position, e.xp)
 	gem_layer.add_child(g)
 	gems.append(g)
-	e.queue_free()
+	e.die()   # joue l'animation de mort puis se libère
 
 # ----- Gemmes -----
 func _update_gems(delta: float) -> void:
@@ -434,9 +463,12 @@ func _apply_upgrade(id: String) -> void:
 # ----- Fin -----
 func _game_over() -> void:
 	state = State.GAMEOVER
-	hud.show_hud(false)
+	player.anim.play("death")
+	player.anim.modulate.a = 1.0
+	sfx.play("death", 0.7)
 	var m := int(elapsed / 60.0)
 	var s := int(fmod(elapsed, 60.0))
+	hud.show_hud(false)
 	hud.show_gameover("%02d:%02d" % [m, s], player.level, kills)
 
 func _refresh_hud() -> void:
@@ -448,16 +480,70 @@ func _refresh_hud() -> void:
 	hud.set_time("%02d:%02d" % [m, s])
 	hud.set_kills(kills)
 
-# ----- Sol procédural -----
+# ============================================================
+# Construction des animations
+func _knight_sf() -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	_add_files(sf, "idle", "res://assets/knight/idle/", 8, 8.0, true)
+	_add_files(sf, "run", "res://assets/knight/run/", 10, 12.0, true)
+	_add_files(sf, "death", "res://assets/knight/death/", 10, 10.0, false)
+	return sf
+
+func _add_files(sf: SpriteFrames, anim: String, dir: String, count: int, fps: float, loop: bool) -> void:
+	if not sf.has_animation(anim):
+		sf.add_animation(anim)
+	sf.set_animation_speed(anim, fps)
+	sf.set_animation_loop(anim, loop)
+	for i in count:
+		var t = load(dir + str(i) + ".png")
+		if t:
+			sf.add_frame(anim, t)
+
+func _enemy_sf(move_path: String, move_count: int, death_path: String, death_count: int) -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	_add_sheet(sf, "move", load(move_path), move_count, 150, 10.0, true)
+	_add_sheet(sf, "death", load(death_path), death_count, 150, 12.0, false)
+	return sf
+
+func _add_sheet(sf: SpriteFrames, anim: String, tex: Texture2D, count: int, fsize: int, fps: float, loop: bool) -> void:
+	if not sf.has_animation(anim):
+		sf.add_animation(anim)
+	sf.set_animation_speed(anim, fps)
+	sf.set_animation_loop(anim, loop)
+	if tex == null:
+		return
+	for i in count:
+		var at := AtlasTexture.new()
+		at.atlas = tex
+		at.region = Rect2(i * fsize, 0, fsize, fsize)
+		sf.add_frame(anim, at)
+
+# ----- Sol procédural (tuile sans couture) -----
 func _make_ground_texture() -> Texture2D:
-	var s := 128
+	var s := 96
 	var img := Image.create(s, s, false, Image.FORMAT_RGBA8)
-	var ca := Color(0.102, 0.18, 0.122)
-	var cb := Color(0.086, 0.153, 0.106)
-	for y in s:
-		for x in s:
-			var cell := (int(x / 64) + int(y / 64)) % 2
-			img.set_pixel(x, y, ca if cell == 0 else cb)
-	for n in 24:
-		img.set_pixel(randi() % s, randi() % s, Color(0.129, 0.227, 0.153))
+	img.fill(Color(0.108, 0.168, 0.122))
+	var r := RandomNumberGenerator.new()
+	r.seed = 20240625
+	# taches de teinte (intérieur -> sans couture) pour casser l'uniformité
+	for n in 7:
+		var px := r.randi_range(8, s - 12)
+		var py := r.randi_range(8, s - 12)
+		var lighter := r.randf() < 0.55
+		var col := Color(0.135, 0.205, 0.140) if lighter else Color(0.078, 0.123, 0.092)
+		for dy in range(0, r.randi_range(4, 9)):
+			for dx in range(0, r.randi_range(4, 9)):
+				img.set_pixel(px + dx, py + dy, col)
+	# brins d'herbe
+	for n in 60:
+		var x := r.randi_range(5, s - 5)
+		var y := r.randi_range(6, s - 5)
+		var c := Color(0.16, 0.26, 0.16) if r.randf() < 0.65 else Color(0.06, 0.10, 0.07)
+		img.set_pixel(x, y, c)
+		img.set_pixel(x, y - 1, c)
+	# quelques fleurs/cailloux
+	for n in 5:
+		var x := r.randi_range(6, s - 6)
+		var y := r.randi_range(6, s - 6)
+		img.set_pixel(x, y, Color(0.58, 0.52, 0.30) if r.randf() < 0.5 else Color(0.45, 0.30, 0.45))
 	return ImageTexture.create_from_image(img)

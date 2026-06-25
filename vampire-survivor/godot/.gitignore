@@ -4,3 +4,4 @@
 /build/
 *.tmp
 _smoke.png
+_smoke*
