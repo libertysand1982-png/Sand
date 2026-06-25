@@ -240,7 +240,7 @@ func _build_menu() -> void:
 	]
 	var start_y := 370.0
 	for i in items.size():
-		var item := items[i]
+		var item: Dictionary = items[i]
 		var bg := ColorRect.new()
 		bg.size = Vector2(340, 42)
 		bg.position = Vector2(470, start_y + i * 62)

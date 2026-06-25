@@ -77,13 +77,13 @@ func _make_player(vol: float) -> AudioStreamPlayer:
 # ── Public API ──────────────────────────────────────────────────────────────────
 
 ## Démarre une musique avec fondu enchaîné. Ignoré si déjà la piste courante.
-func play_music(name: String, fade_dur: float = 1.5) -> void:
-	if name == _cur_music: return
-	var path: String = MUSIC_PATHS.get(name, "")
+func play_music(track: String, fade_dur: float = 1.5) -> void:
+	if track == _cur_music: return
+	var path: String = MUSIC_PATHS.get(track, "")
 	if path.is_empty() or not ResourceLoader.exists(path): return
 	var stream := _load(path)
 	if not stream: return
-	_cur_music = name
+	_cur_music = track
 	if not _music.playing:
 		_music.stream = stream
 		_music.volume_db = MUSIC_VOL_DB
@@ -109,8 +109,8 @@ func stop_music(fade_dur: float = 0.9) -> void:
 	t.tween_callback(_music.stop)
 
 ## Joue un effet sonore. volume_db : offset en dB (0 = plein), pitch : hauteur de base (±3.5% aléatoire ajouté).
-func play_sfx(name: String, volume_db: float = 0.0, pitch: float = 1.0) -> void:
-	var path: String = SFX_PATHS.get(name, "")
+func play_sfx(key: String, volume_db: float = 0.0, pitch: float = 1.0) -> void:
+	var path: String = SFX_PATHS.get(key, "")
 	if path.is_empty() or not ResourceLoader.exists(path): return
 	var stream := _load(path)
 	if not stream: return
@@ -123,7 +123,6 @@ func play_sfx(name: String, volume_db: float = 0.0, pitch: float = 1.0) -> void:
 
 ## Réglage global volume musique (en dB).
 func set_music_vol(db: float) -> void:
-	MUSIC_VOL_DB  # (const) — utiliser AudioServer.set_bus_volume_db si besoin
 	_music.volume_db = db
 
 # ── Cache interne ───────────────────────────────────────────────────────────────

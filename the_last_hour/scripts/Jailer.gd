@@ -64,12 +64,12 @@ func take_damage(amount: int, kb: Vector2 = Vector2.ZERO) -> void:
 		_state_t = 0.16
 
 func _check_phase_change() -> void:
-	if phase == Phase.ONE and hp <= HP_MAX * 2 / 3:
+	if phase == Phase.ONE and hp <= HP_MAX * 2 / 3.0:
 		phase = Phase.TWO
 		sprite.modulate = Color(1.3, 0.25, 0.25)
 		AudioManager.play_sfx("boss_roar")
 		emit_signal("phase_changed", 2)
-	elif phase == Phase.TWO and hp <= HP_MAX / 3:
+	elif phase == Phase.TWO and hp <= HP_MAX / 3.0:
 		phase = Phase.THREE
 		sprite.modulate = Color(1.6, 0.15, 0.15)
 		AudioManager.play_sfx("boss_roar")
