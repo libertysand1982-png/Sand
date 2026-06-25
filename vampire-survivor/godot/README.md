@@ -1,58 +1,79 @@
 # Crépuscule — version Godot 4
 
-Portage **Godot 4.x** (testé sur **Godot 4.7-stable**) du mini Vampire-Survivors.
-Même jeu que la version web, réécrit en **GDScript natif**. Les graphismes et les
-sons viennent de ton dépôt `Sand` (assets Kenney, CC0).
+Mini *Vampire Survivors* en **Godot 4.x** (testé sur **Godot 4.7-stable**), écrit en
+**GDScript natif**. Graphismes et sons issus de ta bibliothèque (dépôt `Sand`).
 
 ## Ouvrir et jouer
 
 1. Lance Godot (`Godot_v4.7-stable_win64.exe`).
-2. Dans le gestionnaire de projets : **Importer** → choisis le fichier
-   `E:\InkFlow\vampire-survivor-godot\project.godot` → **Importer & Éditer**.
+2. Gestionnaire de projets → **Importer** → `project.godot` → **Importer & Éditer**.
    (Au premier ouvrage, Godot ré-importe les images/sons : c'est normal.)
-3. Appuie sur **F5** (ou le bouton ▶ en haut à droite) pour lancer le jeu.
+3. **F5** (ou ▶) pour lancer.
 
 ## Commandes
 
 - **Déplacement :** WASD / ZQSD / flèches
 - **Attaque :** automatique (vise l'ennemi le plus proche)
-- **Pause :** P ou Échap · **Son :** M
-- Monte en niveau en ramassant les gemmes, puis choisis une amélioration.
+- **Sorts actifs :** touches **1 2 3 4** (voir la roue en bas à gauche)
+- **Pause :** P / Échap · **Son :** M
+- Menu : **Nouvelle Partie · Options · Scores · Quitter**
+- Monte en niveau en ramassant les gemmes (sort d'**Onde arcanique** à chaque niveau).
+
+## Sorts actifs (roue en bas-gauche)
+
+| Touche | Sort | Effet | Recharge |
+|--------|------|-------|----------|
+| **1** | Boule de feu | explosion de zone sur l'ennemi le plus proche | 3,5 s |
+| **2** | Éclair | foudroie jusqu'à 4 ennemis proches | 6 s |
+| **3** | Gel | onde glaciale : dégâts + ralentit autour de toi | 10 s |
+| **4** | Soin | rend des PV | 18 s |
+
+La roue affiche l'icône, la touche et la recharge (camembert + compte à rebours).
+
+## Tableau des scores
+
+À la mort : saisis ton **nom**, ton score est calculé et **enregistré** (persistant
+dans `user://scores.json`), puis le **classement** s'affiche (ton entrée surlignée).
+Accessible aussi depuis le menu (**Scores**).
+
+## Contenu visuel & audio
+
+- **Héros :** *HeroKnight* animé (idle / course / mort).
+- **Monstres animés :** gobelin, œil volant, champignon, squelette.
+- **Fond :** sol organique généré + **forêt crépusculaire** dans les menus.
+- **Audio :** musique de combat en boucle + SFX.
 
 ## Comment c'est construit
 
-Tout est piloté par **`scripts/Main.gd`** (la boucle de jeu), à la manière de la
-version web. Les scènes sont créées par code pour rester simples et robustes ;
-la seule scène sur disque est `scenes/Main.tscn` (un `Node2D` + `Main.gd`).
-
 ```text
-vampire-survivor-godot/
-├─ project.godot            Configuration (scène principale, fenêtre, rendu net)
-├─ scenes/Main.tscn         Scène racine (lance Main.gd)
+godot/
+├─ project.godot · scenes/Main.tscn
 ├─ scripts/
-│  ├─ Main.gd               Contrôleur : boucle, spawn, collisions, niveaux, états, HUD
-│  ├─ Player.gd  (VSPlayer) Héros : sprite + Camera2D + stats
-│  ├─ Enemy.gd   (VSEnemy)  Monstres : gobelin / bandit / garde (+ barre de vie)
-│  ├─ Projectile.gd         Éclat de l'arme (dessiné via _draw)
-│  ├─ Gem.gd     (VSGem)    Gemme d'expérience
-│  ├─ Hud.gd     (VSHud)    Interface (barres, chrono, menus, choix d'amélioration)
-│  └─ Sfx.gd     (VSSfx)    Lecteur de sons (pool de voix)
-├─ assets/                  characters / ui / map / audio  (Kenney, CC0)
+│  ├─ Main.gd        Boucle, spawn, collisions, niveaux, sorts, scores, audio
+│  ├─ Player.gd      Héros animé (AnimatedSprite2D) + Camera2D
+│  ├─ Enemy.gd       Monstre animé (+ ralentissement par le Gel)
+│  ├─ Projectile.gd  Éclat de l'arme auto
+│  ├─ Nova.gd        Anneau de sort (couleur paramétrable)
+│  ├─ Bolt.gd        Éclairs en dents de scie
+│  ├─ Gem.gd         Gemme d'XP
+│  ├─ Wheel.gd       Roue de sorts (icônes + recharge radiale)
+│  ├─ Scores.gd      Tableau des scores persistant (user://)
+│  ├─ Hud.gd         Interface + menus (accueil/options/scores/niveau/fin/pause)
+│  └─ Sfx.gd         Sons + musique + volumes
+├─ assets/  knight/  monsters/  spells/  bg/  audio/
 └─ icon.svg
 ```
 
 ### Détails techniques
-- **Rendu net** (pixel-art) : filtre de texture *Nearest* par défaut + sur chaque sprite.
-- **Profondeur** : les ennemis et le héros sont sous un nœud `y_sort_enabled`
-  (celui devant l'autre selon la position verticale).
-- **Sol** : texture en damier générée par code (`Image`), répétée sur l'arène.
-- **Entrées** : actions ajoutées au démarrage (`InputMap`), compatibles QWERTY **et** AZERTY.
-- Astuce dev : lancer avec l'argument `--smoke` démarre une partie automatiquement
-  (utile pour tester rapidement, y compris en `--headless`).
+- **Animations** via `AnimatedSprite2D` + `SpriteFrames` construits en code.
+- **Sorts au clavier** via `_unhandled_input` (n'interfère pas avec la saisie du nom).
+- **Roue** = `Control` dessiné en `_draw` (camembert de recharge).
+- **Scores** = JSON dans `user://` (`FileAccess` + `JSON`).
+- **Entrées** : `InputMap` configuré au démarrage, compatible QWERTY **et** AZERTY.
+- Astuce dev : argument `--smoke` = démarre une partie automatiquement (tests).
 
-## Aller plus loin
-- Découper les entités en vraies scènes `.tscn` si tu préfères l'éditeur visuel.
-- Ajouter d'autres armes, un boss (sprite `garde`/`marchand` agrandi), des objets.
-- Réutiliser ces scripts comme un mini-jeu intégré dans ton RPG « La Forêt de Brume ».
-
-Voir `CREDITS.md` (dans la version web) pour le détail des assets.
+## Crédits assets (tous CC0 / libres, via le dépôt `Sand`)
+- **HeroKnight** — chevalier animé (Sven Thole).
+- **Monsters Creatures Fantasy** — gobelin / œil volant / champignon / squelette (LuizMelo).
+- **Raven Fantasy Icons** — icônes de sorts (boule de feu, éclair, gel, potion).
+- **Fond forêt** — décors nature pixel-art · **Musique & SFX** — `foret_de_brume` + clics Kenney.

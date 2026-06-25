@@ -1,13 +1,8 @@
-# Enemy.gd — un monstre. Données + sprite + barre de vie (gardes). Déplacé par Main.gd.
+# Enemy.gd — un monstre animé (AnimatedSprite2D). Déplacé par Main.gd.
 class_name VSEnemy
 extends Node2D
 
-const TYPES := {
-	"gobelin": {"sprite": "gobelin", "hp": 26.0,  "speed": 76.0, "dmg": 8.0,  "xp": 1, "radius": 15.0, "size": 42.0, "bar": false},
-	"bandit":  {"sprite": "bandit",  "hp": 62.0,  "speed": 58.0, "dmg": 12.0, "xp": 3, "radius": 16.0, "size": 44.0, "bar": false},
-	"garde":   {"sprite": "garde",   "hp": 155.0, "speed": 45.0, "dmg": 20.0, "xp": 6, "radius": 18.0, "size": 50.0, "bar": true},
-}
-
+var anim: AnimatedSprite2D
 var type_key: String
 var hp: float
 var maxhp: float
@@ -15,19 +10,17 @@ var speed: float
 var dmg: float
 var xp: int
 var radius: float
-var size: float
-var facing: int = 1
-var hitflash: float = 0.0
+var disp_scale: float
 var show_bar: bool = false
+var hitflash: float = 0.0
+var slow_timer: float = 0.0   # ralentissement (sort de Gel)
 var dead: bool = false
+var dying: bool = false
 
-var sprite: Sprite2D
-var base_scale: Vector2
-var _texture: Texture2D
+var _frames: SpriteFrames
 
-func setup(tkey: String, pos: Vector2, hp_scale: float, tex: Texture2D) -> void:
+func setup(tkey: String, pos: Vector2, hp_scale: float, frames: SpriteFrames, def: Dictionary) -> void:
 	type_key = tkey
-	var def: Dictionary = TYPES[tkey]
 	position = pos
 	maxhp = round(def["hp"] * hp_scale)
 	hp = maxhp
@@ -35,24 +28,39 @@ func setup(tkey: String, pos: Vector2, hp_scale: float, tex: Texture2D) -> void:
 	dmg = def["dmg"]
 	xp = def["xp"]
 	radius = def["radius"]
-	size = def["size"]
+	disp_scale = def["scale"]
 	show_bar = def["bar"]
-	_texture = tex
+	_frames = frames
 
 func _ready() -> void:
-	base_scale = Vector2(size / 64.0, size / 64.0)
-	sprite = Sprite2D.new()
-	sprite.texture = _texture
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.scale = base_scale
-	add_child(sprite)
+	anim = AnimatedSprite2D.new()
+	anim.sprite_frames = _frames
+	anim.scale = Vector2(disp_scale, disp_scale)
+	add_child(anim)
+	anim.play("move")
+	var n := anim.sprite_frames.get_frame_count("move")
+	if n > 1:
+		anim.frame = randi() % n   # désynchronise les animations
+
+# Joue la mort puis se libère (appelé par Main quand hp <= 0).
+func die() -> void:
+	if dying:
+		return
+	dying = true
+	anim.play("death")
+	await anim.animation_finished
+	queue_free()
 
 func _draw() -> void:
-	# Barre de vie au-dessus des ennemis costauds, seulement s'ils sont blessés.
+	# ombre
+	draw_set_transform(Vector2(0, radius * 1.25), 0.0, Vector2(1, 0.4))
+	draw_circle(Vector2.ZERO, radius * 0.85, Color(0, 0, 0, 0.25))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# barre de vie (monstres costauds blessés)
 	if show_bar and hp < maxhp and hp > 0.0:
-		var w := 44.0
+		var w := 48.0
 		var x := -w / 2.0
-		var y := -size * 0.62
+		var y := -radius * 2.1
 		draw_rect(Rect2(x - 1.0, y - 1.0, w + 2.0, 8.0), Color(0, 0, 0, 0.6))
 		draw_rect(Rect2(x, y, w, 6.0), Color(0.10, 0.05, 0.05))
 		draw_rect(Rect2(x, y, w * clampf(hp / maxhp, 0.0, 1.0), 6.0), Color(0.85, 0.26, 0.31))
