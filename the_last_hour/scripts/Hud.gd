@@ -264,8 +264,8 @@ func show_gameover() -> void:
 	_gameover_panel.visible = true
 
 func update_timer(remaining: float) -> void:
-	var m := int(remaining) / 60
-	var s := int(remaining) % 60
+	var m: int = int(remaining / 60.0)
+	var s: int = int(remaining) % 60
 	_timer_lbl.text = "%02d:%02d" % [m, s]
 	# Color changes with urgency
 	if remaining <= 60.0:

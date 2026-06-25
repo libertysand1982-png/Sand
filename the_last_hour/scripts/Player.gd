@@ -234,7 +234,7 @@ func _update_visuals() -> void:
 	if dash_t > 0.0:
 		sprite.modulate = Color(0.5, 0.8, 1.0, 0.6)
 	elif invuln > 0.0:
-		var flash := int(Time.get_ticks_msec() / 55) % 2
+		var flash: int = int(Time.get_ticks_msec() / 55.0) % 2
 		sprite.modulate.a = 0.35 if flash == 0 else 1.0
 	else:
 		sprite.modulate = Color(1, 1, 1, 1)

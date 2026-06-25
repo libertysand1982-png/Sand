@@ -283,7 +283,7 @@ func _open_zone(zone_idx: int) -> void:
 		if b.zone == zone_idx and not b.open:
 			b.open = true
 			AudioManager.play_sfx("door_open")
-			var scroll_x := b.door.position.x + 11.0
+			var scroll_x: float = b.door.position.x + 11.0
 			if is_instance_valid(b.door):
 				b.door.queue_free()
 			if is_instance_valid(b.body):

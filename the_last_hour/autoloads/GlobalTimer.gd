@@ -36,8 +36,8 @@ func reset_all() -> void:
 	_hit.clear()
 
 func get_fmt() -> String:
-	var m := int(remaining) / 60
-	var s := int(remaining) % 60
+	var m: int = int(remaining / 60.0)
+	var s: int = int(remaining) % 60
 	return "%02d:%02d" % [m, s]
 
 # 0.0 = fresh, 1.0 = expired — used to scale difficulty

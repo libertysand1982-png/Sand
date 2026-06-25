@@ -18,8 +18,6 @@ var _phase: Phase = Phase.CINEMATIC
 # Cinematic state
 var _scene_idx   := 0
 var _scene_t     := 0.0
-var _fade_alpha  := 1.0
-var _fading_in   := true
 const SCENES: Array[Dictionary] = []  # built at runtime
 
 # Scene nodes
@@ -33,7 +31,6 @@ var _skip_lbl:    Label
 var _crawl_root:  Node2D
 var _crawl_y:     float = H + 20.0
 const CRAWL_SPEED := 60.0
-var _crawl_done   := false
 
 # Fade overlay
 var _fade_rect:   ColorRect
@@ -190,7 +187,7 @@ func _show_scene(idx: int) -> void:
 func _build_scene_farm_night() -> void:
 	var root := _make_scene_root()
 	# Night sky
-	var sky := _add_bg(root, Color(0.04, 0.04, 0.12), Vector2.ZERO, Vector2(W, H))
+	_add_bg(root, Color(0.04, 0.04, 0.12), Vector2.ZERO, Vector2(W, H))
 	# Stars
 	for i in 80:
 		var star := ColorRect.new()
@@ -235,8 +232,8 @@ func _build_scene_noise() -> void:
 	_add_bg(root, Color(0.06, 0.08, 0.04), Vector2(0, H - 220), Vector2(W, 220))
 	_add_bg(root, Color(0.10, 0.07, 0.05), Vector2(360, H - 320), Vector2(560, 320))
 	# Two heroes standing up, startled
-	var h1 := _make_sprite(root, "hero", SP_HERO,  Vector2(480, H - 230))
-	var h2 := _make_sprite(root, "hero", SP_SMALL, Vector2(620, H - 215))
+	_make_sprite(root, "hero", SP_HERO,  Vector2(480, H - 230))
+	_make_sprite(root, "hero", SP_SMALL, Vector2(620, H - 215))
 	# Exclamation marks
 	for pos in [Vector2(465, H - 310), Vector2(610, H - 295)]:
 		var ex := Label.new()
