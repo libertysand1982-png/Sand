@@ -564,7 +564,7 @@ func _process(delta: float) -> void:
 
 func _update_cinematic(delta: float) -> void:
 	_scene_t += delta
-	var dur := SCENE_DURATIONS[_scene_idx] if _scene_idx < SCENE_DURATIONS.size() else 4.0
+	var dur: float = SCENE_DURATIONS[_scene_idx] if _scene_idx < SCENE_DURATIONS.size() else 4.0
 
 	if _scene_t >= dur:
 		_scene_t = 0.0

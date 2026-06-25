@@ -114,7 +114,7 @@ func play_sfx(key: String, volume_db: float = 0.0, pitch: float = 1.0) -> void:
 	if path.is_empty() or not ResourceLoader.exists(path): return
 	var stream := _load(path)
 	if not stream: return
-	var p := _sfx_pool[_sfx_idx]
+	var p: AudioStreamPlayer = _sfx_pool[_sfx_idx]
 	_sfx_idx = (_sfx_idx + 1) % SFX_POOL_SIZE
 	p.stream = stream
 	p.volume_db = volume_db

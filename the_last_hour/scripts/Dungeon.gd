@@ -329,7 +329,7 @@ func _spawn_loot_scroll(pos: Vector2) -> void:
 func _on_scroll_picked(body: Node, area: Area2D) -> void:
 	if body != _player or not is_instance_valid(area): return
 	var rolls := ["hp_boost", "dmg_boost", "speed_boost", "knife_upgrade"]
-	var chosen := rolls[randi() % rolls.size()]
+	var chosen: String = rolls[randi() % rolls.size()]
 	RunData.apply_scroll(chosen)
 	_player.hp = RunData.hp
 	_player.max_hp = RunData.max_hp
