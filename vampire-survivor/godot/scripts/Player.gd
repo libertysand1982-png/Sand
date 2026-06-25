@@ -30,6 +30,10 @@ var proj_count := 1
 var pierce := 0
 var proj_size := 12.0
 
+# Sort de montée de niveau (onde arcanique)
+var nova_radius_mul := 1.0
+var nova_dmg_mul := 1.0
+
 func _ready() -> void:
 	anim = AnimatedSprite2D.new()
 	anim.scale = Vector2(disp_scale, disp_scale)
@@ -67,6 +71,8 @@ func reset(pos: Vector2) -> void:
 	proj_count = 1
 	pierce = 0
 	proj_size = 12.0
+	nova_radius_mul = 1.0
+	nova_dmg_mul = 1.0
 	anim.scale = Vector2(disp_scale, disp_scale)
 	anim.modulate = Color(1, 1, 1, 1)
 	anim.flip_h = false

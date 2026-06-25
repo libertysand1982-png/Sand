@@ -22,6 +22,7 @@ const UPGRADES := [
 	{"name": "Aimant",           "desc": "+30% ramassage",       "id": "magnet"},
 	{"name": "Perforation",      "desc": "traverse +1 ennemi",   "id": "pierce"},
 	{"name": "Projectile lourd", "desc": "+25% vitesse/taille",  "id": "heavy"},
+	{"name": "Onde arcanique",   "desc": "+30% puissance du sort", "id": "spell"},
 ]
 
 var state: int = State.MENU
@@ -221,8 +222,8 @@ func _update_playing(delta: float) -> void:
 	_spawns(delta)
 	_update_enemies(delta)
 	_update_projectiles(delta)
-	_cull_enemies()
 	_update_gems(delta)
+	_cull_enemies()
 	_update_floats(delta)
 
 	if level_queue > 0 and state == State.PLAYING:
@@ -307,7 +308,7 @@ func _spawn_one() -> void:
 func _update_enemies(delta: float) -> void:
 	var p := player
 	for e in enemies:
-		if e.dead:
+		if not is_instance_valid(e) or e.dead:
 			continue
 		var to := p.position - e.position
 		var d := to.length()
@@ -335,7 +336,7 @@ func _update_enemies(delta: float) -> void:
 
 func _cull_enemies() -> void:
 	for i in range(enemies.size() - 1, -1, -1):
-		if enemies[i].dead:
+		if not is_instance_valid(enemies[i]) or enemies[i].dead:
 			enemies.remove_at(i)
 
 # ----- Projectiles -----
@@ -350,7 +351,7 @@ func _update_projectiles(delta: float) -> void:
 			projectiles.remove_at(i)
 			continue
 		for e in enemies:
-			if e.dead or pr.hitset.has(e):
+			if not is_instance_valid(e) or e.dead or pr.hitset.has(e):
 				continue
 			var rr := e.radius + pr.size
 			if pp.distance_squared_to(e.position) <= rr * rr:
@@ -401,12 +402,42 @@ func _update_gems(delta: float) -> void:
 
 func _add_xp(amount: int) -> void:
 	var p := player
+	var leveled := false
 	p.xp += amount
 	while p.xp >= p.xp_to_next:
 		p.xp -= p.xp_to_next
 		p.level += 1
 		p.xp_to_next = int(round(p.xp_to_next * 1.32 + 3.0))
 		level_queue += 1
+		leveled = true
+	if leveled:
+		_cast_nova()   # sort lancé à la montée de niveau
+
+# Onde arcanique : dégâts + repoussée sur tous les monstres autour, à chaque niveau.
+func _cast_nova() -> void:
+	var p := player
+	var radius := (200.0 + p.level * 6.0) * p.nova_radius_mul
+	var dmg := (20.0 + p.level * 8.0) * p.nova_dmg_mul
+	var nova := VSNova.new()
+	nova.position = p.position
+	nova.max_r = radius
+	fx_layer.add_child(nova)
+	sfx.play("magic", 0.6)
+	for e in enemies:
+		if not is_instance_valid(e) or e.dead:
+			continue
+		var to := e.position - p.position
+		var d := to.length()
+		if d <= radius:
+			var dir := to / maxf(d, 0.001)
+			var kb := 70.0 * (1.0 - d / radius)
+			e.position.x = clampf(e.position.x + dir.x * kb, 20.0, WORLD - 20.0)
+			e.position.y = clampf(e.position.y + dir.y * kb, 20.0, WORLD - 20.0)
+			e.hitflash = 0.12
+			e.hp -= dmg
+			_spawn_text(e.position + Vector2(0, -e.radius * 1.6), str(int(dmg)), Color(0.7, 0.9, 1.0))
+			if e.hp <= 0.0:
+				_kill_enemy(e)
 
 # ----- Textes flottants -----
 func _spawn_text(pos: Vector2, text: String, color: Color) -> void:
@@ -453,6 +484,9 @@ func _apply_upgrade(id: String) -> void:
 		"heavy":
 			p.proj_speed *= 1.25
 			p.proj_size *= 1.25
+		"spell":
+			p.nova_radius_mul *= 1.3
+			p.nova_dmg_mul *= 1.3
 	sfx.play("click", 0.5)
 	hud.hide_overlays()
 	if level_queue > 0:
