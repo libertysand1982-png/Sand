@@ -302,7 +302,7 @@ func _build_scene_attack() -> void:
 	var mt := create_tween()
 	mt.tween_property(monster, "position:x", 580.0, 0.8).set_ease(Tween.EASE_IN)
 	# Hero standing, about to be hit
-	var hero := _make_sprite(root, "hero", SP_HERO, Vector2(440, H - 230))
+	_make_sprite(root, "hero", SP_HERO, Vector2(440, H - 230))
 	# Red slash effect
 	var slash := ColorRect.new()
 	slash.size = Vector2(160, 6)
@@ -517,7 +517,6 @@ func _build_crawl() -> void:
 	_crawl_root.add_child(text_container)
 
 	var y_offset := 0.0
-	var line_h := 36.0
 	for line in STORY_LINES:
 		var lbl := Label.new()
 		lbl.text = line
@@ -531,7 +530,7 @@ func _build_crawl() -> void:
 		lbl.size = Vector2(700, fs + 8)
 		lbl.position = Vector2((W - 700) / 2.0, y_offset)
 		text_container.add_child(lbl)
-		y_offset += (fs + 8) if line.length() > 0 else 20.0
+		y_offset += float(fs + 8) if line.length() > 0 else 20.0
 
 	_crawl_y = H + 40.0
 	text_container.position.y = _crawl_y
