@@ -524,10 +524,10 @@ func _build_crawl() -> void:
 	for line in STORY_LINES:
 		var lbl := Label.new()
 		lbl.text = line
-		var is_title := (line == "T H E   L A S T   H O U R")
-		var is_emphasis := (line == "UNE HEURE.")
+		var is_title: bool = (line == "T H E   L A S T   H O U R")
+		var is_emphasis: bool = (line == "UNE HEURE.")
 		var fs: int = 50 if is_title else (34 if is_emphasis else 22)
-		var color := Color(0.95, 0.88, 0.5) if is_title else (Color(1.0, 0.4, 0.3) if is_emphasis else Color(0.80, 0.76, 0.68))
+		var color: Color = Color(0.95, 0.88, 0.5) if is_title else (Color(1.0, 0.4, 0.3) if is_emphasis else Color(0.80, 0.76, 0.68))
 		lbl.add_theme_font_size_override("font_size", fs)
 		lbl.add_theme_color_override("font_color", color)
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
