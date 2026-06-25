@@ -308,6 +308,7 @@ func update_boss_name(name: String) -> void:
 		_boss_lbl.add_theme_color_override("font_color", Color(0.9, 0.6, 1.0))
 
 func show_revelation() -> void:
+	AudioManager.play_sfx("revelation")
 	if _revelation_panel == null:
 		_build_revelation_panel()
 	_overlay.visible = true
@@ -338,6 +339,7 @@ func _build_revelation_panel() -> void:
 			Color(0.50, 0.42, 0.62), Vector2(0, 138))
 
 func show_alert(text: String) -> void:
+	AudioManager.play_sfx("alert")
 	_alert_lbl.text = text
 	_alert_t = 3.5
 	_alert_lbl.modulate.a = 1.0

@@ -25,6 +25,7 @@ config/icon="res://icon.svg"
 GlobalTimer="*res://autoloads/GlobalTimer.gd"
 GameManager="*res://autoloads/GameManager.gd"
 RunData="*res://autoloads/RunData.gd"
+AudioManager="*res://autoloads/AudioManager.gd"
 
 [display]
 

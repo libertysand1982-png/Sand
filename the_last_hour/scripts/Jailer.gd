@@ -59,6 +59,7 @@ func take_damage(amount: int, kb: Vector2 = Vector2.ZERO) -> void:
 	if hp <= 0:
 		_die()
 	else:
+		AudioManager.play_sfx("enemy_hurt", -5.0)
 		_state = FSM.STAGGER
 		_state_t = 0.16
 
@@ -66,10 +67,12 @@ func _check_phase_change() -> void:
 	if phase == Phase.ONE and hp <= HP_MAX * 2 / 3:
 		phase = Phase.TWO
 		sprite.modulate = Color(1.3, 0.25, 0.25)
+		AudioManager.play_sfx("boss_roar")
 		emit_signal("phase_changed", 2)
 	elif phase == Phase.TWO and hp <= HP_MAX / 3:
 		phase = Phase.THREE
 		sprite.modulate = Color(1.6, 0.15, 0.15)
+		AudioManager.play_sfx("boss_roar")
 		emit_signal("phase_changed", 3)
 
 func _die() -> void:
@@ -115,6 +118,7 @@ func _tick(delta: float) -> void:
 			velocity.x = lerpf(velocity.x, 0.0, 6.0 * delta)
 			_state_t -= delta
 			if _state_t <= 0.0:
+				AudioManager.play_sfx("boss_slam")
 				if _player and is_instance_valid(_player):
 					var dist := global_position.distance_to(_player.global_position)
 					if dist < 200.0:
@@ -154,6 +158,7 @@ func _choose_attack() -> void:
 func _start_charge() -> void:
 	if not _player or not is_instance_valid(_player): return
 	_state = FSM.CHARGE
+	AudioManager.play_sfx("boss_charge")
 	_charge_dir = int(sign(_player.global_position.x - global_position.x))
 	_charge_speed = 360.0 if phase == Phase.ONE else 500.0
 	_state_t = 0.9
@@ -168,6 +173,7 @@ func _start_burst() -> void:
 	_state_t = 0.55
 
 func _fire_burst() -> void:
+	AudioManager.play_sfx("boss_burst")
 	var count := 6 if phase == Phase.TWO else 10
 	for i in count:
 		var angle := (TAU / count) * i

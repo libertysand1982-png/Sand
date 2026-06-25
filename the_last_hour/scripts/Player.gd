@@ -136,6 +136,7 @@ func _physics_process(delta: float) -> void:
 
 	if jump_buf > 0.0 and (on_floor or coyote_t > 0.0):
 		velocity.y = JUMP_VEL
+		AudioManager.play_sfx("player_jump")
 		coyote_t = 0.0
 		jump_buf = 0.0
 
@@ -170,6 +171,7 @@ func _start_dash() -> void:
 	dash_t = DASH_DUR
 	dash_cd = DASH_CD
 	invuln = DASH_DUR + 0.08
+	AudioManager.play_sfx("player_dash")
 
 func _handle_melee_input() -> void:
 	if not Input.is_action_just_pressed("p_melee"):
@@ -179,6 +181,7 @@ func _handle_melee_input() -> void:
 	combo = (combo + 1) % 3
 	combo_reset_t = 0.6
 	attack_t = 0.26
+	AudioManager.play_sfx("sword_finisher" if combo == 2 else "sword_swing")
 
 	# Finisher hits harder
 	var mult := 1.6 if combo == 2 else 1.0
@@ -190,6 +193,7 @@ func _handle_melee_input() -> void:
 		var diff := e.global_position - global_position
 		if abs(diff.x) < MELEE_REACH and abs(diff.y) < 44.0 and int(sign(diff.x)) == facing:
 			e.take_damage(dmg, Vector2(facing * 200.0, -110.0))
+			AudioManager.play_sfx("sword_hit", -2.0)
 			emit_signal("hit_landed", e.global_position, dmg)
 
 func _handle_knife_input() -> void:
@@ -198,6 +202,7 @@ func _handle_knife_input() -> void:
 	if knife_cd > 0.0:
 		return
 	knife_cd = 0.42
+	AudioManager.play_sfx("knife_throw")
 	emit_signal("knife_fired", global_position + Vector2(facing * 14.0, -6.0), facing)
 
 # ── Damage ─────────────────────────────────────────────────────────────────────
@@ -212,6 +217,7 @@ func take_damage(amount: int, kb: Vector2 = Vector2.ZERO) -> void:
 		emit_signal("died")
 		return
 	hp = RunData.hp
+	AudioManager.play_sfx("player_hurt")
 	invuln = INVULN_DUR
 	knockback = kb
 

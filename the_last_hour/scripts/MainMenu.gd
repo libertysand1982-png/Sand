@@ -24,6 +24,7 @@ var _crow_t          := randf_range(4.0, 10.0)
 var _torches: Array  = []
 var _menu_items: Array = []
 var _time            := 0.0
+var _last_hover_key  := ""
 
 # Node refs
 var _rain_root:    Node2D
@@ -43,6 +44,7 @@ func _ready() -> void:
 	_build_menu()
 	_spawn_rain()
 	_spawn_fog()
+	AudioManager.play_music("menu")
 
 # ── Background & silhouettes ───────────────────────────────────────────────────
 
@@ -311,9 +313,11 @@ func _update_title() -> void:
 
 func _update_menu_hover() -> void:
 	var mouse := get_local_mouse_position()
+	var hovered_key := ""
 	for item in _menu_items:
 		var rect := Rect2(item.bg.position, item.bg.size)
 		if rect.has_point(mouse):
+			hovered_key = item.key
 			item.lbl.add_theme_color_override("font_color", C_GOLD_H)
 			item.bg.color = Color(0.28, 0.04, 0.03, 0.55)
 			item.left.color = C_GOLD_H
@@ -321,6 +325,10 @@ func _update_menu_hover() -> void:
 			item.lbl.add_theme_color_override("font_color", C_GOLD)
 			item.bg.color = Color(0, 0, 0, 0)
 			item.left.color = C_RED
+	if hovered_key != _last_hover_key:
+		_last_hover_key = hovered_key
+		if hovered_key != "":
+			AudioManager.play_sfx("menu_hover")
 
 func _update_crows(delta: float) -> void:
 	_crow_t -= delta
@@ -359,6 +367,7 @@ func _input(event: InputEvent) -> void:
 				_on_item_pressed(item.key)
 
 func _on_item_pressed(key: String) -> void:
+	AudioManager.play_sfx("menu_click")
 	match key:
 		"new":
 			GameManager.auto_start = true

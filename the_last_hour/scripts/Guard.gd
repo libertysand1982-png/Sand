@@ -57,11 +57,13 @@ func take_damage(amount: int, kb: Vector2 = Vector2.ZERO) -> void:
 	if hp <= 0:
 		_die()
 	else:
+		AudioManager.play_sfx("enemy_hurt")
 		_state = FSM.STAGGER
 		_stagger_t = 0.22
 
 func _die() -> void:
 	_state = FSM.DEAD
+	AudioManager.play_sfx("enemy_death")
 	emit_signal("died", global_position, 1)
 	queue_free()
 

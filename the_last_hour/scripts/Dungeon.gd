@@ -263,7 +263,7 @@ func _check_boss_entrance() -> void:
 	# Boss entrance opens only when all zones cleared
 	if _player.global_position.x > BOSS_X + 200.0:
 		_boss_entered = true
-		# Close entrance behind the player
+		AudioManager.play_music("boss")
 		if is_instance_valid(_boss_entrance_body):
 			_boss_entrance_body.queue_free()
 
@@ -282,6 +282,7 @@ func _open_zone(zone_idx: int) -> void:
 	for b in _zone_barriers:
 		if b.zone == zone_idx and not b.open:
 			b.open = true
+			AudioManager.play_sfx("door_open")
 			var scroll_x := b.door.position.x + 11.0
 			if is_instance_valid(b.door):
 				b.door.queue_free()
@@ -332,6 +333,7 @@ func _on_scroll_picked(body: Node, area: Area2D) -> void:
 	RunData.apply_scroll(chosen)
 	_player.hp = RunData.hp
 	_player.max_hp = RunData.max_hp
+	AudioManager.play_sfx("scroll_pickup")
 	_spawn_float(area.global_position, "SCROLL !", Color(1.0, 0.9, 0.3))
 	area.queue_free()
 
@@ -373,6 +375,7 @@ func _on_hit_landed(pos: Vector2, dmg: int) -> void:
 func _on_boss_died() -> void:
 	_spawn_float(_boss.global_position if is_instance_valid(_boss) else Vector2(BOSS_X + 700, 400),
 				 "PHASE 2 !", Color(0.80, 0.30, 1.0))
+	AudioManager.stop_music(1.2)
 	GlobalTimer.pause()
 	emit_signal("revelation_started")
 	var t := create_tween()
@@ -381,6 +384,8 @@ func _on_boss_died() -> void:
 
 func _spawn_mother() -> void:
 	GlobalTimer.start()
+	AudioManager.play_sfx("mother_appear")
+	AudioManager.play_music("mother", 2.5)
 	_boss_mother = TLHMother.new()
 	_boss_mother.collision_layer = 2
 	_boss_mother.collision_mask  = 4

@@ -63,6 +63,7 @@ func _on_revelation() -> void:
 
 func _build_run() -> void:
 	_teardown()
+	AudioManager.play_music("dungeon")
 
 	# Player
 	_player = TLHPlayer.new()
@@ -111,12 +112,15 @@ func _on_boss_defeated() -> void:
 # ── Screen transitions ────────────────────────────────────────────────────────
 
 func _show_death() -> void:
+	AudioManager.stop_music(0.8)
 	_hud.show_death(GlobalTimer.get_fmt(), RunData.cells)
 
 func _show_victory() -> void:
+	AudioManager.play_music("victory", 1.0)
 	_hud.show_victory(GlobalTimer.get_fmt())
 
 func _show_gameover(_reason: String) -> void:
+	AudioManager.stop_music(0.8)
 	_hud.show_gameover()
 
 func _on_threshold(key: String) -> void:

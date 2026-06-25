@@ -55,11 +55,13 @@ func take_damage(amount: int, kb: Vector2 = Vector2.ZERO) -> void:
 	if hp <= 0:
 		_die()
 	else:
+		AudioManager.play_sfx("enemy_hurt")
 		_state = FSM.STAGGER
 		_stagger_t = 0.18
 
 func _die() -> void:
 	_state = FSM.DEAD
+	AudioManager.play_sfx("enemy_death")
 	emit_signal("died", global_position, 1)
 	queue_free()
 
@@ -110,5 +112,6 @@ func _do_shoot() -> void:
 	if not _player: return
 	var dir := sign(_player.global_position.x - global_position.x)
 	sprite.scale.x = abs(sprite.scale.x) * dir
+	AudioManager.play_sfx("arrow_shot", -3.0)
 	var vel_vec := Vector2(dir * ARROW_SPEED, -60.0)
 	emit_signal("arrow_shot", global_position + Vector2(dir * 14.0, -6.0), vel_vec, ARROW_DMG)

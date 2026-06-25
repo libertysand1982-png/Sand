@@ -72,6 +72,7 @@ func take_damage(amount: int, kb: Vector2 = Vector2.ZERO) -> void:
 	if hp <= 0:
 		_die()
 	else:
+		AudioManager.play_sfx("enemy_hurt", -4.0)
 		_check_phase()
 		_state = FSM.STAGGER
 		_stagger_t = 0.22
@@ -162,6 +163,7 @@ func _tick(delta: float) -> void:
 			_shadow_active = true
 			_shadow_t = 2.5
 			sprite.modulate = Color(0.12, 0.0, 0.22, 0.35)
+			AudioManager.play_sfx("mother_shadow")
 			_state = FSM.IDLE
 			_attack_cd = _get_cd()
 
@@ -226,9 +228,11 @@ func _do_swipe(diff: Vector2) -> void:
 func _do_drain(dir_n: Vector2) -> void:
 	var dir := int(sign(dir_n.x)) if dir_n.x != 0.0 else 1
 	sprite.scale.x = abs(sprite.scale.x) * dir
+	AudioManager.play_sfx("mother_drain")
 	emit_signal("drain_bullet", global_position + dir_n * 18.0, dir_n * 260.0, 20)
 
 func _do_bat_swarm() -> void:
+	AudioManager.play_sfx("mother_bats")
 	var count := 5 if _phase == Phase.TWO else 8
 	var base_dmg := 10 if _phase == Phase.TWO else 14
 	for i in count:
