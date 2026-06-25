@@ -13,6 +13,7 @@ var radius: float
 var disp_scale: float
 var show_bar: bool = false
 var hitflash: float = 0.0
+var slow_timer: float = 0.0   # ralentissement (sort de Gel)
 var dead: bool = false
 var dying: bool = false
 

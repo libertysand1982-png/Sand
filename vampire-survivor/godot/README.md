@@ -14,54 +14,66 @@ Mini *Vampire Survivors* en **Godot 4.x** (testé sur **Godot 4.7-stable**), éc
 
 - **Déplacement :** WASD / ZQSD / flèches
 - **Attaque :** automatique (vise l'ennemi le plus proche)
+- **Sorts actifs :** touches **1 2 3 4** (voir la roue en bas à gauche)
 - **Pause :** P / Échap · **Son :** M
-- Menu : **Nouvelle Partie · Options** (volume musique/effets) **· Quitter**
-- Monte en niveau en ramassant les gemmes, puis choisis une amélioration.
+- Menu : **Nouvelle Partie · Options · Scores · Quitter**
+- Monte en niveau en ramassant les gemmes (sort d'**Onde arcanique** à chaque niveau).
+
+## Sorts actifs (roue en bas-gauche)
+
+| Touche | Sort | Effet | Recharge |
+|--------|------|-------|----------|
+| **1** | Boule de feu | explosion de zone sur l'ennemi le plus proche | 3,5 s |
+| **2** | Éclair | foudroie jusqu'à 4 ennemis proches | 6 s |
+| **3** | Gel | onde glaciale : dégâts + ralentit autour de toi | 10 s |
+| **4** | Soin | rend des PV | 18 s |
+
+La roue affiche l'icône, la touche et la recharge (camembert + compte à rebours).
+
+## Tableau des scores
+
+À la mort : saisis ton **nom**, ton score est calculé et **enregistré** (persistant
+dans `user://scores.json`), puis le **classement** s'affiche (ton entrée surlignée).
+Accessible aussi depuis le menu (**Scores**).
 
 ## Contenu visuel & audio
 
-- **Héros :** *HeroKnight* animé (idle / course / mort), retourné selon la direction.
-- **Monstres animés :** gobelin, œil volant, champignon, squelette (course + mort).
+- **Héros :** *HeroKnight* animé (idle / course / mort).
+- **Monstres animés :** gobelin, œil volant, champignon, squelette.
 - **Fond :** sol organique généré + **forêt crépusculaire** dans les menus.
-- **Audio :** musique de combat en boucle + SFX (coup, magie, pièces, mort, pas, clic).
+- **Audio :** musique de combat en boucle + SFX.
 
 ## Comment c'est construit
 
-Tout est piloté par **`scripts/Main.gd`** ; la seule scène sur disque est
-`scenes/Main.tscn` (un `Node2D` + `Main.gd`). Le reste est créé par code.
-
 ```text
 godot/
-├─ project.godot
-├─ scenes/Main.tscn
+├─ project.godot · scenes/Main.tscn
 ├─ scripts/
-│  ├─ Main.gd        Boucle, spawn, collisions, niveaux, états, audio, construction des anims
+│  ├─ Main.gd        Boucle, spawn, collisions, niveaux, sorts, scores, audio
 │  ├─ Player.gd      Héros animé (AnimatedSprite2D) + Camera2D
-│  ├─ Enemy.gd       Monstre animé (feuilles découpées en AtlasTexture)
-│  ├─ Projectile.gd  Éclat de l'arme (dessiné via _draw)
-│  ├─ Gem.gd         Gemme d'expérience
-│  ├─ Hud.gd         Interface + menus (accueil/options/niveau/fin/pause)
-│  └─ Sfx.gd         Sons (pool de voix) + musique + volumes
-├─ assets/  knight/  monsters/  bg/  audio/  ui/  characters/
+│  ├─ Enemy.gd       Monstre animé (+ ralentissement par le Gel)
+│  ├─ Projectile.gd  Éclat de l'arme auto
+│  ├─ Nova.gd        Anneau de sort (couleur paramétrable)
+│  ├─ Bolt.gd        Éclairs en dents de scie
+│  ├─ Gem.gd         Gemme d'XP
+│  ├─ Wheel.gd       Roue de sorts (icônes + recharge radiale)
+│  ├─ Scores.gd      Tableau des scores persistant (user://)
+│  ├─ Hud.gd         Interface + menus (accueil/options/scores/niveau/fin/pause)
+│  └─ Sfx.gd         Sons + musique + volumes
+├─ assets/  knight/  monsters/  spells/  bg/  audio/
 └─ icon.svg
 ```
 
 ### Détails techniques
-- **Animations** via `AnimatedSprite2D` + `SpriteFrames` construits en code
-  (frames individuelles pour le héros, feuilles horizontales découpées en
-  `AtlasTexture` pour les monstres).
-- **Rendu net** (pixel-art) : filtre *Nearest* par défaut.
-- **Profondeur** : héros + monstres sous un nœud `y_sort_enabled`.
-- **Sol** : tuile d'herbe générée (sans couture) répétée sur l'arène.
+- **Animations** via `AnimatedSprite2D` + `SpriteFrames` construits en code.
+- **Sorts au clavier** via `_unhandled_input` (n'interfère pas avec la saisie du nom).
+- **Roue** = `Control` dessiné en `_draw` (camembert de recharge).
+- **Scores** = JSON dans `user://` (`FileAccess` + `JSON`).
 - **Entrées** : `InputMap` configuré au démarrage, compatible QWERTY **et** AZERTY.
 - Astuce dev : argument `--smoke` = démarre une partie automatiquement (tests).
 
 ## Crédits assets (tous CC0 / libres, via le dépôt `Sand`)
-- **HeroKnight** — pack de chevalier animé (Sven Thole).
+- **HeroKnight** — chevalier animé (Sven Thole).
 - **Monsters Creatures Fantasy** — gobelin / œil volant / champignon / squelette (LuizMelo).
-- **Fond forêt** — pack de décors nature pixel-art.
-- **Musique & SFX** — `foret_de_brume` (battle, hit, magic, coins, death) + clics Kenney.
-
-## Aller plus loin
-- Ajouter un **boss** (le *Shadowed Wetlands Boss* est dans ta bibliothèque), d'autres armes, des objets.
-- Animer une attaque du héros (frames *Attack1/2/3* dispo) sur le tir.
+- **Raven Fantasy Icons** — icônes de sorts (boule de feu, éclair, gel, potion).
+- **Fond forêt** — décors nature pixel-art · **Musique & SFX** — `foret_de_brume` + clics Kenney.

@@ -46,6 +46,9 @@ var projectiles: Array[VSProjectile] = []
 var gems: Array[VSGem] = []
 var floats: Array = []
 var enemy_frames: Dictionary = {}
+var spells: Array = []
+var _last_score := 0
+var _last_time := "00:00"
 
 # ============================================================
 func _ready() -> void:
@@ -59,6 +62,13 @@ func _ready() -> void:
 		"mushroom":  _enemy_sf("res://assets/monsters/mushroom/run.png", 8, "res://assets/monsters/mushroom/death.png", 4),
 		"skeleton":  _enemy_sf("res://assets/monsters/skeleton/walk.png", 4, "res://assets/monsters/skeleton/death.png", 4),
 	}
+
+	spells = [
+		{"id": "fire",  "name": "Boule de feu", "key": "1", "cd": 3.5,  "left": 0.0, "icon": load("res://assets/spells/fire.png")},
+		{"id": "bolt",  "name": "Éclair",       "key": "2", "cd": 6.0,  "left": 0.0, "icon": load("res://assets/spells/lightning.png")},
+		{"id": "frost", "name": "Gel",          "key": "3", "cd": 10.0, "left": 0.0, "icon": load("res://assets/spells/frost.png")},
+		{"id": "heal",  "name": "Soin",         "key": "4", "cd": 18.0, "left": 0.0, "icon": load("res://assets/spells/heal.png")},
+	]
 
 	# Sol
 	ground = Sprite2D.new()
@@ -106,6 +116,7 @@ func _ready() -> void:
 	hud.upgrade_chosen.connect(_apply_upgrade)
 	hud.music_changed.connect(sfx.set_music_volume)
 	hud.sfx_changed.connect(sfx.set_sfx_volume)
+	hud.name_submitted.connect(_on_name_submitted)
 	hud.show_menu()
 	state = State.MENU
 	sfx.start_music()
@@ -121,6 +132,10 @@ func _setup_input() -> void:
 	_mk("vs_right", [KEY_D, KEY_RIGHT])
 	_mk("vs_pause", [KEY_P, KEY_ESCAPE])
 	_mk("vs_mute", [KEY_M])
+	_mk("vs_spell1", [KEY_1, KEY_KP_1])
+	_mk("vs_spell2", [KEY_2, KEY_KP_2])
+	_mk("vs_spell3", [KEY_3, KEY_KP_3])
+	_mk("vs_spell4", [KEY_4, KEY_KP_4])
 
 func _mk(action: String, keys: Array) -> void:
 	if InputMap.has_action(action):
@@ -168,12 +183,17 @@ func _to_menu() -> void:
 	hud.show_hud(false)
 	hud.show_menu()
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("vs_pause"):
 		_toggle_pause()
 	elif event.is_action_pressed("vs_mute"):
 		sfx.set_muted(not sfx.muted)
 		hud.set_muted(sfx.muted)
+	elif state == State.PLAYING:
+		for i in spells.size():
+			if event.is_action_pressed("vs_spell" + str(i + 1)):
+				_try_cast(i)
+				break
 
 func _toggle_pause() -> void:
 	if state == State.PLAYING:
@@ -192,6 +212,9 @@ func _process(delta: float) -> void:
 func _update_playing(delta: float) -> void:
 	var p := player
 	elapsed += delta
+	for sp in spells:
+		if sp["left"] > 0.0:
+			sp["left"] = maxf(0.0, sp["left"] - delta)
 
 	# Déplacement + animation
 	var dir := Input.get_vector("vs_left", "vs_right", "vs_up", "vs_down")
@@ -310,10 +333,14 @@ func _update_enemies(delta: float) -> void:
 	for e in enemies:
 		if not is_instance_valid(e) or e.dead:
 			continue
+		var sp_mul := 1.0
+		if e.slow_timer > 0.0:
+			e.slow_timer -= delta
+			sp_mul = 0.45
 		var to := p.position - e.position
 		var d := to.length()
 		if d > 0.001:
-			e.position += to / d * e.speed * delta
+			e.position += to / d * e.speed * sp_mul * delta
 		e.anim.flip_h = to.x < 0.0
 
 		var punch := 1.0
@@ -322,6 +349,8 @@ func _update_enemies(delta: float) -> void:
 			var tt := clampf(e.hitflash / 0.12, 0.0, 1.0)
 			punch = lerpf(1.0, 1.18, tt)
 			e.anim.self_modulate = Color(1, 1, 1).lerp(Color(2.2, 2.2, 2.2), tt)
+		elif e.slow_timer > 0.0:
+			e.anim.self_modulate = Color(0.6, 0.8, 1.25)   # teinte gelée
 		else:
 			e.anim.self_modulate = Color(1, 1, 1)
 		e.anim.scale = Vector2(e.disp_scale * punch, e.disp_scale * punch)
@@ -439,6 +468,120 @@ func _cast_nova() -> void:
 			if e.hp <= 0.0:
 				_kill_enemy(e)
 
+# ----- Sorts actifs (touches 1..4) -----
+func _wheel_data() -> Array:
+	var out: Array = []
+	for sp in spells:
+		out.append({
+			"icon": sp["icon"], "key": sp["key"], "left": sp["left"],
+			"frac": (sp["left"] / sp["cd"]) if sp["cd"] > 0.0 else 0.0,
+			"ready": sp["left"] <= 0.0,
+		})
+	return out
+
+func _try_cast(i: int) -> void:
+	var sp = spells[i]
+	if sp["left"] > 0.0:
+		return
+	if _do_cast(sp["id"]):
+		sp["left"] = sp["cd"]
+		hud.wheel.set_data(_wheel_data())
+
+func _do_cast(id: String) -> bool:
+	var p := player
+	match id:
+		"fire":
+			var e := _nearest_enemy()
+			if e == null:
+				return false
+			_burst(e.position, 90.0, Color(1.0, 0.7, 0.3), Color(1.0, 0.45, 0.15))
+			var fdmg := 55.0 + p.level * 3.0
+			for en in enemies:
+				if not is_instance_valid(en) or en.dead:
+					continue
+				if en.position.distance_to(e.position) <= 90.0:
+					en.hp -= fdmg
+					en.hitflash = 0.12
+					_spawn_text(en.position + Vector2(0, -en.radius * 1.6), str(int(fdmg)), Color(1.0, 0.7, 0.3))
+					if en.hp <= 0.0:
+						_kill_enemy(en)
+			sfx.play("magic", 0.6)
+			return true
+		"bolt":
+			var targets := _nearest_enemies(4, 540.0)
+			if targets.is_empty():
+				return false
+			var bdmg := 75.0 + p.level * 4.0
+			var pts: Array = []
+			for en in targets:
+				pts.append(en.position)
+				en.hp -= bdmg
+				en.hitflash = 0.12
+				_spawn_text(en.position + Vector2(0, -en.radius * 1.6), str(int(bdmg)), Color(0.8, 0.9, 1.0))
+				if en.hp <= 0.0:
+					_kill_enemy(en)
+			var bolt := VSBolt.new()
+			bolt.setup(p.position, pts)
+			fx_layer.add_child(bolt)
+			sfx.play("hit", 0.5)
+			return true
+		"frost":
+			var frad := 240.0
+			_burst(p.position, frad, Color(0.8, 0.95, 1.0), Color(0.4, 0.7, 1.0))
+			var cdmg := 22.0 + p.level * 2.0
+			for en in enemies:
+				if not is_instance_valid(en) or en.dead:
+					continue
+				if en.position.distance_to(p.position) <= frad:
+					en.slow_timer = 3.0
+					en.hp -= cdmg
+					en.hitflash = 0.12
+					if en.hp <= 0.0:
+						_kill_enemy(en)
+			sfx.play("magic", 0.6)
+			return true
+		"heal":
+			if p.hp >= p.maxhp:
+				return false
+			p.hp = minf(p.maxhp, p.hp + 40.0)
+			_burst(p.position, 80.0, Color(0.7, 1.0, 0.6), Color(0.4, 0.9, 0.4))
+			_spawn_text(p.position + Vector2(0, -40), "+40", Color(0.5, 1.0, 0.5))
+			sfx.play("coins", 0.5)
+			return true
+	return false
+
+func _burst(pos: Vector2, radius: float, ring: Color, glow: Color) -> void:
+	var nova := VSNova.new()
+	nova.position = pos
+	nova.max_r = radius
+	nova.ring_color = ring
+	nova.glow_color = glow
+	fx_layer.add_child(nova)
+
+func _nearest_enemy() -> VSEnemy:
+	var best: VSEnemy = null
+	var bd := INF
+	for e in enemies:
+		if not is_instance_valid(e) or e.dead:
+			continue
+		var d := player.position.distance_squared_to(e.position)
+		if d < bd:
+			bd = d
+			best = e
+	return best
+
+func _nearest_enemies(count: int, max_range: float) -> Array:
+	var pool: Array = []
+	for e in enemies:
+		if not is_instance_valid(e) or e.dead:
+			continue
+		if player.position.distance_to(e.position) <= max_range:
+			pool.append(e)
+	pool.sort_custom(func(a, b): return player.position.distance_squared_to(a.position) < player.position.distance_squared_to(b.position))
+	if pool.size() > count:
+		pool.resize(count)
+	return pool
+
 # ----- Textes flottants -----
 func _spawn_text(pos: Vector2, text: String, color: Color) -> void:
 	var l := Label.new()
@@ -500,10 +643,24 @@ func _game_over() -> void:
 	player.anim.play("death")
 	player.anim.modulate.a = 1.0
 	sfx.play("death", 0.7)
+	hud.show_hud(false)
+	_last_score = kills * 10 + (player.level - 1) * 40 + int(elapsed)
 	var m := int(elapsed / 60.0)
 	var s := int(fmod(elapsed, 60.0))
-	hud.show_hud(false)
-	hud.show_gameover("%02d:%02d" % [m, s], player.level, kills)
+	_last_time = "%02d:%02d" % [m, s]
+	hud.show_gameover_entry(_last_time, player.level, kills, _last_score, VSScores.last_name())
+
+func _on_name_submitted(player_name: String) -> void:
+	var nm := player_name.strip_edges()
+	if nm == "":
+		nm = "Héros"
+	VSScores.save_name(nm)
+	var rank := VSScores.add({
+		"name": nm, "score": _last_score, "time": _last_time,
+		"level": player.level, "kills": kills,
+	})
+	sfx.play("click", 0.5)
+	hud.show_gameover_result(VSScores.load_all(), rank, _last_score)
 
 func _refresh_hud() -> void:
 	var p := player
@@ -513,6 +670,7 @@ func _refresh_hud() -> void:
 	hud.set_hp(p.hp, p.maxhp)
 	hud.set_time("%02d:%02d" % [m, s])
 	hud.set_kills(kills)
+	hud.wheel.set_data(_wheel_data())
 
 # ============================================================
 # Construction des animations
