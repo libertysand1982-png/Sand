@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Crépuscule — mini Vampire Survivors</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="game">
+  <canvas id="canvas"></canvas>
+
+  <!-- HUD (visible en jeu) -->
+  <div id="hud" class="hidden">
+    <div id="topbar">
+      <div id="xpwrap"><div id="xpfill"></div><span id="xptext">Niv. 1</span></div>
+    </div>
+    <div id="stats">
+      <span id="timer">00:00</span>
+      <span id="kills">&#9760; 0</span>
+    </div>
+    <div id="muteflag" class="hidden">&#128263; muet</div>
+  </div>
+
+  <!-- Menu d'accueil -->
+  <div id="menu" class="overlay">
+    <div class="panel">
+      <h1>CR&Eacute;PUSCULE</h1>
+      <p>Survis aux vagues de monstres.<br />Ton arme frappe <b>toute seule</b> : ramasse les gemmes, monte en niveau, deviens surpuissant.</p>
+      <p class="controls">D&eacute;placement&nbsp;: <b>WASD</b> / <b>fl&egrave;ches</b> &middot; Pause&nbsp;: <b>P</b> &middot; Son&nbsp;: <b>M</b></p>
+      <button class="btn" id="startBtn">Chargement&hellip;</button>
+      <p class="credits">Sprites &amp; sons issus du d&eacute;p&ocirc;t &laquo;&nbsp;Sand&nbsp;&raquo; (assets Kenney&nbsp;/&nbsp;CC0)</p>
+    </div>
+  </div>
+
+  <!-- Choix d'amelioration (montee de niveau) -->
+  <div id="levelup" class="overlay hidden">
+    <div class="panel">
+      <h2>NIVEAU SUP&Eacute;RIEUR&nbsp;!</h2>
+      <p>Choisis une am&eacute;lioration</p>
+      <div id="cards"></div>
+    </div>
+  </div>
+
+  <!-- Fin de partie -->
+  <div id="gameover" class="overlay hidden">
+    <div class="panel">
+      <h2>TU ES TOMB&Eacute;</h2>
+      <p id="goStats"></p>
+      <button class="btn" id="retryBtn">REJOUER</button>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div id="pause" class="overlay hidden">
+    <div class="panel"><h2>PAUSE</h2><p>Appuie sur <b>P</b> pour reprendre</p></div>
+  </div>
+</div>
+
+<script src="js/assets.js"></script>
+<script src="js/input.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

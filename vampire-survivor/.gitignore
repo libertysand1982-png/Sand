@@ -1,0 +1,9 @@
+# Cache/import Godot (régénéré automatiquement à l'ouverture du projet)
+godot/.godot/
+
+# Exports / build
+/build/
+*.tmp
+_smoke.png
+.DS_Store
+Thumbs.db
