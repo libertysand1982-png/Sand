@@ -164,7 +164,7 @@ func _tick(delta: float) -> void:
 				_attack_cd = _get_cd()
 			if _player and is_instance_valid(_player):
 				if global_position.distance_to(_player.global_position) < 55.0:
-					var kb_dir := sign(_player.global_position.x - global_position.x)
+					var kb_dir: float = sign(_player.global_position.x - global_position.x)
 					_player.take_damage(BASE_DMG, Vector2(kb_dir * 320.0, -130.0))
 
 		FSM.SLAM:
@@ -175,7 +175,7 @@ func _tick(delta: float) -> void:
 				if _player and is_instance_valid(_player):
 					var dist := global_position.distance_to(_player.global_position)
 					if dist < 200.0:
-						var kb_dir := sign(_player.global_position.x - global_position.x)
+						var kb_dir: float = sign(_player.global_position.x - global_position.x)
 						_player.take_damage(int(BASE_DMG * 1.5), Vector2(kb_dir * 280.0, -180.0))
 				_state = FSM.IDLE
 				_attack_cd = _get_cd()

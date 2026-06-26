@@ -171,7 +171,7 @@ func _do_attack(delta: float) -> void:
 	if _player and is_instance_valid(_player):
 		var dist := global_position.distance_to(_player.global_position)
 		if dist < ATTACK_RANGE + 14.0:
-			var dir := sign(_player.global_position.x - global_position.x)
+			var dir: float = sign(_player.global_position.x - global_position.x)
 			_player.take_damage(DMG, Vector2(dir * 210.0, -90.0))
 	_attack_cd = ATTACK_CD
 	_state = FSM.CHASE

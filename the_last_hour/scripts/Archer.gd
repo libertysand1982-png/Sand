@@ -160,7 +160,7 @@ func _tick(delta: float) -> void:
 
 func _do_shoot() -> void:
 	if not _player: return
-	var dir := sign(_player.global_position.x - global_position.x)
+	var dir: float = sign(_player.global_position.x - global_position.x)
 	sprite.flip_h = dir < 0.0
 	AudioManager.play_sfx("arrow_shot", -3.0)
 	var vel_vec := Vector2(dir * ARROW_SPEED, -60.0)
