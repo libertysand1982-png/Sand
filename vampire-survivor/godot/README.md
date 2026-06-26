@@ -13,7 +13,7 @@ Mini *Vampire Survivors* en **Godot 4.x** (testé sur **Godot 4.7-stable**), éc
 ## Commandes
 
 - **Déplacement :** WASD / ZQSD / flèches
-- **Attaque :** automatique (vise l'ennemi le plus proche)
+- **Attaque :** **boules de feu** automatiques (visent l'ennemi le plus proche)
 - **Sorts actifs :** touches **1 2 3 4** (voir la roue en bas à gauche)
 - **Pause :** P / Échap · **Son :** M
 - Menu : **Nouvelle Partie · Options · Scores · Quitter**
@@ -28,7 +28,7 @@ Mini *Vampire Survivors* en **Godot 4.x** (testé sur **Godot 4.7-stable**), éc
 | **3** | Gel | onde glaciale : dégâts + ralentit autour de toi | 10 s |
 | **4** | Soin | rend des PV | 18 s |
 
-La roue affiche l'icône, la touche et la recharge (camembert + compte à rebours).
+La roue affiche l'icône sur un **cadre rond** (pack CraftPix), la touche et la recharge (camembert + compte à rebours).
 
 ## Tableau des scores
 
@@ -36,12 +36,20 @@ La roue affiche l'icône, la touche et la recharge (camembert + compte à rebour
 dans `user://scores.json`), puis le **classement** s'affiche (ton entrée surlignée).
 Accessible aussi depuis le menu (**Scores**).
 
+## Boss & objets
+
+Tous les **5 niveaux**, un **boss NightBorne** apparaît. En mourant, il lâche un
+objet à ramasser (au contact) :
+- ⚔️ **Arme** — +30% de dégâts
+- 🛡️ **Armure** — +40 PV max
+- 🧪 **Potion** — PV au maximum
+
 ## Contenu visuel & audio
 
-- **Héros :** *HeroKnight* animé (idle / course / mort).
-- **Monstres animés :** gobelin, œil volant, champignon, squelette.
+- **Héros :** *Evil Wizard* animé — un sorcier lanceur de sorts (idle / déplacement / mort).
+- **Monstres animés :** gobelin, **chauve-souris** (dark fantasy), œil volant, champignon, squelette + **boss NightBorne**.
 - **Fond :** sol organique généré + **forêt crépusculaire** dans les menus.
-- **Audio :** musique de combat en boucle + SFX.
+- **Audio :** SFX uniquement (pas de musique) — **un son par sort** (feu / éclair / glace / soin).
 
 ## Comment c'est construit
 
@@ -52,14 +60,15 @@ godot/
 │  ├─ Main.gd        Boucle, spawn, collisions, niveaux, sorts, scores, audio
 │  ├─ Player.gd      Héros animé (AnimatedSprite2D) + Camera2D
 │  ├─ Enemy.gd       Monstre animé (+ ralentissement par le Gel)
-│  ├─ Projectile.gd  Éclat de l'arme auto
+│  ├─ Projectile.gd  Boule de feu de l'arme auto
 │  ├─ Nova.gd        Anneau de sort (couleur paramétrable)
 │  ├─ Bolt.gd        Éclairs en dents de scie
 │  ├─ Gem.gd         Gemme d'XP
 │  ├─ Wheel.gd       Roue de sorts (icônes + recharge radiale)
 │  ├─ Scores.gd      Tableau des scores persistant (user://)
+│  ├─ Item.gd        Objet de loot lâché par les boss
 │  ├─ Hud.gd         Interface + menus (accueil/options/scores/niveau/fin/pause)
-│  └─ Sfx.gd         Sons + musique + volumes
+│  └─ Sfx.gd         Sons (un par sort) + volumes
 ├─ assets/  knight/  monsters/  spells/  bg/  audio/
 └─ icon.svg
 ```
@@ -73,7 +82,9 @@ godot/
 - Astuce dev : argument `--smoke` = démarre une partie automatiquement (tests).
 
 ## Crédits assets (tous CC0 / libres, via le dépôt `Sand`)
-- **HeroKnight** — chevalier animé (Sven Thole).
+- **Evil Wizard** — sorcier animé (LuizMelo).
 - **Monsters Creatures Fantasy** — gobelin / œil volant / champignon / squelette (LuizMelo).
 - **Raven Fantasy Icons** — icônes de sorts (boule de feu, éclair, gel, potion).
-- **Fond forêt** — décors nature pixel-art · **Musique & SFX** — `foret_de_brume` + clics Kenney.
+- **CraftPix — Basic Pixel Art UI for RPG** — cadres ronds de la roue de sorts.
+- **Dark Fantasy Enemies** (chauve-souris) · **NightBorne** (boss) · **Fire Bullet Pack** (boule de feu) · **16x16 Assorted RPG Icons** (objets de loot).
+- **Fond forêt** — décors nature pixel-art · **SFX** — banque de sons (feu / éclair / glace / bénédiction) + `foret_de_brume` + clics Kenney.
