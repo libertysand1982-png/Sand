@@ -1,0 +1,3 @@
+# Cache d'import et fichiers temporaires Godot 4
+.godot/
+*.tmp
