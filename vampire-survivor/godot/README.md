@@ -28,7 +28,7 @@ Mini *Vampire Survivors* en **Godot 4.x** (testé sur **Godot 4.7-stable**), éc
 | **3** | Gel | onde glaciale : dégâts + ralentit autour de toi | 10 s |
 | **4** | Soin | rend des PV | 18 s |
 
-La roue affiche l'icône, la touche et la recharge (camembert + compte à rebours).
+La roue affiche l'icône sur un **cadre rond** (pack CraftPix), la touche et la recharge (camembert + compte à rebours).
 
 ## Tableau des scores
 
@@ -41,7 +41,7 @@ Accessible aussi depuis le menu (**Scores**).
 - **Héros :** *HeroKnight* animé (idle / course / mort).
 - **Monstres animés :** gobelin, œil volant, champignon, squelette.
 - **Fond :** sol organique généré + **forêt crépusculaire** dans les menus.
-- **Audio :** musique de combat en boucle + SFX.
+- **Audio :** musique de combat énergique (« Riot theme ») en boucle + SFX.
 
 ## Comment c'est construit
 
@@ -76,4 +76,5 @@ godot/
 - **HeroKnight** — chevalier animé (Sven Thole).
 - **Monsters Creatures Fantasy** — gobelin / œil volant / champignon / squelette (LuizMelo).
 - **Raven Fantasy Icons** — icônes de sorts (boule de feu, éclair, gel, potion).
-- **Fond forêt** — décors nature pixel-art · **Musique & SFX** — `foret_de_brume` + clics Kenney.
+- **CraftPix — Basic Pixel Art UI for RPG** — cadres ronds de la roue de sorts.
+- **Fond forêt** — décors nature pixel-art · **Musique** — « Riot theme » · **SFX** — `foret_de_brume` + clics Kenney.

@@ -36,7 +36,7 @@ func _ready() -> void:
 		players.append(p)
 	music = AudioStreamPlayer.new()
 	add_child(music)
-	var m = load("res://assets/audio/battle.mp3")
+	var m = load("res://assets/audio/music.mp3")
 	if m is AudioStreamMP3:
 		m.loop = true
 	music.stream = m
