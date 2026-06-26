@@ -1,7 +1,0 @@
-# Godot 4+ — dossier de cache/imports régénéré automatiquement
-.godot/
-# Exports
-/build/
-*.tmp
-_smoke.png
-_smoke*
