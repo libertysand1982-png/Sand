@@ -121,15 +121,16 @@ func _make_knight_frames() -> SpriteFrames:
 		"hurt":    "res://assets/characters/knight/hurt.png",
 		"death":   "res://assets/characters/knight/death.png",
 	}
-	for anim_name in KNIGHT_ANIMS:
+	for raw_name in KNIGHT_ANIMS:
+		var anim_name: String = str(raw_name)
 		var def: Array = KNIGHT_ANIMS[anim_name]
-		var frame_count: int = def[0]
-		var fps: float = def[1]
-		var loop: bool = def[2]
+		var frame_count: int = int(def[0])
+		var fps: float = float(def[1])
+		var loop: bool = bool(def[2])
 		sf.add_animation(anim_name)
 		sf.set_animation_speed(anim_name, fps)
 		sf.set_animation_loop(anim_name, loop)
-		var tex: Texture2D = load(anim_files[anim_name])
+		var tex: Texture2D = load(str(anim_files[anim_name]))
 		var fw: int = tex.get_width() / frame_count
 		for i in frame_count:
 			var atlas := AtlasTexture.new()
@@ -234,7 +235,7 @@ func _handle_melee_input() -> void:
 	for e in _enemies:
 		if not is_instance_valid(e) or e.is_dead():
 			continue
-		var diff := e.global_position - global_position
+		var diff: Vector2 = e.global_position - global_position
 		if abs(diff.x) < MELEE_REACH and abs(diff.y) < 44.0 and int(sign(diff.x)) == facing:
 			e.take_damage(dmg, Vector2(facing * 200.0, -110.0))
 			AudioManager.play_sfx("sword_hit", -2.0)

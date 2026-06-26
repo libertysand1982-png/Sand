@@ -68,15 +68,16 @@ func _make_jailer_frames() -> SpriteFrames:
 		"attack": "res://assets/characters/samurai/attack.png",
 		"hurt":   "res://assets/characters/samurai/hurt.png",
 	}
-	for anim_name in SAM_ANIMS:
+	for raw_name in SAM_ANIMS:
+		var anim_name: String = str(raw_name)
 		var def: Array = SAM_ANIMS[anim_name]
-		var frame_count: int = def[0]
-		var fps: float = def[1]
-		var loop: bool = def[2]
+		var frame_count: int = int(def[0])
+		var fps: float = float(def[1])
+		var loop: bool = bool(def[2])
 		sf.add_animation(anim_name)
 		sf.set_animation_speed(anim_name, fps)
 		sf.set_animation_loop(anim_name, loop)
-		var tex: Texture2D = load(anim_files[anim_name])
+		var tex: Texture2D = load(str(anim_files[anim_name]))
 		var fw: int = tex.get_width() / frame_count
 		for i in frame_count:
 			var atlas := AtlasTexture.new()

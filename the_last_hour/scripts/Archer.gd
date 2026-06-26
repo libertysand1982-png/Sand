@@ -64,15 +64,16 @@ func _make_kobold_frames() -> SpriteFrames:
 		"run":    "res://assets/characters/kobold/run.png",
 		"attack": "res://assets/characters/kobold/attack.png",
 	}
-	for anim_name in KOB_ANIMS:
+	for raw_name in KOB_ANIMS:
+		var anim_name: String = str(raw_name)
 		var def: Array = KOB_ANIMS[anim_name]
-		var frame_count: int = def[0]
-		var fps: float = def[1]
-		var loop: bool = def[2]
+		var frame_count: int = int(def[0])
+		var fps: float = float(def[1])
+		var loop: bool = bool(def[2])
 		sf.add_animation(anim_name)
 		sf.set_animation_speed(anim_name, fps)
 		sf.set_animation_loop(anim_name, loop)
-		var tex: Texture2D = load(anim_files[anim_name])
+		var tex: Texture2D = load(str(anim_files[anim_name]))
 		var fw: int = tex.get_width() / frame_count
 		for i in frame_count:
 			var atlas := AtlasTexture.new()
