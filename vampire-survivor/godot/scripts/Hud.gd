@@ -7,7 +7,6 @@ signal play_pressed
 signal retry_pressed
 signal to_menu_pressed
 signal upgrade_chosen(id: String)
-signal music_changed(v: float)
 signal sfx_changed(v: float)
 signal name_submitted(player_name: String)
 
@@ -36,7 +35,6 @@ var overlay_gameover: Control
 var overlay_pause: Control
 var cards_box: HBoxContainer
 var go_box: VBoxContainer
-var music_pct: Label
 var sfx_pct: Label
 
 # ============================================================
@@ -159,14 +157,6 @@ func _build_options() -> void:
 	var v := _vbox(p)
 	v.add_child(_title2("OPTIONS"))
 	v.add_child(_spacer(6))
-	music_pct = _label("Musique : 55%", 16, CREAM, true)
-	v.add_child(music_pct)
-	var ms := _slider(0.55)
-	ms.value_changed.connect(func(val):
-		music_pct.text = "Musique : %d%%" % int(round(val * 100))
-		music_changed.emit(val))
-	v.add_child(ms)
-	v.add_child(_spacer(8))
 	sfx_pct = _label("Effets : 85%", 16, CREAM, true)
 	v.add_child(sfx_pct)
 	var ss := _slider(0.85)

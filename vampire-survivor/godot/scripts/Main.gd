@@ -99,7 +99,7 @@ func _ready() -> void:
 
 	player = VSPlayer.new()
 	world.add_child(player)
-	player.set_frames(_knight_sf())
+	player.set_frames(_wizard_sf())
 	player.cam.limit_left = 0
 	player.cam.limit_top = 0
 	player.cam.limit_right = int(WORLD)
@@ -114,12 +114,10 @@ func _ready() -> void:
 	hud.retry_pressed.connect(start_game)
 	hud.to_menu_pressed.connect(_to_menu)
 	hud.upgrade_chosen.connect(_apply_upgrade)
-	hud.music_changed.connect(sfx.set_music_volume)
 	hud.sfx_changed.connect(sfx.set_sfx_volume)
 	hud.name_submitted.connect(_on_name_submitted)
 	hud.show_menu()
 	state = State.MENU
-	sfx.start_music()
 
 	# Test automatisé : l'argument `--smoke` (ligne de commande) auto-démarre une partie.
 	if "--smoke" in OS.get_cmdline_user_args():
@@ -173,7 +171,6 @@ func start_game() -> void:
 	player.visible = true
 	hud.hide_overlays()
 	hud.show_hud(true)
-	sfx.start_music()
 	state = State.PLAYING
 
 func _to_menu() -> void:
@@ -674,11 +671,11 @@ func _refresh_hud() -> void:
 
 # ============================================================
 # Construction des animations
-func _knight_sf() -> SpriteFrames:
+func _wizard_sf() -> SpriteFrames:
 	var sf := SpriteFrames.new()
-	_add_files(sf, "idle", "res://assets/knight/idle/", 8, 8.0, true)
-	_add_files(sf, "run", "res://assets/knight/run/", 10, 12.0, true)
-	_add_files(sf, "death", "res://assets/knight/death/", 10, 10.0, false)
+	_add_sheet(sf, "idle", load("res://assets/wizard/idle.png"), 8, 150, 8.0, true)
+	_add_sheet(sf, "run", load("res://assets/wizard/move.png"), 8, 150, 11.0, true)
+	_add_sheet(sf, "death", load("res://assets/wizard/death.png"), 5, 150, 9.0, false)
 	return sf
 
 func _add_files(sf: SpriteFrames, anim: String, dir: String, count: int, fps: float, loop: bool) -> void:

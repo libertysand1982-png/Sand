@@ -5,7 +5,7 @@ extends Node2D
 
 var anim: AnimatedSprite2D
 var cam: Camera2D
-var disp_scale := 1.45
+var disp_scale := 0.95
 var dying := false
 
 # Stats
@@ -37,7 +37,7 @@ var nova_dmg_mul := 1.0
 func _ready() -> void:
 	anim = AnimatedSprite2D.new()
 	anim.scale = Vector2(disp_scale, disp_scale)
-	anim.offset = Vector2(0, -6)
+	anim.offset = Vector2(0, -16)
 	add_child(anim)
 
 	cam = Camera2D.new()
@@ -87,6 +87,6 @@ func hp_pct() -> float:
 
 func _draw() -> void:
 	# ombre portée (ellipse aplatie sous les pieds)
-	draw_set_transform(Vector2(0, 30), 0.0, Vector2(1, 0.4))
-	draw_circle(Vector2.ZERO, 17, Color(0, 0, 0, 0.28))
+	draw_set_transform(Vector2(0, 16), 0.0, Vector2(1, 0.4))
+	draw_circle(Vector2.ZERO, 18, Color(0, 0, 0, 0.28))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

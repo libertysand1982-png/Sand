@@ -38,10 +38,10 @@ Accessible aussi depuis le menu (**Scores**).
 
 ## Contenu visuel & audio
 
-- **Héros :** *HeroKnight* animé (idle / course / mort).
+- **Héros :** *Evil Wizard* animé — un sorcier lanceur de sorts (idle / déplacement / mort).
 - **Monstres animés :** gobelin, œil volant, champignon, squelette.
 - **Fond :** sol organique généré + **forêt crépusculaire** dans les menus.
-- **Audio :** musique de combat énergique (« Riot theme ») en boucle + SFX.
+- **Audio :** SFX uniquement (pas de musique de fond).
 
 ## Comment c'est construit
 
@@ -73,8 +73,8 @@ godot/
 - Astuce dev : argument `--smoke` = démarre une partie automatiquement (tests).
 
 ## Crédits assets (tous CC0 / libres, via le dépôt `Sand`)
-- **HeroKnight** — chevalier animé (Sven Thole).
+- **Evil Wizard** — sorcier animé (LuizMelo).
 - **Monsters Creatures Fantasy** — gobelin / œil volant / champignon / squelette (LuizMelo).
 - **Raven Fantasy Icons** — icônes de sorts (boule de feu, éclair, gel, potion).
 - **CraftPix — Basic Pixel Art UI for RPG** — cadres ronds de la roue de sorts.
-- **Fond forêt** — décors nature pixel-art · **Musique** — « Riot theme » · **SFX** — `foret_de_brume` + clics Kenney.
+- **Fond forêt** — décors nature pixel-art · **SFX** — `foret_de_brume` + clics Kenney.
