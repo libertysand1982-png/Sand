@@ -10,7 +10,9 @@ const ENEMY_DEF := {
 	"goblin":    {"hp": 26.0,  "speed": 82.0, "dmg": 8.0,  "xp": 1, "radius": 18.0, "scale": 0.58, "bar": false},
 	"flyingeye": {"hp": 40.0,  "speed": 96.0, "dmg": 10.0, "xp": 3, "radius": 17.0, "scale": 0.52, "bar": false},
 	"mushroom":  {"hp": 60.0,  "speed": 52.0, "dmg": 13.0, "xp": 3, "radius": 20.0, "scale": 0.60, "bar": false},
-	"skeleton":  {"hp": 160.0, "speed": 46.0, "dmg": 20.0, "xp": 7, "radius": 22.0, "scale": 0.70, "bar": true},
+	"skeleton":  {"hp": 160.0, "speed": 46.0, "dmg": 20.0, "xp": 7,  "radius": 22.0, "scale": 0.70, "bar": true},
+	"bat":       {"hp": 30.0,  "speed": 112.0,"dmg": 9.0,  "xp": 2,  "radius": 16.0, "scale": 0.85, "bar": false},
+	"boss":      {"hp": 600.0, "speed": 42.0, "dmg": 30.0, "xp": 30, "radius": 42.0, "scale": 1.70, "bar": true},
 }
 
 const UPGRADES := [
@@ -47,6 +49,9 @@ var gems: Array[VSGem] = []
 var floats: Array = []
 var enemy_frames: Dictionary = {}
 var spells: Array = []
+var items: Array = []
+var item_tex: Dictionary = {}
+var bosses_spawned := 0
 var _last_score := 0
 var _last_time := "00:00"
 
@@ -61,6 +66,13 @@ func _ready() -> void:
 		"flyingeye": _enemy_sf("res://assets/monsters/flyingeye/flight.png", 8, "res://assets/monsters/flyingeye/death.png", 4),
 		"mushroom":  _enemy_sf("res://assets/monsters/mushroom/run.png", 8, "res://assets/monsters/mushroom/death.png", 4),
 		"skeleton":  _enemy_sf("res://assets/monsters/skeleton/walk.png", 4, "res://assets/monsters/skeleton/death.png", 4),
+		"bat":       _enemy_sf("res://assets/monsters/bat/fly.png", 9, "res://assets/monsters/bat/death.png", 12, 64),
+		"boss":      _boss_sf(),
+	}
+	item_tex = {
+		"weapon": load("res://assets/items/weapon.png"),
+		"armor":  load("res://assets/items/armor.png"),
+		"potion": load("res://assets/items/potion.png"),
 	}
 
 	spells = [
@@ -158,6 +170,7 @@ func _clear_entities() -> void:
 	enemies.clear()
 	projectiles.clear()
 	gems.clear()
+	items.clear()
 	floats.clear()
 
 func start_game() -> void:
@@ -167,6 +180,7 @@ func start_game() -> void:
 	kills = 0
 	spawn_timer = 0.0
 	level_queue = 0
+	bosses_spawned = 0
 	player.reset(Vector2(WORLD / 2.0, WORLD / 2.0))
 	player.visible = true
 	hud.hide_overlays()
@@ -243,8 +257,14 @@ func _update_playing(delta: float) -> void:
 	_update_enemies(delta)
 	_update_projectiles(delta)
 	_update_gems(delta)
+	_update_items(delta)
 	_cull_enemies()
 	_update_floats(delta)
+
+	# Boss tous les 5 niveaux
+	if player.level >= (bosses_spawned + 1) * 5:
+		bosses_spawned += 1
+		_spawn_boss()
 
 	if level_queue > 0 and state == State.PLAYING:
 		_open_levelup()
@@ -296,17 +316,21 @@ func _pick_type() -> String:
 	var t := elapsed
 	var r := randf()
 	if t < 25.0:
-		return "goblin"
+		return "goblin" if r < 0.7 else "bat"
 	elif t < 70.0:
-		return "goblin" if r < 0.6 else "flyingeye"
+		if r < 0.45: return "goblin"
+		elif r < 0.7: return "bat"
+		else: return "flyingeye"
 	elif t < 140.0:
-		if r < 0.4: return "goblin"
-		elif r < 0.65: return "flyingeye"
+		if r < 0.3: return "goblin"
+		elif r < 0.5: return "bat"
+		elif r < 0.7: return "flyingeye"
 		else: return "mushroom"
 	else:
-		if r < 0.25: return "goblin"
-		elif r < 0.45: return "flyingeye"
-		elif r < 0.72: return "mushroom"
+		if r < 0.2: return "goblin"
+		elif r < 0.4: return "bat"
+		elif r < 0.58: return "flyingeye"
+		elif r < 0.78: return "mushroom"
 		else: return "skeleton"
 
 func _spawn_one() -> void:
@@ -323,6 +347,55 @@ func _spawn_one() -> void:
 	e.setup(tkey, pos, hp_scale, enemy_frames[tkey], ENEMY_DEF[tkey])
 	world.add_child(e)
 	enemies.append(e)
+
+# ----- Boss + objets -----
+func _spawn_boss() -> void:
+	var hp_scale := 1.0 + bosses_spawned * 0.6
+	var vsize := get_viewport_rect().size
+	var radius := maxf(vsize.x, vsize.y) / 2.0 + 90.0
+	var ang := randf() * TAU
+	var pos := player.position + Vector2.from_angle(ang) * radius
+	pos.x = clampf(pos.x, 40.0, WORLD - 40.0)
+	pos.y = clampf(pos.y, 40.0, WORLD - 40.0)
+	var e := VSEnemy.new()
+	e.setup("boss", pos, hp_scale, enemy_frames["boss"], ENEMY_DEF["boss"])
+	e.is_boss = true
+	world.add_child(e)
+	enemies.append(e)
+	_spawn_text(player.position + Vector2(0, -120), "BOSS !", Color(0.85, 0.35, 1.0))
+	sfx.play("buff", 0.7)
+
+func _drop_item(pos: Vector2) -> void:
+	var kinds := ["weapon", "armor", "potion"]
+	var k: String = kinds[randi() % kinds.size()]
+	var it := VSItem.new()
+	it.setup(pos, k, item_tex[k])
+	gem_layer.add_child(it)
+	items.append(it)
+
+func _update_items(_delta: float) -> void:
+	var p := player
+	for i in range(items.size() - 1, -1, -1):
+		var it: VSItem = items[i]
+		if p.position.distance_to(it.position) < 34.0:
+			_apply_item(it.kind)
+			it.queue_free()
+			items.remove_at(i)
+
+func _apply_item(kind: String) -> void:
+	var p := player
+	match kind:
+		"weapon":
+			p.proj_damage = round(p.proj_damage * 1.3)
+			_spawn_text(p.position + Vector2(0, -46), "ARME ! +30% dégâts", Color(1.0, 0.7, 0.3))
+		"armor":
+			p.maxhp += 40.0
+			p.hp = minf(p.maxhp, p.hp + 40.0)
+			_spawn_text(p.position + Vector2(0, -46), "ARMURE ! +40 PV max", Color(0.55, 0.8, 1.0))
+		"potion":
+			p.hp = p.maxhp
+			_spawn_text(p.position + Vector2(0, -46), "POTION ! PV au max", Color(0.55, 1.0, 0.55))
+	sfx.play("blessing", 0.6)
 
 # ----- Ennemis -----
 func _update_enemies(delta: float) -> void:
@@ -403,6 +476,8 @@ func _kill_enemy(e: VSEnemy) -> void:
 	g.setup(e.position, e.xp)
 	gem_layer.add_child(g)
 	gems.append(g)
+	if e.is_boss:
+		_drop_item(e.position)
 	e.die()   # joue l'animation de mort puis se libère
 
 # ----- Gemmes -----
@@ -448,7 +523,7 @@ func _cast_nova() -> void:
 	nova.position = p.position
 	nova.max_r = radius
 	fx_layer.add_child(nova)
-	sfx.play("magic", 0.6)
+	sfx.play("buff", 0.6)
 	for e in enemies:
 		if not is_instance_valid(e) or e.dead:
 			continue
@@ -502,7 +577,7 @@ func _do_cast(id: String) -> bool:
 					_spawn_text(en.position + Vector2(0, -en.radius * 1.6), str(int(fdmg)), Color(1.0, 0.7, 0.3))
 					if en.hp <= 0.0:
 						_kill_enemy(en)
-			sfx.play("magic", 0.6)
+			sfx.play("fire_cast", 0.6)
 			return true
 		"bolt":
 			var targets := _nearest_enemies(4, 540.0)
@@ -520,7 +595,7 @@ func _do_cast(id: String) -> bool:
 			var bolt := VSBolt.new()
 			bolt.setup(p.position, pts)
 			fx_layer.add_child(bolt)
-			sfx.play("hit", 0.5)
+			sfx.play("lightning_cast", 0.5)
 			return true
 		"frost":
 			var frad := 240.0
@@ -535,7 +610,7 @@ func _do_cast(id: String) -> bool:
 					en.hitflash = 0.12
 					if en.hp <= 0.0:
 						_kill_enemy(en)
-			sfx.play("magic", 0.6)
+			sfx.play("ice_impact", 0.6)
 			return true
 		"heal":
 			if p.hp >= p.maxhp:
@@ -543,7 +618,7 @@ func _do_cast(id: String) -> bool:
 			p.hp = minf(p.maxhp, p.hp + 40.0)
 			_burst(p.position, 80.0, Color(0.7, 1.0, 0.6), Color(0.4, 0.9, 0.4))
 			_spawn_text(p.position + Vector2(0, -40), "+40", Color(0.5, 1.0, 0.5))
-			sfx.play("coins", 0.5)
+			sfx.play("blessing", 0.5)
 			return true
 	return false
 
@@ -688,11 +763,31 @@ func _add_files(sf: SpriteFrames, anim: String, dir: String, count: int, fps: fl
 		if t:
 			sf.add_frame(anim, t)
 
-func _enemy_sf(move_path: String, move_count: int, death_path: String, death_count: int) -> SpriteFrames:
+func _enemy_sf(move_path: String, move_count: int, death_path: String, death_count: int, fsize: int = 150) -> SpriteFrames:
 	var sf := SpriteFrames.new()
-	_add_sheet(sf, "move", load(move_path), move_count, 150, 10.0, true)
-	_add_sheet(sf, "death", load(death_path), death_count, 150, 12.0, false)
+	_add_sheet(sf, "move", load(move_path), move_count, fsize, 10.0, true)
+	_add_sheet(sf, "death", load(death_path), death_count, fsize, 12.0, false)
 	return sf
+
+func _boss_sf() -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	var tex = load("res://assets/boss/nightborne.png")
+	_add_sheet_row(sf, "move", tex, 0, 9, 80, 9.0, true)       # rangée 0 = idle
+	_add_sheet_row(sf, "death", tex, 4, 16, 80, 11.0, false)   # rangée 4 = mort / dissolution
+	return sf
+
+func _add_sheet_row(sf: SpriteFrames, anim: String, tex: Texture2D, row: int, count: int, fsize: int, fps: float, loop: bool) -> void:
+	if not sf.has_animation(anim):
+		sf.add_animation(anim)
+	sf.set_animation_speed(anim, fps)
+	sf.set_animation_loop(anim, loop)
+	if tex == null:
+		return
+	for i in count:
+		var at := AtlasTexture.new()
+		at.atlas = tex
+		at.region = Rect2(i * fsize, row * fsize, fsize, fsize)
+		sf.add_frame(anim, at)
 
 func _add_sheet(sf: SpriteFrames, anim: String, tex: Texture2D, count: int, fsize: int, fps: float, loop: bool) -> void:
 	if not sf.has_animation(anim):

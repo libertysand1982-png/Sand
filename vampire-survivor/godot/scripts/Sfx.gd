@@ -18,6 +18,11 @@ const FILES := {
 	"step":   "res://assets/audio/footstep00.ogg",
 	"click":  "res://assets/audio/click1.ogg",
 	"hurt":   "res://assets/audio/drawKnife1.ogg",
+	"fire_cast":      "res://assets/audio/fire_cast.mp3",
+	"lightning_cast": "res://assets/audio/lightning_cast.mp3",
+	"ice_impact":     "res://assets/audio/ice_impact.mp3",
+	"blessing":       "res://assets/audio/blessing.mp3",
+	"buff":           "res://assets/audio/buff.mp3",
 }
 
 func _ready() -> void:
@@ -26,6 +31,8 @@ func _ready() -> void:
 		if s == null:
 			continue
 		if s is AudioStreamOggVorbis:
+			s.loop = false
+		if s is AudioStreamMP3:
 			s.loop = false
 		sfx_streams[key] = s
 	for i in 18:

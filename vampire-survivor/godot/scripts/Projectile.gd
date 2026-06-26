@@ -1,4 +1,4 @@
-# Projectile.gd — un éclat lancé par l'arme. Dessiné via _draw, déplacé par Main.gd.
+# Projectile.gd — boule de feu lancée par l'arme automatique (sprite orienté + halo).
 class_name VSProjectile
 extends Node2D
 
@@ -18,9 +18,14 @@ func setup(pos: Vector2, dir: Vector2, spd: float, d: float, p: int, sz: float) 
 	hits_left = p + 1
 	size = sz
 
+func _ready() -> void:
+	var s := Sprite2D.new()
+	s.texture = load("res://assets/fx/fireball.png")
+	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var sc := (size * 2.4) / 18.0   # l'orbe fait 18px ; échelle selon la taille
+	s.scale = Vector2(sc, sc)
+	add_child(s)
+
 func _draw() -> void:
-	# halo
-	draw_circle(Vector2.ZERO, size + 5.0, Color(0.47, 0.90, 1.0, 0.22))
-	# éclat (le nœud est déjà orienté par rotation)
-	draw_rect(Rect2(-size, -2.5, size * 2.0, 5.0), Color(0.87, 0.97, 1.0))
-	draw_rect(Rect2(size - 3.0, -1.5, 5.0, 3.0), Color(0.56, 0.90, 1.0))
+	# halo lumineux chaud sous le sprite
+	draw_circle(Vector2.ZERO, size + 4.0, Color(1.0, 0.6, 0.2, 0.22))
