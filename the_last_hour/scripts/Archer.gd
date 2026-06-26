@@ -10,10 +10,17 @@ const SPRITE_SIZE  := 36.0
 const HP_BASE      := 50
 const ARROW_SPEED  := 310.0
 const ARROW_DMG    := 13
+# Kobold spritesheet: 96×96 px per frame
+const KOB_FRAME_H  := 96
+const KOB_ANIMS := {
+	"idle":   [9,  8.0,  true],
+	"run":    [12, 10.0, true],
+	"attack": [7,  12.0, false],
+}
 
 enum FSM { IDLE, REPOSITION, SHOOT, STAGGER, DEAD }
 
-var sprite: Sprite2D
+var sprite: AnimatedSprite2D
 var _state: FSM = FSM.IDLE
 var hp: int
 var _shoot_cd := 0.0
@@ -30,10 +37,12 @@ func setup(pos: Vector2, player: Node2D, hp_scale: float = 1.0) -> void:
 	hp = int(HP_BASE * hp_scale)
 	_shoot_cd = randf_range(0.6, SHOOT_CD)
 
-	sprite = Sprite2D.new()
-	sprite.texture = load("res://assets/characters/bandit.png")
+	sprite = AnimatedSprite2D.new()
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.scale = Vector2.ONE * (SPRITE_SIZE / 64.0)
+	var sc: float = SPRITE_SIZE / float(KOB_FRAME_H)
+	sprite.scale = Vector2(sc, sc)
+	sprite.sprite_frames = _make_kobold_frames()
+	sprite.play("idle")
 	add_child(sprite)
 
 	var col := CollisionShape2D.new()
@@ -46,6 +55,42 @@ func setup(pos: Vector2, player: Node2D, hp_scale: float = 1.0) -> void:
 
 func is_dead() -> bool:
 	return _state == FSM.DEAD
+
+func _make_kobold_frames() -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	sf.remove_animation("default")
+	var anim_files := {
+		"idle":   "res://assets/characters/kobold/idle.png",
+		"run":    "res://assets/characters/kobold/run.png",
+		"attack": "res://assets/characters/kobold/attack.png",
+	}
+	for anim_name in KOB_ANIMS:
+		var def: Array = KOB_ANIMS[anim_name]
+		var frame_count: int = def[0]
+		var fps: float = def[1]
+		var loop: bool = def[2]
+		sf.add_animation(anim_name)
+		sf.set_animation_speed(anim_name, fps)
+		sf.set_animation_loop(anim_name, loop)
+		var tex: Texture2D = load(anim_files[anim_name])
+		var fw: int = tex.get_width() / frame_count
+		for i in frame_count:
+			var atlas := AtlasTexture.new()
+			atlas.atlas = tex
+			atlas.region = Rect2(i * fw, 0, fw, KOB_FRAME_H)
+			sf.add_frame(anim_name, atlas)
+	return sf
+
+func _update_anim(diff_x: float) -> void:
+	var anim: String
+	match _state:
+		FSM.SHOOT:   anim = "attack"
+		FSM.STAGGER: anim = "attack"
+		_:           anim = "run" if abs(velocity.x) > 10.0 else "idle"
+	if sprite.animation != anim:
+		sprite.play(anim)
+	if diff_x != 0.0:
+		sprite.flip_h = diff_x < 0.0
 
 func take_damage(amount: int, kb: Vector2 = Vector2.ZERO) -> void:
 	if is_dead(): return
@@ -79,10 +124,15 @@ func _tick(delta: float) -> void:
 		sprite.self_modulate = Color(3.0, 3.0, 3.0) if _hitflash > 0.0 else Color(1, 1, 1)
 
 	if not _player or not is_instance_valid(_player):
+		_update_anim(0.0)
 		return
 	var diff := _player.global_position - global_position
 	var dist := diff.length()
-	if dist > SIGHT: return
+	if dist > SIGHT:
+		_update_anim(0.0)
+		return
+
+	_update_anim(diff.x)
 
 	match _state:
 		FSM.IDLE, FSM.REPOSITION:
@@ -94,7 +144,6 @@ func _tick(delta: float) -> void:
 				velocity.x = lerpf(velocity.x, sign(diff.x) * MOVE_SPEED, 8.0 * delta)
 			else:
 				velocity.x = lerpf(velocity.x, 0.0, 8.0 * delta)
-			sprite.scale.x = abs(sprite.scale.x) * int(sign(diff.x))
 			if _shoot_cd <= 0.0:
 				_state = FSM.SHOOT
 		FSM.SHOOT:
@@ -111,7 +160,7 @@ func _tick(delta: float) -> void:
 func _do_shoot() -> void:
 	if not _player: return
 	var dir := sign(_player.global_position.x - global_position.x)
-	sprite.scale.x = abs(sprite.scale.x) * dir
+	sprite.flip_h = dir < 0.0
 	AudioManager.play_sfx("arrow_shot", -3.0)
 	var vel_vec := Vector2(dir * ARROW_SPEED, -60.0)
 	emit_signal("arrow_shot", global_position + Vector2(dir * 14.0, -6.0), vel_vec, ARROW_DMG)

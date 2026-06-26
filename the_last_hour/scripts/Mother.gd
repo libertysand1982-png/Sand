@@ -7,11 +7,20 @@ const HP_MAX     := 900
 const SIGHT      := 950.0
 const MOVE_SPEED := 140.0
 const SPRITE_SIZE := 48.0
+# Evil Wizard spritesheet: 140×140 px per frame
+const WIZ_FRAME_H := 140
+const WIZ_ANIMS := {
+	"idle":   [10, 8.0,  true],
+	"run":    [8,  10.0, true],
+	"attack": [13, 14.0, false],
+	"hurt":   [3,  10.0, false],
+	"death":  [18, 8.0,  false],
+}
 
 enum Phase { ONE, TWO, THREE }
 enum FSM { IDLE, GLIDE, SWIPE, DRAIN, BAT_SWARM, SHADOW, STAGGER, DEAD }
 
-var sprite: Sprite2D
+var sprite: AnimatedSprite2D
 var _state: FSM = FSM.IDLE
 var _phase: Phase = Phase.ONE
 var hp: int = HP_MAX
@@ -37,17 +46,14 @@ func setup(pos: Vector2, player: Node2D) -> void:
 	_player = player
 	hp = HP_MAX
 
-	sprite = Sprite2D.new()
-	var tex_path := "res://assets/characters/mother.png"
-	if ResourceLoader.exists(tex_path):
-		sprite.texture = load(tex_path)
-		_base_modulate = Color(1, 1, 1)
-	else:
-		sprite.texture = load("res://assets/characters/garde.png")
-		_base_modulate = Color(0.55, 0.15, 0.70)
+	sprite = AnimatedSprite2D.new()
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.scale = Vector2.ONE * (SPRITE_SIZE / 64.0)
+	var sc: float = SPRITE_SIZE / float(WIZ_FRAME_H)
+	sprite.scale = Vector2(sc, sc)
+	sprite.sprite_frames = _make_wizard_frames()
+	_base_modulate = Color(1, 1, 1)
 	sprite.modulate = _base_modulate
+	sprite.play("idle")
 	add_child(sprite)
 
 	var col := CollisionShape2D.new()
@@ -62,6 +68,46 @@ func setup(pos: Vector2, player: Node2D) -> void:
 
 func is_dead() -> bool:
 	return _state == FSM.DEAD
+
+func _make_wizard_frames() -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	sf.remove_animation("default")
+	var anim_files := {
+		"idle":   "res://assets/characters/wizard/idle.png",
+		"run":    "res://assets/characters/wizard/run.png",
+		"attack": "res://assets/characters/wizard/attack.png",
+		"hurt":   "res://assets/characters/wizard/hurt.png",
+		"death":  "res://assets/characters/wizard/death.png",
+	}
+	for anim_name in WIZ_ANIMS:
+		var def: Array = WIZ_ANIMS[anim_name]
+		var frame_count: int = def[0]
+		var fps: float = def[1]
+		var loop: bool = def[2]
+		sf.add_animation(anim_name)
+		sf.set_animation_speed(anim_name, fps)
+		sf.set_animation_loop(anim_name, loop)
+		var tex: Texture2D = load(anim_files[anim_name])
+		var fw: int = tex.get_width() / frame_count
+		for i in frame_count:
+			var atlas := AtlasTexture.new()
+			atlas.atlas = tex
+			atlas.region = Rect2(i * fw, 0, fw, WIZ_FRAME_H)
+			sf.add_frame(anim_name, atlas)
+	return sf
+
+func _update_anim(dir: float) -> void:
+	var anim: String
+	match _state:
+		FSM.SWIPE, FSM.DRAIN, FSM.BAT_SWARM, FSM.SHADOW: anim = "attack"
+		FSM.STAGGER: anim = "hurt"
+		FSM.DEAD:    anim = "death"
+		FSM.GLIDE:   anim = "run" if abs(velocity.x) > 10.0 else "idle"
+		_:           anim = "idle"
+	if sprite.animation != anim:
+		sprite.play(anim)
+	if dir != 0.0:
+		sprite.flip_h = dir < 0.0
 
 func take_damage(amount: int, kb: Vector2 = Vector2.ZERO) -> void:
 	if is_dead() or _shadow_active: return
@@ -105,6 +151,10 @@ func _physics_process(delta: float) -> void:
 	elif not is_on_floor():
 		velocity.y += 920.0 * delta
 	_tick(delta)
+	var dir: float = 0.0
+	if _player and is_instance_valid(_player):
+		dir = sign(_player.global_position.x - global_position.x)
+	_update_anim(dir)
 	move_and_slide()
 
 func _tick(delta: float) -> void:
@@ -136,7 +186,7 @@ func _tick(delta: float) -> void:
 		FSM.GLIDE:
 			_glide_t -= delta
 			velocity.x = lerpf(velocity.x, _glide_dir * MOVE_SPEED * 2.0, 3.5 * delta)
-			sprite.scale.x = abs(sprite.scale.x) * _glide_dir
+			sprite.flip_h = _glide_dir < 0
 			if abs(diff.x) < 65.0 or _glide_t <= 0.0:
 				_state = FSM.SWIPE
 				_attack_cd = 0.0
@@ -175,7 +225,7 @@ func _tick(delta: float) -> void:
 	if _state == FSM.IDLE:
 		var dir_x := sign(diff.x)
 		if dir_x != 0.0:
-			sprite.scale.x = abs(sprite.scale.x) * dir_x
+			sprite.flip_h = dir_x < 0.0
 
 func _choose_attack(dist: float) -> void:
 	match _phase:
@@ -221,13 +271,13 @@ func _get_cd() -> float:
 
 func _do_swipe(diff: Vector2) -> void:
 	var dir := int(sign(diff.x)) if diff.x != 0.0 else 1
-	sprite.scale.x = abs(sprite.scale.x) * dir
+	sprite.flip_h = dir < 0
 	if diff.length() < 85.0:
 		_player.take_damage(24, Vector2(dir * 220.0, -90.0))
 
 func _do_drain(dir_n: Vector2) -> void:
 	var dir := int(sign(dir_n.x)) if dir_n.x != 0.0 else 1
-	sprite.scale.x = abs(sprite.scale.x) * dir
+	sprite.flip_h = dir < 0
 	AudioManager.play_sfx("mother_drain")
 	emit_signal("drain_bullet", global_position + dir_n * 18.0, dir_n * 260.0, 20)
 

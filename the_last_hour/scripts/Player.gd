@@ -14,8 +14,20 @@ const MELEE_REACH := 55.0
 const MELEE_DMG := 22
 const INVULN_DUR := 0.75
 const SPRITE_SIZE := 40.0
+# Knight spritesheet specs: all frames are 84×84 px
+const KNIGHT_FRAME_H := 84
+const KNIGHT_ANIMS := {
+	"idle":    [8,  8.0, true],
+	"run":     [9,  10.0, true],
+	"jump":    [5,  8.0, false],
+	"attack1": [6,  14.0, false],
+	"attack2": [5,  14.0, false],
+	"attack3": [6,  12.0, false],
+	"hurt":    [4,  10.0, false],
+	"death":   [13, 8.0, false],
+}
 
-var sprite: Sprite2D
+var sprite: AnimatedSprite2D
 var cam: Camera2D
 
 # Physics state
@@ -49,10 +61,12 @@ func _ready() -> void:
 	hp = RunData.hp
 	max_hp = RunData.max_hp
 
-	sprite = Sprite2D.new()
-	sprite.texture = load("res://assets/characters/hero.png")
+	sprite = AnimatedSprite2D.new()
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.scale = Vector2.ONE * (SPRITE_SIZE / 64.0)
+	var sc: float = SPRITE_SIZE / float(KNIGHT_FRAME_H)
+	sprite.scale = Vector2(sc, sc)
+	sprite.sprite_frames = _make_knight_frames()
+	sprite.play("idle")
 	add_child(sprite)
 
 	var col := CollisionShape2D.new()
@@ -93,6 +107,36 @@ func _mk(action: String, keys: Array) -> void:
 
 func register_enemies(arr: Array) -> void:
 	_enemies = arr
+
+func _make_knight_frames() -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	sf.remove_animation("default")
+	var anim_files := {
+		"idle":    "res://assets/characters/knight/idle.png",
+		"run":     "res://assets/characters/knight/run.png",
+		"jump":    "res://assets/characters/knight/jump.png",
+		"attack1": "res://assets/characters/knight/attack1.png",
+		"attack2": "res://assets/characters/knight/attack2.png",
+		"attack3": "res://assets/characters/knight/attack3.png",
+		"hurt":    "res://assets/characters/knight/hurt.png",
+		"death":   "res://assets/characters/knight/death.png",
+	}
+	for anim_name in KNIGHT_ANIMS:
+		var def: Array = KNIGHT_ANIMS[anim_name]
+		var frame_count: int = def[0]
+		var fps: float = def[1]
+		var loop: bool = def[2]
+		sf.add_animation(anim_name)
+		sf.set_animation_speed(anim_name, fps)
+		sf.set_animation_loop(anim_name, loop)
+		var tex: Texture2D = load(anim_files[anim_name])
+		var fw: int = tex.get_width() / frame_count
+		for i in frame_count:
+			var atlas := AtlasTexture.new()
+			atlas.atlas = tex
+			atlas.region = Rect2(i * fw, 0, fw, KNIGHT_FRAME_H)
+			sf.add_frame(anim_name, atlas)
+	return sf
 
 # ── Input ──────────────────────────────────────────────────────────────────────
 
@@ -212,12 +256,14 @@ func take_damage(amount: int, kb: Vector2 = Vector2.ZERO) -> void:
 		return
 	if RunData.take_damage(amount):
 		hp = 0
+		sprite.play("death")
 		set_physics_process(false)
 		set_process(false)
 		emit_signal("died")
 		return
 	hp = RunData.hp
 	AudioManager.play_sfx("player_hurt")
+	sprite.play("hurt")
 	invuln = INVULN_DUR
 	knockback = kb
 
@@ -229,7 +275,7 @@ func _update_visuals() -> void:
 		facing = 1
 	elif dir_x < 0.0:
 		facing = -1
-	sprite.scale.x = abs(sprite.scale.x) * facing
+	sprite.flip_h = facing < 0
 
 	if dash_t > 0.0:
 		sprite.modulate = Color(0.5, 0.8, 1.0, 0.6)
@@ -238,3 +284,19 @@ func _update_visuals() -> void:
 		sprite.modulate.a = 0.35 if flash == 0 else 1.0
 	else:
 		sprite.modulate = Color(1, 1, 1, 1)
+
+	# Drive animation state
+	var anim: String
+	if attack_t > 0.0:
+		match combo:
+			1: anim = "attack1"
+			2: anim = "attack2"
+			_: anim = "attack3"
+	elif not is_on_floor() and velocity.y < -50.0:
+		anim = "jump"
+	elif abs(velocity.x) > 20.0 or dash_t > 0.0:
+		anim = "run"
+	else:
+		anim = "idle"
+	if sprite.animation != anim:
+		sprite.play(anim)

@@ -100,6 +100,9 @@ func _ready() -> void:
 
 # ── Assets ─────────────────────────────────────────────────────────────────────
 
+# hframes per sprite key (spritesheets show only frame 0)
+const SPRITE_HFRAMES := { "hero": 8, "bandit": 10, "gobelin": 9 }
+
 func _load_sprites() -> void:
 	_sprites["hero"]    = load("res://assets/characters/hero.png")
 	_sprites["bandit"]  = load("res://assets/characters/bandit.png")
@@ -649,5 +652,8 @@ func _make_sprite(parent: Node2D, tex_key: String, sc: float, pos: Vector2) -> S
 	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sp.scale = Vector2.ONE * sc
 	sp.position = pos
+	if SPRITE_HFRAMES.has(tex_key):
+		sp.hframes = SPRITE_HFRAMES[tex_key]
+		sp.frame = 0
 	parent.add_child(sp)
 	return sp

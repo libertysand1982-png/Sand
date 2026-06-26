@@ -1,55 +1,58 @@
 # AudioManager.gd — gestionnaire audio centralisé.
 # Musique avec fondu, pool de 8 canaux SFX simultanés.
 # Chaque fichier est optionnel : silencieux si absent, aucun crash.
-#
-# Structure attendue :
-#   assets/audio/music/  ← pistes .ogg (activer Loop dans l'import Godot)
-#   assets/audio/sfx/    ← effets .ogg ou .wav
 extends Node
 
 # ── Chemins ─────────────────────────────────────────────────────────────────────
 
 const MUSIC_PATHS: Dictionary = {
-	"menu":    "res://assets/audio/music/menu.ogg",
-	"dungeon": "res://assets/audio/music/dungeon.ogg",
-	"boss":    "res://assets/audio/music/boss.ogg",
-	"mother":  "res://assets/audio/music/mother.ogg",
-	"victory": "res://assets/audio/music/victory.ogg",
+	"menu":    "res://assets/audio/music/menu.mp3",
+	"dungeon": "res://assets/audio/music/dungeon.mp3",
+	"boss":    "res://assets/audio/music/boss.mp3",
+	"mother":  "res://assets/audio/music/mother.mp3",
+	"victory": "res://assets/audio/music/victory.mp3",
+	"combat":  "res://assets/audio/music/combat.mp3",
 }
 
 const SFX_PATHS: Dictionary = {
 	# Joueur
-	"player_jump":    "res://assets/audio/sfx/player_jump.ogg",
-	"player_dash":    "res://assets/audio/sfx/player_dash.ogg",
-	"player_hurt":    "res://assets/audio/sfx/player_hurt.ogg",
+	"player_jump":    "res://assets/audio/sfx/player_jump.mp3",
+	"player_dash":    "res://assets/audio/sfx/player_dash.mp3",
+	"player_hurt":    "res://assets/audio/sfx/player_hurt.mp3",
 	# Mêlée
-	"sword_swing":    "res://assets/audio/sfx/sword_swing.ogg",
-	"sword_finisher": "res://assets/audio/sfx/sword_finisher.ogg",
-	"sword_hit":      "res://assets/audio/sfx/sword_hit.ogg",
+	"sword_swing":    "res://assets/audio/sfx/sword_swing.mp3",
+	"sword_finisher": "res://assets/audio/sfx/sword_finisher.mp3",
+	"sword_hit":      "res://assets/audio/sfx/sword_hit.mp3",
 	# Couteaux & flèches
-	"knife_throw":    "res://assets/audio/sfx/knife_throw.ogg",
-	"knife_hit":      "res://assets/audio/sfx/knife_hit.ogg",
-	"arrow_shot":     "res://assets/audio/sfx/arrow_shot.ogg",
+	"knife_throw":    "res://assets/audio/sfx/knife_throw.mp3",
+	"knife_hit":      "res://assets/audio/sfx/knife_hit.mp3",
+	"arrow_shot":     "res://assets/audio/sfx/arrow_shot.mp3",
 	# Ennemis
-	"enemy_hurt":     "res://assets/audio/sfx/enemy_hurt.ogg",
-	"enemy_death":    "res://assets/audio/sfx/enemy_death.ogg",
+	"enemy_hurt":     "res://assets/audio/sfx/enemy_hurt.mp3",
+	"enemy_death":    "res://assets/audio/sfx/enemy_death.mp3",
 	# Boss – Le Geôlier
-	"boss_roar":      "res://assets/audio/sfx/boss_roar.ogg",
-	"boss_charge":    "res://assets/audio/sfx/boss_charge.ogg",
-	"boss_slam":      "res://assets/audio/sfx/boss_slam.ogg",
-	"boss_burst":     "res://assets/audio/sfx/boss_burst.ogg",
+	"boss_roar":      "res://assets/audio/sfx/boss_roar.mp3",
+	"boss_charge":    "res://assets/audio/sfx/boss_charge.mp3",
+	"boss_slam":      "res://assets/audio/sfx/boss_slam.mp3",
+	"boss_burst":     "res://assets/audio/sfx/boss_burst.mp3",
 	# Boss – La Mère
-	"mother_appear":  "res://assets/audio/sfx/mother_appear.ogg",
-	"mother_drain":   "res://assets/audio/sfx/mother_drain.ogg",
-	"mother_bats":    "res://assets/audio/sfx/mother_bats.ogg",
-	"mother_shadow":  "res://assets/audio/sfx/mother_shadow.ogg",
+	"mother_appear":  "res://assets/audio/sfx/mother_appear.mp3",
+	"mother_drain":   "res://assets/audio/sfx/mother_drain.mp3",
+	"mother_bats":    "res://assets/audio/sfx/mother_bats.mp3",
+	"mother_shadow":  "res://assets/audio/sfx/mother_shadow.mp3",
 	# Donjon & interface
-	"scroll_pickup":  "res://assets/audio/sfx/scroll_pickup.ogg",
-	"door_open":      "res://assets/audio/sfx/door_open.ogg",
-	"alert":          "res://assets/audio/sfx/alert.ogg",
-	"revelation":     "res://assets/audio/sfx/revelation.ogg",
-	"menu_hover":     "res://assets/audio/sfx/menu_hover.ogg",
-	"menu_click":     "res://assets/audio/sfx/menu_click.ogg",
+	"scroll_pickup":  "res://assets/audio/sfx/scroll_pickup.mp3",
+	"door_open":      "res://assets/audio/sfx/door_open.mp3",
+	"alert":          "res://assets/audio/sfx/alert.mp3",
+	"revelation":     "res://assets/audio/sfx/revelation.mp3",
+	"menu_hover":     "res://assets/audio/sfx/menu_hover.mp3",
+	"menu_click":     "res://assets/audio/sfx/menu_click.mp3",
+	# Extras
+	"coin_pickup":    "res://assets/audio/sfx/coin_pickup.mp3",
+	"item_pickup":    "res://assets/audio/sfx/item_pickup.mp3",
+	"level_up":       "res://assets/audio/sfx/level_up.mp3",
+	"goblin_attack":  "res://assets/audio/sfx/goblin_attack.mp3",
+	"goblin_laugh":   "res://assets/audio/sfx/goblin_laugh.mp3",
 }
 
 const MUSIC_VOL_DB  := -8.0
