@@ -8,8 +8,8 @@ const W := 1280.0
 const H := 720.0
 
 # Sprite scales — divisor = frame height of each sheet
-const SP_PAYSAN  := 68.0 / 140.0   # frères paysans (wizard idle, 140 px)
-const SP_CADET   := 38.0 / 140.0   # petit frère
+const SP_PAYSAN  := 90.0 / 140.0   # frères paysans (wizard idle, 140 px)
+const SP_CADET   := 52.0 / 140.0   # petit frère
 const SP_MONSTER := 48.0 / 96.0    # gobelin (kobold, 96 px)
 
 enum Phase { CINEMATIC, CRAWL, FADE_OUT, DONE }
@@ -111,6 +111,7 @@ func _load_sprites() -> void:
 	_sprites["ew3_walk"]  = load("res://assets/characters/evil_wizard3/walk.png")
 	_sprites["holy_init"] = load("res://assets/vfx/holy_initial.png")
 	_sprites["holy_loop"] = load("res://assets/vfx/holy_repeatable.png")
+	_sprites["weapons"]   = load("res://assets/items/weapons.png")
 
 # ── Base layout ────────────────────────────────────────────────────────────────
 
@@ -180,12 +181,78 @@ func _show_scene(idx: int) -> void:
 		"« Toi à gauche. Moi à droite. »",
 		"Une embuscade !",
 		"L'aîné tombe, assommé.",
-		"Une silhouette dans l'ombre pose une lettre...",
+		"Une présence mystérieuse s'adresse à lui...",
 		"Le cadet est emporté dans l'obscurité.",
 		"L'aîné se réveille. Seul. La grange, vide.",
 		"L'épée de son père. La seule chose qui lui reste.",
 	]
 	_sub_lbl.text = subs[idx] if idx < subs.size() else ""
+	_start_scene_anim(idx)
+
+# ── Scene animators (called when scene becomes visible) ───────────────────────
+
+func _start_scene_anim(idx: int) -> void:
+	match idx:
+		5: _start_wizard_anim()
+		8: _start_sword_anim()
+
+func _start_wizard_anim() -> void:
+	var root: Node2D = _scene_root.get_child(5)
+	if not root: return
+	var wizard: AnimatedSprite2D = root.get_node_or_null("Wizard") as AnimatedSprite2D
+	var aura:   ColorRect        = root.get_node_or_null("Aura")   as ColorRect
+	var flash:  ColorRect        = root.get_node_or_null("Flash")  as ColorRect
+	var bubble: Node2D           = root.get_node_or_null("Bubble") as Node2D
+	if not wizard or not bubble: return
+	# Reset to initial (invisible) state
+	var wz_sc := 68.0 / 140.0
+	wizard.scale    = Vector2(0.0, 0.0)
+	wizard.play("idle")
+	flash.color     = Color(0.6, 0.3, 1.0, 0.0)
+	aura.color      = Color(0.28, 0.0, 0.45, 0.0)
+	bubble.modulate = Color(1, 1, 1, 0.0)
+	# Materialize sequence
+	var wt := create_tween()
+	wt.tween_property(flash, "color:a", 0.65, 0.04)
+	wt.tween_property(flash, "color:a", 0.0, 0.22)
+	wt.parallel().tween_property(wizard, "scale", Vector2(wz_sc, wz_sc), 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	wt.parallel().tween_property(aura, "color:a", 0.38, 0.45)
+	# Pause then speech bubble appears
+	wt.tween_interval(0.45)
+	wt.tween_property(bubble, "modulate:a", 1.0, 0.38)
+	# Hold for player to read
+	wt.tween_interval(4.2)
+	# Bubble fades, then wizard dematerializes
+	wt.tween_property(bubble, "modulate:a", 0.0, 0.32)
+	wt.tween_interval(0.25)
+	wt.tween_property(flash, "color:a", 0.55, 0.04)
+	wt.tween_property(flash, "color:a", 0.0, 0.22)
+	wt.parallel().tween_property(wizard, "scale", Vector2(0.0, 0.0), 0.28).set_ease(Tween.EASE_IN)
+	wt.parallel().tween_property(aura, "color:a", 0.0, 0.32)
+
+func _start_sword_anim() -> void:
+	var root: Node2D = _scene_root.get_child(8)
+	if not root: return
+	var hero:  Sprite2D          = root.get_node_or_null("Hero")  as Sprite2D
+	var holy:  AnimatedSprite2D  = root.get_node_or_null("Holy")  as AnimatedSprite2D
+	if not hero: return
+	# Reset
+	hero.position.x = 430.0
+	if holy:
+		holy.visible = false
+	var ht := create_tween()
+	ht.tween_property(hero, "position:x", 580.0, 1.8).set_ease(Tween.EASE_OUT)
+	var vt := create_tween()
+	vt.tween_interval(1.65)
+	vt.tween_callback(func():
+		if is_instance_valid(holy):
+			holy.visible = true
+			holy.play("initial")
+	)
+	vt.tween_interval(0.22)
+	vt.tween_callback(func():
+		if is_instance_valid(holy): holy.play("repeat")
+	)
 
 # ── Timing ────────────────────────────────────────────────────────────────────
 
@@ -355,73 +422,74 @@ func _build_scene_ko() -> void:
 	create_tween().tween_property(monster, "position:x", 1400.0, 2.5).set_ease(Tween.EASE_IN)
 	create_tween().tween_property(small,   "position:x", 1450.0, 2.5).set_ease(Tween.EASE_IN)
 
-# ── Scene 5 : Evil Wizard 3 pose une lettre ───────────────────────────────────
+# ── Scene 5 : Evil Wizard 3 se matérialise et parle au frère blessé ──────────
 
 func _build_scene_wizard_letter() -> void:
 	var root := _make_scene_root()
+	root.name = "SceneWizard"
 	_add_bg(root, Color(0.02, 0.01, 0.02), Vector2.ZERO, Vector2(W, H))
-	_add_bg(root, Color(0.045, 0.025, 0.02), Vector2(0, H - 180), Vector2(W, 180))
-	# Aîné inconscient au sol
-	var hero := _make_sprite(root, "paysan", SP_PAYSAN, Vector2(380, H - 190))
+	_add_bg(root, Color(0.04, 0.02, 0.02), Vector2(0, H - 180), Vector2(W, 180))
+	# Aîné inconscient au sol (plus grand)
+	var hero := _make_sprite(root, "paysan", SP_PAYSAN, Vector2(300, H - 190))
 	hero.rotation_degrees = 90.0
 	hero.modulate = Color(0.45, 0.38, 0.48)
-	# Aura violette précède le sorcier
+	# Aura violette derrière le sorcier — invisible initialement
 	var aura := ColorRect.new()
-	aura.size = Vector2(70, 90)
+	aura.name = "Aura"
+	aura.size = Vector2(90, 110)
 	aura.color = Color(0.28, 0.0, 0.45, 0.0)
-	aura.position = Vector2(W + 60.0, H - 258.0)
+	aura.position = Vector2(718, H - 275)
 	root.add_child(aura)
-	# Evil Wizard 3 — AnimatedSprite2D avec walk + idle
+	# Flash d'apparition — invisible initialement
+	var flash := ColorRect.new()
+	flash.name = "Flash"
+	flash.size = Vector2(W, H)
+	flash.color = Color(0.6, 0.3, 1.0, 0.0)
+	flash.z_index = 10
+	root.add_child(flash)
+	# Evil Wizard 3 — scale=0 au départ (invisible), _start_wizard_anim() le fait apparaître
 	var wizard := AnimatedSprite2D.new()
+	wizard.name = "Wizard"
 	wizard.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	wizard.sprite_frames = _make_ew3_frames()
-	wizard.scale = Vector2(64.0 / 140.0, 64.0 / 140.0)
-	wizard.position = Vector2(W + 100.0, H - 215.0)
-	wizard.flip_h = true  # marche vers la gauche (vers le héros)
-	wizard.play("walk")
+	wizard.scale = Vector2(0.0, 0.0)
+	wizard.position = Vector2(760, H - 215.0)
+	wizard.flip_h = true   # face au frère blessé à gauche
+	wizard.play("idle")
 	root.add_child(wizard)
-	# Lettre (parchemin) — apparaît quand le sorcier se penche
-	var letter := ColorRect.new()
-	letter.size = Vector2(26, 18)
-	letter.position = Vector2(463, H - 183)
-	letter.color = Color(0.88, 0.82, 0.60)
-	letter.visible = false
-	root.add_child(letter)
-	var seal := ColorRect.new()
-	seal.size = Vector2(8, 8)
-	seal.position = Vector2(477, H - 175)
-	seal.color = Color(0.62, 0.06, 0.06)
-	seal.visible = false
-	root.add_child(seal)
-	# Texte de la lettre qui apparaît en fondu
-	var msg := Label.new()
-	msg.text = "« Château Noir. Une heure.\nOu ton frère mourra. »"
-	msg.add_theme_font_size_override("font_size", 16)
-	msg.add_theme_color_override("font_color", Color(0.88, 0.80, 0.50))
-	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	msg.size = Vector2(480, 56)
-	msg.position = Vector2(400, H - 270)
-	msg.modulate = Color(1, 1, 1, 0.0)
-	msg.z_index = 5
-	root.add_child(msg)
-	# Séquence animée
-	var wt := create_tween()
-	# Sorcier entre depuis la droite
-	wt.tween_property(wizard, "position:x", 620.0, 2.2).set_ease(Tween.EASE_IN_OUT)
-	wt.parallel().tween_property(aura, "position:x", 582.0, 2.2).set_ease(Tween.EASE_IN_OUT)
-	wt.parallel().tween_property(aura, "color:a", 0.28, 0.9)
-	# Passe en idle
-	wt.tween_callback(func(): wizard.play("idle"))
-	# Pose la lettre après une pause
-	wt.tween_interval(0.55)
-	wt.tween_callback(func(): letter.visible = true; seal.visible = true)
-	# Message de la lettre apparaît
-	wt.tween_property(msg, "modulate:a", 1.0, 0.65)
-	wt.tween_interval(1.3)
-	# Sorcier repart
-	wt.tween_callback(func(): wizard.flip_h = false; wizard.play("walk"))
-	wt.tween_property(wizard, "position:x", W + 130.0, 1.9).set_ease(Tween.EASE_IN)
-	wt.parallel().tween_property(aura, "color:a", 0.0, 1.1)
+	# Bulle de dialogue (conteneur — modulate:a contrôle tout d'un coup)
+	var bubble := Node2D.new()
+	bubble.name = "Bubble"
+	bubble.modulate = Color(1, 1, 1, 0.0)
+	root.add_child(bubble)
+	# Bordure de la bulle (couleur violette)
+	var border := ColorRect.new()
+	border.size = Vector2(348, 82)
+	border.position = Vector2(376, H - 350)
+	border.color = Color(0.55, 0.18, 0.78, 0.94)
+	bubble.add_child(border)
+	# Fond intérieur foncé
+	var bg := ColorRect.new()
+	bg.size = Vector2(340, 74)
+	bg.position = Vector2(380, H - 346)
+	bg.color = Color(0.07, 0.03, 0.12, 0.97)
+	bubble.add_child(bg)
+	# Queue de la bulle pointant vers le sorcier (en bas à droite)
+	var tail := ColorRect.new()
+	tail.size = Vector2(20, 26)
+	tail.position = Vector2(706, H - 284)
+	tail.rotation_degrees = 25.0
+	tail.color = Color(0.55, 0.18, 0.78, 0.94)
+	bubble.add_child(tail)
+	# Texte du discours
+	var speech := Label.new()
+	speech.text = "« Ton frère est prisonnier\n     du Château Noir...\n Tu as exactement une heure. »"
+	speech.add_theme_font_size_override("font_size", 14)
+	speech.add_theme_color_override("font_color", Color(0.92, 0.80, 1.0))
+	speech.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	speech.size = Vector2(330, 72)
+	speech.position = Vector2(385, H - 344)
+	bubble.add_child(speech)
 
 # ── Scene 6 : Enlèvement (récapitulatif) ──────────────────────────────────────
 
@@ -479,55 +547,66 @@ func _build_scene_awakening() -> void:
 
 func _build_scene_sword() -> void:
 	var root := _make_scene_root()
+	root.name = "SceneSword"
 	_add_bg(root, Color(0.07, 0.04, 0.02), Vector2.ZERO, Vector2(W, H))
 	_add_bg(root, Color(0.10, 0.06, 0.03), Vector2(0, H - 160), Vector2(W, 160))
-	_add_bg(root, Color(0.12, 0.08, 0.05), Vector2(480, H - 400), Vector2(320, 400))
-	# Épée accrochée au mur
-	var sword_blade := ColorRect.new()
-	sword_blade.size = Vector2(8, 120)
-	sword_blade.position = Vector2(636, H - 380)
-	sword_blade.color = Color(0.78, 0.82, 0.88)
-	root.add_child(sword_blade)
-	var sword_guard := ColorRect.new()
-	sword_guard.size = Vector2(30, 6)
-	sword_guard.position = Vector2(625, H - 280)
-	sword_guard.color = Color(0.60, 0.50, 0.20)
-	root.add_child(sword_guard)
-	var sword_handle := ColorRect.new()
-	sword_handle.size = Vector2(8, 36)
-	sword_handle.position = Vector2(636, H - 275)
-	sword_handle.color = Color(0.40, 0.28, 0.14)
-	root.add_child(sword_handle)
-	# Lueur bleue pulsante autour de l'épée
+	# Panneau mural derrière l'épée
+	_add_bg(root, Color(0.14, 0.09, 0.06), Vector2(590, H - 420), Vector2(100, 420))
+	# Supports muraux (clous/crochets)
+	var hook_t := ColorRect.new()
+	hook_t.size = Vector2(44, 7)
+	hook_t.position = Vector2(618, H - 402)
+	hook_t.color = Color(0.28, 0.20, 0.10, 0.9)
+	root.add_child(hook_t)
+	var hook_b := ColorRect.new()
+	hook_b.size = Vector2(44, 7)
+	hook_b.position = Vector2(618, H - 296)
+	hook_b.color = Color(0.28, 0.20, 0.10, 0.9)
+	root.add_child(hook_b)
+	# Lueur dorée pulsante (looping — toujours visible)
 	var glow := ColorRect.new()
-	glow.size = Vector2(50, 140)
-	glow.position = Vector2(615, H - 390)
-	glow.color = Color(0.5, 0.6, 0.8, 0.0)
+	glow.size = Vector2(96, 130)
+	glow.position = Vector2(592, H - 420)
+	glow.color = Color(0.9, 0.72, 0.18, 0.0)
 	root.add_child(glow)
 	var gt := create_tween().set_loops()
-	gt.tween_property(glow, "color:a", 0.15, 1.0).set_ease(Tween.EASE_IN_OUT)
-	gt.tween_property(glow, "color:a", 0.05, 1.0).set_ease(Tween.EASE_IN_OUT)
-	# Héros (paysan) s'approche de l'épée
-	var hero := _make_sprite(root, "paysan", SP_PAYSAN, Vector2(440, H - 230))
-	hero.modulate = Color(0.80, 0.66, 0.42)
-	create_tween().tween_property(hero, "position:x", 592.0, 1.8).set_ease(Tween.EASE_OUT)
-	# Holy VFX au moment où il saisit l'épée
-	var holy := _make_holy_anim(root, Vector2(640, H - 295))
-	var vt := create_tween()
-	vt.tween_interval(1.65)
-	vt.tween_callback(func():
-		holy.visible = true
-		holy.play("initial")
-	)
-	vt.tween_interval(0.22)
-	vt.tween_callback(func(): holy.play("repeat"))
-	# Inscription
+	gt.tween_property(glow, "color:a", 0.18, 1.4).set_ease(Tween.EASE_IN_OUT)
+	gt.tween_property(glow, "color:a", 0.05, 1.4).set_ease(Tween.EASE_IN_OUT)
+	# Scintillements dorés (looping — toujours visibles)
+	for i in 4:
+		var spark := Label.new()
+		spark.text = "✦"
+		spark.add_theme_font_size_override("font_size", 8 + i * 3)
+		spark.add_theme_color_override("font_color", Color(1.0, 0.88, 0.3, 0.8))
+		spark.position = Vector2(610 + i * 16, H - 420 + i * 22)
+		root.add_child(spark)
+		var st := create_tween().set_loops()
+		st.tween_property(spark, "modulate:a", 0.08, 0.4 + i * 0.18).set_ease(Tween.EASE_IN_OUT)
+		st.tween_property(spark, "modulate:a", 0.85, 0.4 + i * 0.18).set_ease(Tween.EASE_IN_OUT)
+	# Épée réelle (spritesheet weapons.png — premier sprite 16×16, colonne 0 rangée 0)
+	var sword := Sprite2D.new()
+	sword.texture = _sprites["weapons"]
+	sword.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sword.region_enabled = true
+	sword.region_rect = Rect2(0, 0, 16, 16)
+	sword.scale = Vector2(7.0, 7.0)         # 16×7 = 112 px affiché
+	sword.position = Vector2(640, H - 350)
+	sword.rotation_degrees = -40.0           # légèrement incliné, pointe en haut
+	root.add_child(sword)
+	# Inscription gravée
 	var inscription := Label.new()
 	inscription.text = "— L'épée du père —"
 	inscription.add_theme_font_size_override("font_size", 14)
 	inscription.add_theme_color_override("font_color", Color(0.55, 0.45, 0.28, 0.7))
-	inscription.position = Vector2(590, H - 400)
+	inscription.position = Vector2(575, H - 430)
 	root.add_child(inscription)
+	# Héros (paysan) — position initiale, _start_sword_anim() gère le déplacement
+	var hero := _make_sprite(root, "paysan", SP_PAYSAN, Vector2(430, H - 230))
+	hero.name = "Hero"
+	hero.modulate = Color(0.80, 0.66, 0.42)
+	# Holy VFX — invisible au départ, _start_sword_anim() le déclenche
+	var holy := _make_holy_anim(root, Vector2(640, H - 355))
+	holy.name = "Holy"
 
 # ── Helpers — sprites animés ──────────────────────────────────────────────────
 

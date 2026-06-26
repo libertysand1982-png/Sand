@@ -224,7 +224,7 @@ func _tick(delta: float) -> void:
 				_state = FSM.IDLE
 
 	if _state == FSM.IDLE:
-		var dir_x := sign(diff.x)
+		var dir_x: float = sign(diff.x)
 		if dir_x != 0.0:
 			sprite.flip_h = dir_x < 0.0
 
