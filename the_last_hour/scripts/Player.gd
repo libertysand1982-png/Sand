@@ -52,6 +52,7 @@ var max_hp: int
 var kills := 0
 
 var _enemies: Array = []
+var _locked := false
 
 signal died()
 signal knife_fired(from_pos: Vector2, direction: int)
@@ -108,6 +109,12 @@ func _mk(action: String, keys: Array) -> void:
 func register_enemies(arr: Array) -> void:
 	_enemies = arr
 
+func lock_controls() -> void:
+	_locked = true
+
+func unlock_controls() -> void:
+	_locked = false
+
 func _make_knight_frames() -> SpriteFrames:
 	var sf := SpriteFrames.new()
 	sf.remove_animation("default")
@@ -142,11 +149,16 @@ func _make_knight_frames() -> SpriteFrames:
 # ── Input ──────────────────────────────────────────────────────────────────────
 
 func _input(event: InputEvent) -> void:
+	if _locked: return
 	if event.is_action_pressed("p_pause"):
 		GameManager.toggle_pause()
 
 func _process(delta: float) -> void:
 	_tick_timers(delta)
+	if _locked:
+		if sprite.animation != "idle":
+			sprite.play("idle")
+		return
 	_handle_melee_input()
 	_handle_knife_input()
 	_update_visuals()
@@ -163,6 +175,11 @@ func _physics_process(delta: float) -> void:
 	if not on_floor:
 		velocity.y += GRAVITY * delta
 		velocity.y = minf(velocity.y, 900.0)
+
+	if _locked:
+		velocity.x = lerpf(velocity.x, 0.0, 10.0 * delta)
+		move_and_slide()
+		return
 
 	# Dash overrides everything
 	if dash_t > 0.0:
@@ -198,6 +215,8 @@ func _tick_timers(delta: float) -> void:
 		combo_reset_t -= delta
 		if combo_reset_t <= 0.0:
 			combo = 0
+
+	if _locked: return
 
 	if Input.is_action_just_pressed("p_jump"):
 		jump_buf = JUMP_BUFFER

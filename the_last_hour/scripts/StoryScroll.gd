@@ -714,6 +714,8 @@ func _update_fade_out(_delta: float) -> void:
 
 func _launch_game() -> void:
 	GameManager.new_game()
+	GlobalTimer.pause()           # suspended until camera descent ends in Main.gd
+	GameManager.auto_start = true # tells Main.gd to skip the menu
 	get_tree().change_scene_to_file("res://scenes/Main.tscn")
 
 # ── Input (skip) ───────────────────────────────────────────────────────────────

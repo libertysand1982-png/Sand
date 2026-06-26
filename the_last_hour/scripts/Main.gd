@@ -6,6 +6,7 @@ const SPAWN_Y := TLHDungeon.GROUND_Y - 42
 var _player: TLHPlayer = null
 var _dungeon: TLHDungeon = null
 var _hud: TLHHud
+var _intro_mode := false
 
 func _ready() -> void:
 	_hud = TLHHud.new()
@@ -33,6 +34,7 @@ func _ready() -> void:
 
 	if GameManager.auto_start:
 		GameManager.auto_start = false
+		_intro_mode = true
 		_hud.show_hud(false)
 		_hud.hide_overlays()
 		_build_run()
@@ -93,6 +95,42 @@ func _build_run() -> void:
 	_hud.show_hud(true)
 	_hud.hide_overlays()
 	_hud.update_boss_hp(-1.0)
+
+	if _intro_mode:
+		_intro_mode = false
+		_play_intro_descent()
+
+func _play_intro_descent() -> void:
+	_player.lock_controls()
+	_player.cam.zoom   = Vector2(0.45, 0.45)
+	_player.cam.offset = Vector2(0.0, -220.0)
+	_hud.show_hud(false)
+
+	# Fullscreen black overlay on its own CanvasLayer (unaffected by world zoom)
+	var cl := CanvasLayer.new()
+	cl.layer = 50
+	add_child(cl)
+	var fade := ColorRect.new()
+	fade.color    = Color(0, 0, 0, 1.0)
+	fade.position = Vector2.ZERO
+	fade.size     = Vector2(1280, 720)
+	cl.add_child(fade)
+
+	var t := create_tween()
+	# Reveal world from black (0.9 s)
+	t.tween_property(fade, "color:a", 0.0, 0.9)
+	# Camera descends and zooms in (3.6 s)
+	t.tween_property(_player.cam, "zoom",   Vector2(1.0, 1.0), 3.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	t.parallel().tween_property(_player.cam, "offset", Vector2.ZERO, 3.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	# Brief landing pause
+	t.tween_interval(0.4)
+	# Unlock controls, start 60-minute timer, show HUD
+	t.tween_callback(func():
+		_player.unlock_controls()
+		_hud.show_hud(true)
+		GlobalTimer.start()
+		cl.queue_free()
+	)
 
 func _teardown() -> void:
 	if is_instance_valid(_dungeon):
