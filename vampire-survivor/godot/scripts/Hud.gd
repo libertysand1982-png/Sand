@@ -135,6 +135,7 @@ func _build_menu() -> void:
 	overlay_menu.add_child(p)
 	var v := _vbox(p)
 	v.add_child(_title("CRÉPUSCULE"))
+	v.add_child(_divider())
 	v.add_child(_label("Survis aux vagues. Ton arme frappe toute seule.", 16, CREAM, true))
 	v.add_child(_spacer(6))
 	var b1 := _button("NOUVELLE PARTIE")
@@ -150,7 +151,7 @@ func _build_menu() -> void:
 	b4.pressed.connect(func(): get_tree().quit())
 	v.add_child(b4)
 	v.add_child(_spacer(2))
-	v.add_child(_label("WASD/ZQSD/flèches  ·  Sorts : 1 2 3 4  ·  Pause : P  ·  Son : M", 12, LILAC, true))
+	v.add_child(_label("WASD/ZQSD/flèches ou manette  ·  Sorts : 1-5  ·  Ultime : 6/Espace  ·  Pause : P  ·  Son : M", 12, LILAC, true))
 	add_child(overlay_menu)
 	overlay_menu.visible = false
 
@@ -194,7 +195,7 @@ func _build_scores() -> void:
 
 func _build_select() -> void:
 	overlay_select = _overlay(false)
-	var p := _panel(900, 540)
+	var p := _panel(900, 600)
 	overlay_select.add_child(p)
 	var v := _vbox(p)
 	v.name = "box"
@@ -315,6 +316,7 @@ func show_select(heroes: Array) -> void:
 	for c in box.get_children():
 		c.queue_free()
 	box.add_child(_title2("CHOISIS TON HÉROS"))
+	box.add_child(_divider())
 	box.add_child(_spacer(6))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -537,6 +539,17 @@ func _spacer(h: int) -> Control:
 	var c := Control.new()
 	c.custom_minimum_size = Vector2(0, h)
 	return c
+
+# Séparateur décoratif Kenney (teinté or), centré sous les titres
+func _divider() -> TextureRect:
+	var d := TextureRect.new()
+	d.texture = load("res://assets/ui/divider.png")
+	d.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	d.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	d.custom_minimum_size = Vector2(0, 30)
+	d.self_modulate = Color(1.0, 0.84, 0.46)
+	d.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return d
 
 func _label(text: String, size: int, color: Color, center: bool = false) -> Label:
 	var l := Label.new()
