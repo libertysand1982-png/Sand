@@ -10,25 +10,32 @@ Mini *Vampire Survivors* en **Godot 4.x** (testé sur **Godot 4.7-stable**), éc
    (Au premier ouvrage, Godot ré-importe les images/sons : c'est normal.)
 3. **F5** (ou ▶) pour lancer.
 
+## Nouvelle Partie → choix du héros
+
+Depuis le menu (**cadre fantasy Kenney** + musique d'ambiance), **Nouvelle Partie**
+ouvre l'écran de **sélection du héros**. Chaque carte montre le **style de combat**,
+les **5 capacités** et l'**ultime**. Deux héros jouables :
+
+| Héros | Style | Attaque auto | PV | Capacités (1→5) | Ultime |
+|-------|-------|--------------|----|----|--------|
+| **Sorcier Maudit** | mage à distance | boules de feu | 100 | Boule de feu · Éclair · Gel · Soin · Météore | Tempête arcanique |
+| **Samurai Errant** | mêlée rapide | coups de sabre | 135 | Entaille · Ruée · Tourbillon · Garde · Lame volante | Mille coupures |
+
 ## Commandes
 
-- **Déplacement :** WASD / ZQSD / flèches
-- **Attaque :** **boules de feu** automatiques (visent l'ennemi le plus proche)
-- **Sorts actifs :** touches **1 2 3 4** (voir la roue en bas à gauche)
-- **Pause :** P / Échap · **Son :** M
-- Menu : **Nouvelle Partie · Options · Scores · Quitter**
-- Monte en niveau en ramassant les gemmes (sort d'**Onde arcanique** à chaque niveau).
+- **Déplacement :** WASD / ZQSD / flèches — ou **stick gauche** (manette).
+- **Attaque de base : automatique** (vise l'ennemi le plus proche).
+- **Capacités : déclenchées par toi** — touches **1 2 3 4 5** (ou **A B X Y / LB**).
+- **Ultime :** touche **6** / **Espace** (ou **RB**) — seulement quand la **jauge de
+  puissance** est pleine (elle monte en tuant des ennemis, surtout les boss).
+- **Pause :** P / Échap / Start · **Son :** M
+- Monte en niveau en ramassant les gemmes (**Onde arcanique** à chaque niveau).
 
-## Sorts actifs (roue en bas-gauche)
+## Barre de skills (bas-centre)
 
-| Touche | Sort | Effet | Recharge |
-|--------|------|-------|----------|
-| **1** | Boule de feu | explosion de zone sur l'ennemi le plus proche | 3,5 s |
-| **2** | Éclair | foudroie jusqu'à 4 ennemis proches | 6 s |
-| **3** | Gel | onde glaciale : dégâts + ralentit autour de toi | 10 s |
-| **4** | Soin | rend des PV | 18 s |
-
-La roue affiche l'icône sur un **cadre rond** (pack CraftPix), la touche et la recharge (camembert + compte à rebours).
+La barre horizontale au **milieu-bas** de l'écran affiche les **5 capacités** (icône sur
+cadre CraftPix + touche + recharge en camembert), la **jauge de puissance**, puis
+l'emplacement d'**ultime** (halo doré + « ULTIME PRÊT ! » quand la jauge est pleine).
 
 ## Tableau des scores
 
@@ -46,10 +53,11 @@ objet à ramasser (au contact) :
 
 ## Contenu visuel & audio
 
-- **Héros :** *Evil Wizard* animé — un sorcier lanceur de sorts (idle / déplacement / mort).
-- **Monstres animés :** gobelin, **chauve-souris** (dark fantasy), œil volant, champignon, squelette + **boss NightBorne**.
-- **Fond :** sol organique généré + **forêt crépusculaire** dans les menus.
-- **Audio :** SFX uniquement (pas de musique) — **un son par sort** (feu / éclair / glace / soin).
+- **Héros :** *Evil Wizard* (sorcier) et *Samurai* animés (idle / déplacement / mort).
+- **Monstres animés :** gobelin, chauve-souris, œil volant, champignon, squelette + **boss NightBorne**.
+- **Carte :** sol du tileset **RPGW Caves v2.1**.
+- **Menus :** **forêt crépusculaire** + **cadre fantasy Kenney** (nine-patch teinté or).
+- **Audio :** **musique** au menu et en jeu + SFX (**un son par sort** : feu / éclair / glace / soin).
 
 ## Comment c'est construit
 
@@ -57,34 +65,40 @@ objet à ramasser (au contact) :
 godot/
 ├─ project.godot · scenes/Main.tscn
 ├─ scripts/
-│  ├─ Main.gd        Boucle, spawn, collisions, niveaux, sorts, scores, audio
+│  ├─ Main.gd        Boucle, héros, spawn, collisions, niveaux, sorts, ultime, scores, audio
 │  ├─ Player.gd      Héros animé (AnimatedSprite2D) + Camera2D
 │  ├─ Enemy.gd       Monstre animé (+ ralentissement par le Gel)
 │  ├─ Projectile.gd  Boule de feu de l'arme auto
 │  ├─ Nova.gd        Anneau de sort (couleur paramétrable)
 │  ├─ Bolt.gd        Éclairs en dents de scie
 │  ├─ Gem.gd         Gemme d'XP
-│  ├─ Wheel.gd       Roue de sorts (icônes + recharge radiale)
+│  ├─ Wheel.gd       Barre de skills (icônes + recharge + jauge de puissance + ultime)
 │  ├─ Scores.gd      Tableau des scores persistant (user://)
 │  ├─ Item.gd        Objet de loot lâché par les boss
-│  ├─ Hud.gd         Interface + menus (accueil/options/scores/niveau/fin/pause)
-│  └─ Sfx.gd         Sons (un par sort) + volumes
-├─ assets/  knight/  monsters/  spells/  bg/  audio/
+│  ├─ Hud.gd         Interface + menus (accueil/sélection/options/scores/niveau/fin/pause)
+│  └─ Sfx.gd         Sons (un par sort) + musique (menu / jeu) + volumes
+├─ assets/  wizard/  samurai/  monsters/  boss/  spells/  items/  fx/  bg/  ui/  audio/
 └─ icon.svg
 ```
 
 ### Détails techniques
-- **Animations** via `AnimatedSprite2D` + `SpriteFrames` construits en code.
-- **Sorts au clavier** via `_unhandled_input` (n'interfère pas avec la saisie du nom).
-- **Roue** = `Control` dessiné en `_draw` (camembert de recharge).
+- **Héros** : dictionnaire `HEROES` (stats, frames, style, skills, ultime) ; `SKILLS`
+  décrit chaque capacité (nom, icône, recharge). Changer/ajouter un héros = éditer ces deux tables.
+- **Capacités au clavier/manette** via `_unhandled_input` (n'interfère pas avec la saisie du nom).
+- **Manette** : `InputEventJoypadMotion` (stick) + `InputEventJoypadButton` (boutons).
+- **Barre de skills** = `Control` dessiné en `_draw` (camembert de recharge + jauge).
+- **Cadre de menu** = `NinePatchRect` (frame fantasy Kenney, centre transparent, teinté or).
+- **Musique** = `AudioStreamPlayer` (MP3 en boucle) ; volumes réglables dans **Options**.
 - **Scores** = JSON dans `user://` (`FileAccess` + `JSON`).
 - **Entrées** : `InputMap` configuré au démarrage, compatible QWERTY **et** AZERTY.
 - Astuce dev : argument `--smoke` = démarre une partie automatiquement (tests).
 
 ## Crédits assets (tous CC0 / libres, via le dépôt `Sand`)
-- **Evil Wizard** — sorcier animé (LuizMelo).
+- **Evil Wizard** et **Samurai** — héros animés (LuizMelo).
 - **Monsters Creatures Fantasy** — gobelin / œil volant / champignon / squelette (LuizMelo).
-- **Raven Fantasy Icons** — icônes de sorts (boule de feu, éclair, gel, potion).
-- **CraftPix — Basic Pixel Art UI for RPG** — cadres ronds de la roue de sorts.
+- **Raven Fantasy Icons** — icônes de sorts.
+- **CraftPix — Basic Pixel Art UI for RPG** — cadres ronds de la barre de skills.
+- **Kenney — Fantasy UI Borders** — cadre des menus (nine-patch).
+- **RPGW Caves v2.1** — tileset de la carte.
 - **Dark Fantasy Enemies** (chauve-souris) · **NightBorne** (boss) · **Fire Bullet Pack** (boule de feu) · **16x16 Assorted RPG Icons** (objets de loot).
-- **Fond forêt** — décors nature pixel-art · **SFX** — banque de sons (feu / éclair / glace / bénédiction) + `foret_de_brume` + clics Kenney.
+- **Musique / SFX** — boucles d'ambiance & d'action + banque de sons (feu / éclair / glace / bénédiction) + clics Kenney.

@@ -6,6 +6,8 @@ extends Node2D
 var anim: AnimatedSprite2D
 var cam: Camera2D
 var disp_scale := 0.95
+var shadow_y := 16.0
+var shadow_r := 18.0
 var dying := false
 
 # Stats
@@ -50,6 +52,14 @@ func set_frames(sf: SpriteFrames) -> void:
 	anim.sprite_frames = sf
 	anim.play("idle")
 
+func setup_hero(scale: float, offset_y: float, sh_y: float, sh_r: float) -> void:
+	disp_scale = scale
+	shadow_y = sh_y
+	shadow_r = sh_r
+	anim.scale = Vector2(disp_scale, disp_scale)
+	anim.offset = Vector2(0, offset_y)
+	queue_redraw()
+
 func reset(pos: Vector2) -> void:
 	position = pos
 	dying = false
@@ -87,6 +97,6 @@ func hp_pct() -> float:
 
 func _draw() -> void:
 	# ombre portée (ellipse aplatie sous les pieds)
-	draw_set_transform(Vector2(0, 16), 0.0, Vector2(1, 0.4))
-	draw_circle(Vector2.ZERO, 18, Color(0, 0, 0, 0.28))
+	draw_set_transform(Vector2(0, shadow_y), 0.0, Vector2(1, 0.4))
+	draw_circle(Vector2.ZERO, shadow_r, Color(0, 0, 0, 0.28))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

@@ -27,6 +27,38 @@ const UPGRADES := [
 	{"name": "Onde arcanique",   "desc": "+30% puissance du sort", "id": "spell"},
 ]
 
+# Héros jouables (sélection au début)
+const HEROES := {
+	"wizard": {
+		"name": "Sorcier Maudit", "style": "Mage à distance — boules de feu auto",
+		"frames": "wizard", "scale": 0.95, "offset_y": -16.0, "shadow_y": 16.0, "shadow_r": 18.0,
+		"speed": 205.0, "maxhp": 100.0, "fire_interval": 0.85, "attack": "fireball",
+		"skills": ["fire", "bolt", "frost", "heal", "meteor"], "ult": "arcane_storm",
+	},
+	"samurai": {
+		"name": "Samurai Errant", "style": "Mêlée rapide — coups de sabre",
+		"frames": "samurai", "scale": 0.85, "offset_y": -22.0, "shadow_y": 12.0, "shadow_r": 16.0,
+		"speed": 250.0, "maxhp": 135.0, "fire_interval": 0.5, "attack": "melee",
+		"skills": ["slash_sk", "dash", "whirl", "guard", "blade"], "ult": "thousand_cuts",
+	},
+}
+
+# Capacités (nom, icône dans assets/spells/, recharge)
+const SKILLS := {
+	"fire":     {"name": "Boule de feu", "icon": "fire",      "cd": 3.5},
+	"bolt":     {"name": "Éclair",       "icon": "lightning", "cd": 6.0},
+	"frost":    {"name": "Gel",          "icon": "frost",     "cd": 10.0},
+	"heal":     {"name": "Soin",         "icon": "heal",      "cd": 18.0},
+	"meteor":   {"name": "Météore",      "icon": "meteor",    "cd": 7.0},
+	"slash_sk": {"name": "Entaille",     "icon": "slash",     "cd": 2.0},
+	"dash":     {"name": "Ruée",         "icon": "dash",      "cd": 4.0},
+	"whirl":    {"name": "Tourbillon",   "icon": "whirl",     "cd": 6.0},
+	"guard":    {"name": "Garde",        "icon": "guard",     "cd": 14.0},
+	"blade":    {"name": "Lame volante", "icon": "blade",     "cd": 3.0},
+	"arcane_storm":  {"name": "Tempête arcanique", "icon": "ult_wizard",  "cd": 0.0},
+	"thousand_cuts": {"name": "Mille coupures",    "icon": "ult_samurai", "cd": 0.0},
+}
+
 var state: int = State.MENU
 var time := 0.0
 var elapsed := 0.0
@@ -51,6 +83,10 @@ var enemy_frames: Dictionary = {}
 var spells: Array = []
 var items: Array = []
 var item_tex: Dictionary = {}
+var hero_frames: Dictionary = {}
+var current_hero := "wizard"
+var power := 0.0
+var ult_icon: Texture2D
 var bosses_spawned := 0
 var _last_score := 0
 var _last_time := "00:00"
@@ -75,16 +111,15 @@ func _ready() -> void:
 		"potion": load("res://assets/items/potion.png"),
 	}
 
-	spells = [
-		{"id": "fire",  "name": "Boule de feu", "key": "1", "cd": 3.5,  "left": 0.0, "icon": load("res://assets/spells/fire.png")},
-		{"id": "bolt",  "name": "Éclair",       "key": "2", "cd": 6.0,  "left": 0.0, "icon": load("res://assets/spells/lightning.png")},
-		{"id": "frost", "name": "Gel",          "key": "3", "cd": 10.0, "left": 0.0, "icon": load("res://assets/spells/frost.png")},
-		{"id": "heal",  "name": "Soin",         "key": "4", "cd": 18.0, "left": 0.0, "icon": load("res://assets/spells/heal.png")},
-	]
+	hero_frames = {
+		"wizard": _wizard_sf(),
+		"samurai": _samurai_sf(),
+	}
+	_build_spells(current_hero)
 
 	# Sol
 	ground = Sprite2D.new()
-	ground.texture = _make_ground_texture()
+	ground.texture = load("res://assets/bg/cave_floor.png")
 	ground.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	ground.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	ground.centered = false
@@ -111,7 +146,7 @@ func _ready() -> void:
 
 	player = VSPlayer.new()
 	world.add_child(player)
-	player.set_frames(_wizard_sf())
+	player.set_frames(hero_frames["wizard"])
 	player.cam.limit_left = 0
 	player.cam.limit_top = 0
 	player.cam.limit_right = int(WORLD)
@@ -122,14 +157,17 @@ func _ready() -> void:
 	hud = VSHud.new()
 	add_child(hud)
 	hud.build()
-	hud.play_pressed.connect(start_game)
-	hud.retry_pressed.connect(start_game)
+	hud.play_pressed.connect(_on_play)
+	hud.retry_pressed.connect(_on_retry)
 	hud.to_menu_pressed.connect(_to_menu)
 	hud.upgrade_chosen.connect(_apply_upgrade)
 	hud.sfx_changed.connect(sfx.set_sfx_volume)
+	hud.music_changed.connect(sfx.set_music_volume)
+	hud.hero_selected.connect(_on_hero_selected)
 	hud.name_submitted.connect(_on_name_submitted)
 	hud.show_menu()
 	state = State.MENU
+	sfx.play_music("menu")
 
 	# Test automatisé : l'argument `--smoke` (ligne de commande) auto-démarre une partie.
 	if "--smoke" in OS.get_cmdline_user_args():
@@ -146,6 +184,20 @@ func _setup_input() -> void:
 	_mk("vs_spell2", [KEY_2, KEY_KP_2])
 	_mk("vs_spell3", [KEY_3, KEY_KP_3])
 	_mk("vs_spell4", [KEY_4, KEY_KP_4])
+	_mk("vs_spell5", [KEY_5, KEY_KP_5])
+	_mk("vs_ult", [KEY_6, KEY_KP_6, KEY_SPACE])
+	# Manette : stick gauche pour bouger, boutons pour les capacités
+	_pad_axis("vs_left", 0, -1.0)
+	_pad_axis("vs_right", 0, 1.0)
+	_pad_axis("vs_up", 1, -1.0)
+	_pad_axis("vs_down", 1, 1.0)
+	_pad_btn("vs_spell1", JOY_BUTTON_A)
+	_pad_btn("vs_spell2", JOY_BUTTON_B)
+	_pad_btn("vs_spell3", JOY_BUTTON_X)
+	_pad_btn("vs_spell4", JOY_BUTTON_Y)
+	_pad_btn("vs_spell5", JOY_BUTTON_LEFT_SHOULDER)
+	_pad_btn("vs_ult", JOY_BUTTON_RIGHT_SHOULDER)
+	_pad_btn("vs_pause", JOY_BUTTON_START)
 
 func _mk(action: String, keys: Array) -> void:
 	if InputMap.has_action(action):
@@ -155,6 +207,17 @@ func _mk(action: String, keys: Array) -> void:
 		var ev := InputEventKey.new()
 		ev.keycode = k
 		InputMap.action_add_event(action, ev)
+
+func _pad_axis(action: String, axis: int, dir: float) -> void:
+	var ev := InputEventJoypadMotion.new()
+	ev.axis = axis
+	ev.axis_value = dir
+	InputMap.action_add_event(action, ev)
+
+func _pad_btn(action: String, btn: int) -> void:
+	var ev := InputEventJoypadButton.new()
+	ev.button_index = btn
+	InputMap.action_add_event(action, ev)
 
 # ============================================================
 func _clear_entities() -> void:
@@ -173,7 +236,29 @@ func _clear_entities() -> void:
 	items.clear()
 	floats.clear()
 
-func start_game() -> void:
+func _on_play() -> void:
+	sfx.play("click", 0.5)
+	var data: Array = []
+	for hid in HEROES:
+		var h: Dictionary = HEROES[hid]
+		var sk := ""
+		for sid in h["skills"]:
+			sk += (" · " if sk != "" else "") + SKILLS[sid]["name"]
+		data.append({
+			"id": hid, "name": h["name"], "style": h["style"],
+			"skills": sk, "ult": SKILLS[h["ult"]]["name"],
+		})
+	hud.show_select(data)
+
+func _on_hero_selected(hero_id: String) -> void:
+	start_game(hero_id)
+
+func _on_retry() -> void:
+	start_game(current_hero)
+
+func start_game(hero_id := current_hero) -> void:
+	current_hero = hero_id
+	var h: Dictionary = HEROES[hero_id]
 	sfx.play("click", 0.5)
 	_clear_entities()
 	elapsed = 0.0
@@ -181,11 +266,32 @@ func start_game() -> void:
 	spawn_timer = 0.0
 	level_queue = 0
 	bosses_spawned = 0
+	power = 0.0
+	player.set_frames(hero_frames[h["frames"]])
+	player.setup_hero(h["scale"], h["offset_y"], h["shadow_y"], h["shadow_r"])
+	_build_spells(hero_id)
 	player.reset(Vector2(WORLD / 2.0, WORLD / 2.0))
+	player.maxhp = h["maxhp"]
+	player.hp = h["maxhp"]
+	player.speed = h["speed"]
+	player.fire_interval = h["fire_interval"]
 	player.visible = true
 	hud.hide_overlays()
 	hud.show_hud(true)
+	sfx.play_music("game")
 	state = State.PLAYING
+
+func _build_spells(hero_id: String) -> void:
+	spells = []
+	var hs: Array = HEROES[hero_id]["skills"]
+	for i in hs.size():
+		var sid: String = hs[i]
+		var sk: Dictionary = SKILLS[sid]
+		spells.append({
+			"id": sid, "name": sk["name"], "key": str(i + 1), "cd": sk["cd"], "left": 0.0,
+			"icon": load("res://assets/spells/%s.png" % sk["icon"]),
+		})
+	ult_icon = load("res://assets/spells/%s.png" % SKILLS[HEROES[hero_id]["ult"]]["icon"])
 
 func _to_menu() -> void:
 	state = State.MENU
@@ -193,6 +299,7 @@ func _to_menu() -> void:
 	player.visible = false
 	hud.show_hud(false)
 	hud.show_menu()
+	sfx.play_music("menu")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("vs_pause"):
@@ -201,6 +308,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		sfx.set_muted(not sfx.muted)
 		hud.set_muted(sfx.muted)
 	elif state == State.PLAYING:
+		if event.is_action_pressed("vs_ult"):
+			_cast_ult()
+			return
 		for i in spells.size():
 			if event.is_action_pressed("vs_spell" + str(i + 1)):
 				_try_cast(i)
@@ -278,6 +388,9 @@ func _update_playing(delta: float) -> void:
 # ----- Arme -----
 func _fire() -> void:
 	var p := player
+	if HEROES[current_hero]["attack"] == "melee":
+		_melee_attack()
+		return
 	var best: VSEnemy = null
 	var bd := INF
 	for e in enemies:
@@ -472,6 +585,7 @@ func _kill_enemy(e: VSEnemy) -> void:
 		return
 	e.dead = true
 	kills += 1
+	power = minf(1.0, power + (0.25 if e.is_boss else 0.045))
 	var g := VSGem.new()
 	g.setup(e.position, e.xp)
 	gem_layer.add_child(g)
@@ -541,7 +655,7 @@ func _cast_nova() -> void:
 				_kill_enemy(e)
 
 # ----- Sorts actifs (touches 1..4) -----
-func _wheel_data() -> Array:
+func _wheel_data() -> Dictionary:
 	var out: Array = []
 	for sp in spells:
 		out.append({
@@ -549,7 +663,7 @@ func _wheel_data() -> Array:
 			"frac": (sp["left"] / sp["cd"]) if sp["cd"] > 0.0 else 0.0,
 			"ready": sp["left"] <= 0.0,
 		})
-	return out
+	return {"slots": out, "power": power, "ult": {"icon": ult_icon, "key": "6"}}
 
 func _try_cast(i: int) -> void:
 	var sp = spells[i]
@@ -620,7 +734,149 @@ func _do_cast(id: String) -> bool:
 			_spawn_text(p.position + Vector2(0, -40), "+40", Color(0.5, 1.0, 0.5))
 			sfx.play("blessing", 0.5)
 			return true
+		"meteor":
+			var me := _nearest_enemy()
+			if me == null:
+				return false
+			_burst(me.position, 130.0, Color(1.0, 0.6, 0.2), Color(1.0, 0.35, 0.1))
+			var mdmg := 90.0 + p.level * 4.0
+			for en in enemies:
+				if not is_instance_valid(en) or en.dead:
+					continue
+				if en.position.distance_to(me.position) <= 130.0:
+					en.hp -= mdmg
+					en.hitflash = 0.12
+					_spawn_text(en.position + Vector2(0, -en.radius * 1.6), str(int(mdmg)), Color(1.0, 0.6, 0.2))
+					if en.hp <= 0.0:
+						_kill_enemy(en)
+			sfx.play("fire_cast", 0.7)
+			return true
+		"slash_sk":
+			var skrad := 135.0
+			_burst(p.position, skrad, Color(1.0, 0.95, 0.7), Color(1.0, 0.7, 0.3))
+			var skdmg := 55.0 + p.level * 3.0
+			for en in enemies:
+				if not is_instance_valid(en) or en.dead:
+					continue
+				var sto := en.position - p.position
+				var sd := sto.length()
+				if sd <= skrad:
+					en.position += (sto / maxf(sd, 0.001)) * 50.0
+					en.hp -= skdmg
+					en.hitflash = 0.12
+					_spawn_text(en.position + Vector2(0, -en.radius * 1.6), str(int(skdmg)), Color(1, 0.9, 0.6))
+					if en.hp <= 0.0:
+						_kill_enemy(en)
+			sfx.play("slice", 0.5)
+			return true
+		"dash":
+			var dvx := p.facing * 175.0
+			p.position.x = clampf(p.position.x + dvx, 24.0, WORLD - 24.0)
+			p.invuln = maxf(p.invuln, 0.45)
+			_burst(p.position, 95.0, Color(0.9, 0.95, 1.0), Color(0.6, 0.8, 1.0))
+			var ddmg := 45.0 + p.level * 2.0
+			for en in enemies:
+				if not is_instance_valid(en) or en.dead:
+					continue
+				if en.position.distance_to(p.position) <= 95.0:
+					en.hp -= ddmg
+					en.hitflash = 0.12
+					if en.hp <= 0.0:
+						_kill_enemy(en)
+			sfx.play("slice2", 0.5)
+			return true
+		"whirl":
+			var wrad := 165.0
+			_burst(p.position, wrad, Color(1.0, 0.9, 0.6), Color(1.0, 0.6, 0.2))
+			var wdmg := 40.0 + p.level * 3.0
+			for en in enemies:
+				if not is_instance_valid(en) or en.dead:
+					continue
+				if en.position.distance_to(p.position) <= wrad:
+					en.hp -= wdmg
+					en.hitflash = 0.12
+					_spawn_text(en.position + Vector2(0, -en.radius * 1.6), str(int(wdmg)), Color(1, 0.9, 0.6))
+					if en.hp <= 0.0:
+						_kill_enemy(en)
+			sfx.play("slice", 0.5)
+			return true
+		"guard":
+			p.hp = minf(p.maxhp, p.hp + 30.0)
+			p.invuln = maxf(p.invuln, 1.6)
+			_burst(p.position, 75.0, Color(0.7, 0.85, 1.0), Color(0.4, 0.6, 1.0))
+			_spawn_text(p.position + Vector2(0, -44), "GARDE !", Color(0.6, 0.8, 1.0))
+			sfx.play("blessing", 0.5)
+			return true
+		"blade":
+			var bld_e := _nearest_enemy()
+			var bld_ang := 0.0
+			if bld_e != null:
+				bld_ang = (bld_e.position - p.position).angle()
+			elif p.facing < 0:
+				bld_ang = PI
+			for k in 3:
+				var bpr := VSProjectile.new()
+				bpr.setup(p.position, Vector2.from_angle(bld_ang + (k - 1) * 0.2), 560.0, 40.0 + p.level * 3.0, 2, 11.0)
+				proj_layer.add_child(bpr)
+				projectiles.append(bpr)
+			sfx.play("slice2", 0.4)
+			return true
 	return false
+
+# Attaque de mêlée (Samurai) : dégâts autour du héros + éclat.
+func _melee_attack() -> void:
+	var p := player
+	var rad := 100.0
+	_burst(p.position + Vector2(p.facing * 28, 0), 80.0, Color(1.0, 0.97, 0.8), Color(1.0, 0.8, 0.4))
+	for e in enemies:
+		if not is_instance_valid(e) or e.dead:
+			continue
+		if p.position.distance_to(e.position) <= rad:
+			e.hp -= p.proj_damage
+			e.hitflash = 0.12
+			_spawn_text(e.position + Vector2(0, -e.radius * 1.6), str(int(p.proj_damage)), Color(1, 0.9, 0.6))
+			if e.hp <= 0.0:
+				_kill_enemy(e)
+	sfx.play("slice" if randf() < 0.5 else "slice2", 0.25)
+
+# Ultime (jauge pleine) : dépend du héros.
+func _cast_ult() -> bool:
+	if power < 1.0:
+		return false
+	var p := player
+	var uid: String = HEROES[current_hero]["ult"]
+	match uid:
+		"arcane_storm":
+			for k in 7:
+				var off := Vector2.from_angle(randf() * TAU) * randf_range(40.0, 240.0)
+				_burst(p.position + off, 110.0, Color(0.72, 0.6, 1.0), Color(0.5, 0.4, 1.0))
+			var udmg := 140.0 + p.level * 6.0
+			for en in enemies:
+				if not is_instance_valid(en) or en.dead:
+					continue
+				if en.position.distance_to(p.position) <= 380.0:
+					en.hp -= udmg
+					en.hitflash = 0.12
+					if en.hp <= 0.0:
+						_kill_enemy(en)
+			sfx.play("buff", 0.85)
+		"thousand_cuts":
+			var udmg2 := 120.0 + p.level * 6.0
+			for en in enemies:
+				if not is_instance_valid(en) or en.dead:
+					continue
+				if en.position.distance_to(p.position) <= 430.0:
+					_burst(en.position, 38.0, Color(1.0, 0.97, 0.85), Color(1.0, 0.7, 0.3))
+					en.hp -= udmg2
+					en.hitflash = 0.12
+					_spawn_text(en.position, str(int(udmg2)), Color(1, 0.85, 0.4))
+					if en.hp <= 0.0:
+						_kill_enemy(en)
+			sfx.play("slice", 0.85)
+	power = 0.0
+	_spawn_text(p.position + Vector2(0, -60), "ULTIME !", Color(1.0, 0.82, 0.32))
+	hud.wheel.set_data(_wheel_data())
+	return true
 
 func _burst(pos: Vector2, radius: float, ring: Color, glow: Color) -> void:
 	var nova := VSNova.new()
@@ -715,6 +971,7 @@ func _game_over() -> void:
 	player.anim.play("death")
 	player.anim.modulate.a = 1.0
 	sfx.play("death", 0.7)
+	sfx.play_music("menu")
 	hud.show_hud(false)
 	_last_score = kills * 10 + (player.level - 1) * 40 + int(elapsed)
 	var m := int(elapsed / 60.0)
@@ -751,6 +1008,13 @@ func _wizard_sf() -> SpriteFrames:
 	_add_sheet(sf, "idle", load("res://assets/wizard/idle.png"), 8, 150, 8.0, true)
 	_add_sheet(sf, "run", load("res://assets/wizard/move.png"), 8, 150, 11.0, true)
 	_add_sheet(sf, "death", load("res://assets/wizard/death.png"), 5, 150, 9.0, false)
+	return sf
+
+func _samurai_sf() -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	_add_sheet(sf, "idle", load("res://assets/samurai/idle.png"), 10, 96, 8.0, true)
+	_add_sheet(sf, "run", load("res://assets/samurai/run.png"), 16, 96, 14.0, true)
+	_add_sheet(sf, "death", load("res://assets/samurai/hurt.png"), 4, 96, 7.0, false)
 	return sf
 
 func _add_files(sf: SpriteFrames, anim: String, dir: String, count: int, fps: float, loop: bool) -> void:

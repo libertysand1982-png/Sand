@@ -8,6 +8,8 @@ signal retry_pressed
 signal to_menu_pressed
 signal upgrade_chosen(id: String)
 signal sfx_changed(v: float)
+signal music_changed(v: float)
+signal hero_selected(hero_id: String)
 signal name_submitted(player_name: String)
 
 const GOLD := Color(1.0, 0.847, 0.420)
@@ -30,12 +32,14 @@ var xp_full_w := 720.0
 var overlay_menu: Control
 var overlay_options: Control
 var overlay_scores: Control
+var overlay_select: Control
 var overlay_levelup: Control
 var overlay_gameover: Control
 var overlay_pause: Control
 var cards_box: HBoxContainer
 var go_box: VBoxContainer
 var sfx_pct: Label
+var music_pct: Label
 
 # ============================================================
 func build() -> void:
@@ -44,6 +48,7 @@ func build() -> void:
 	_build_menu()
 	_build_options()
 	_build_scores()
+	_build_select()
 	_build_levelup()
 	_build_gameover()
 	_build_pause()
@@ -98,18 +103,17 @@ func _build_bars() -> void:
 	_anchor(kills_label, 0.5, 0.0, 0.5, 0.0, 14.0, 42.0, 140.0, 70.0)
 	bars.add_child(kills_label)
 
-	# Vie (bas centré — le coin bas-gauche est pris par la roue)
+	# Vie (bas-gauche — la barre de skills occupe le centre)
 	var hp_bg := ColorRect.new()
 	hp_bg.color = Color(0, 0, 0, 0.55)
-	_anchor(hp_bg, 0.5, 1.0, 0.5, 1.0, -hp_full_w / 2.0, -42.0, hp_full_w / 2.0, -18.0)
+	_anchor(hp_bg, 0.0, 1.0, 0.0, 1.0, 18.0, -42.0, 18.0 + hp_full_w, -18.0)
 	bars.add_child(hp_bg)
 	hp_fill = ColorRect.new()
 	hp_fill.color = Color(0.85, 0.26, 0.31)
-	_anchor(hp_fill, 0.5, 1.0, 0.5, 1.0, -hp_full_w / 2.0, -40.0, -hp_full_w / 2.0, -20.0)
+	_anchor(hp_fill, 0.0, 1.0, 0.0, 1.0, 20.0, -40.0, 20.0, -20.0)
 	bars.add_child(hp_fill)
 	hp_label = _label("PV 100 / 100", 14, Color(1, 1, 1))
-	_anchor(hp_label, 0.5, 1.0, 0.5, 1.0, -hp_full_w / 2.0, -41.0, hp_full_w / 2.0, -19.0)
-	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_anchor(hp_label, 0.0, 1.0, 0.0, 1.0, 28.0, -41.0, 28.0 + hp_full_w, -19.0)
 	bars.add_child(hp_label)
 
 	mute_label = _label("Muet", 14, LILAC)
@@ -164,6 +168,14 @@ func _build_options() -> void:
 		sfx_pct.text = "Effets : %d%%" % int(round(val * 100))
 		sfx_changed.emit(val))
 	v.add_child(ss)
+	v.add_child(_spacer(8))
+	music_pct = _label("Musique : 50%", 16, CREAM, true)
+	v.add_child(music_pct)
+	var ms := _slider(0.5)
+	ms.value_changed.connect(func(val):
+		music_pct.text = "Musique : %d%%" % int(round(val * 100))
+		music_changed.emit(val))
+	v.add_child(ms)
 	v.add_child(_spacer(10))
 	var back := _button("RETOUR")
 	back.pressed.connect(func(): show_menu())
@@ -179,6 +191,15 @@ func _build_scores() -> void:
 	v.name = "box"
 	add_child(overlay_scores)
 	overlay_scores.visible = false
+
+func _build_select() -> void:
+	overlay_select = _overlay(false)
+	var p := _panel(900, 540)
+	overlay_select.add_child(p)
+	var v := _vbox(p)
+	v.name = "box"
+	add_child(overlay_select)
+	overlay_select.visible = false
 
 func _build_levelup() -> void:
 	overlay_levelup = _overlay(true)
@@ -239,6 +260,7 @@ func hide_overlays() -> void:
 	overlay_menu.visible = false
 	overlay_options.visible = false
 	overlay_scores.visible = false
+	overlay_select.visible = false
 	overlay_levelup.visible = false
 	overlay_gameover.visible = false
 	overlay_pause.visible = false
@@ -280,6 +302,85 @@ func _scores_box() -> VBoxContainer:
 				if cc is VBoxContainer:
 					return cc
 	return null
+
+# ----- Sélection du héros -----
+func show_select(heroes: Array) -> void:
+	hide_overlays()
+	bars.visible = false
+	wheel.visible = false
+	menu_bg.visible = true
+	var box := _select_box()
+	if box == null:
+		return
+	for c in box.get_children():
+		c.queue_free()
+	box.add_child(_title2("CHOISIS TON HÉROS"))
+	box.add_child(_spacer(6))
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 24)
+	for h in heroes:
+		row.add_child(_hero_card(h))
+	box.add_child(row)
+	box.add_child(_spacer(10))
+	var back := _button("RETOUR")
+	back.custom_minimum_size = Vector2(220, 46)
+	back.pressed.connect(func(): show_menu())
+	box.add_child(back)
+	overlay_select.visible = true
+
+func _select_box() -> VBoxContainer:
+	for c in overlay_select.get_children():
+		if c is Panel:
+			for cc in c.get_children():
+				if cc is VBoxContainer:
+					return cc
+	return null
+
+func _hero_card(h: Dictionary) -> Control:
+	var card := _card_panel()
+	var v := VBoxContainer.new()
+	v.anchor_right = 1.0
+	v.anchor_bottom = 1.0
+	v.offset_left = 16
+	v.offset_top = 14
+	v.offset_right = -16
+	v.offset_bottom = -14
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_theme_constant_override("separation", 8)
+	card.add_child(v)
+	v.add_child(_label(str(h.get("name", "?")), 24, GOLD, true))
+	var style_lbl := _label(str(h.get("style", "")), 14, LILAC, true)
+	style_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	style_lbl.custom_minimum_size = Vector2(280, 0)
+	v.add_child(style_lbl)
+	v.add_child(_spacer(4))
+	v.add_child(_label("Capacités", 13, GOLD, true))
+	var skills_lbl := _label(str(h.get("skills", "")), 13, CREAM, true)
+	skills_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	skills_lbl.custom_minimum_size = Vector2(280, 0)
+	v.add_child(skills_lbl)
+	v.add_child(_spacer(4))
+	v.add_child(_label("Ultime : %s" % str(h.get("ult", "")), 14, Color(1.0, 0.82, 0.32), true))
+	v.add_child(_spacer(8))
+	var pick := _button("CHOISIR")
+	pick.custom_minimum_size = Vector2(240, 46)
+	var hid := str(h.get("id", ""))
+	pick.pressed.connect(func(): hero_selected.emit(hid))
+	v.add_child(pick)
+	return card
+
+func _card_panel() -> Panel:
+	var p := Panel.new()
+	p.custom_minimum_size = Vector2(324, 372)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.16, 0.13, 0.22, 0.96)
+	sb.border_color = Color(0.55, 0.44, 0.28)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(12)
+	sb.set_content_margin_all(6)
+	p.add_theme_stylebox_override("panel", sb)
+	return p
 
 func show_levelup(choices: Array) -> void:
 	for c in cards_box.get_children():
@@ -385,14 +486,24 @@ func _panel(w: float, h: float) -> Panel:
 	var p := Panel.new()
 	_anchor(p, 0.5, 0.5, 0.5, 0.5, -w / 2.0, -h / 2.0, w / 2.0, h / 2.0)
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.118, 0.094, 0.157, 0.96)
-	sb.border_color = Color(0.45, 0.36, 0.22)
-	sb.set_border_width_all(3)
-	sb.set_corner_radius_all(16)
-	sb.set_content_margin_all(20)
-	sb.shadow_color = Color(0, 0, 0, 0.5)
-	sb.shadow_size = 14
+	sb.bg_color = Color(0.106, 0.082, 0.145, 0.97)
+	sb.set_corner_radius_all(10)
+	sb.set_content_margin_all(22)
+	sb.shadow_color = Color(0, 0, 0, 0.55)
+	sb.shadow_size = 18
 	p.add_theme_stylebox_override("panel", sb)
+	# Cadre fantasy Kenney (nine-patch) teinté or, par-dessus le fond sombre
+	var frame := NinePatchRect.new()
+	frame.texture = load("res://assets/ui/frame.png")
+	frame.patch_margin_left = 16
+	frame.patch_margin_right = 16
+	frame.patch_margin_top = 16
+	frame.patch_margin_bottom = 16
+	frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	frame.self_modulate = Color(1.0, 0.84, 0.46)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(frame, 0.0, 0.0, 1.0, 1.0, -5.0, -5.0, 5.0, 5.0)
+	p.add_child(frame)
 	return p
 
 func _vbox(parent: Control) -> VBoxContainer:
