@@ -22,6 +22,7 @@ var facing := 1
 var invuln := 0.0
 var pickup := 80.0
 var step_timer := 0.0
+var frenzy_timer := 0.0   # buff Frénésie (attaque + vitesse accélérées)
 
 # Arme (frappe automatique)
 var fire_cd := 0.0
@@ -74,6 +75,7 @@ func reset(pos: Vector2) -> void:
 	invuln = 0.0
 	pickup = 80.0
 	step_timer = 0.0
+	frenzy_timer = 0.0
 	fire_cd = 0.0
 	fire_interval = 0.85
 	proj_damage = 24.0

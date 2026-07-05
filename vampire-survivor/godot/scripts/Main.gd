@@ -3,6 +3,7 @@ extends Node2D
 
 const WORLD := 4000.0
 const MAX_ENEMIES := 280
+const MAX_LEVEL := 99   # niveau maximum — le Seigneur du Crépuscule y attend
 
 enum State { MENU, PLAYING, LEVELUP, PAUSED, GAMEOVER }
 
@@ -13,6 +14,7 @@ const ENEMY_DEF := {
 	"skeleton":  {"hp": 160.0, "speed": 46.0, "dmg": 20.0, "xp": 7,  "radius": 22.0, "scale": 0.70, "bar": true},
 	"bat":       {"hp": 30.0,  "speed": 112.0,"dmg": 9.0,  "xp": 2,  "radius": 16.0, "scale": 0.85, "bar": false},
 	"boss":      {"hp": 600.0, "speed": 42.0, "dmg": 30.0, "xp": 30, "radius": 42.0, "scale": 1.70, "bar": true},
+	"bringer":   {"hp": 720.0, "speed": 38.0, "dmg": 34.0, "xp": 40, "radius": 46.0, "scale": 1.55, "bar": true},
 }
 
 const UPGRADES := [
@@ -32,31 +34,54 @@ const HEROES := {
 	"wizard": {
 		"name": "Sorcier Maudit", "style": "Mage à distance — boules de feu auto",
 		"frames": "wizard", "scale": 0.95, "offset_y": -16.0, "shadow_y": 16.0, "shadow_r": 18.0,
-		"speed": 205.0, "maxhp": 100.0, "fire_interval": 0.85, "attack": "fireball",
+		"speed": 205.0, "maxhp": 100.0, "fire_interval": 0.85, "attack": "fireball", "dmg": 24.0,
 		"skills": ["fire", "bolt", "frost", "heal", "meteor"], "ult": "arcane_storm",
+		"crop": Rect2(45, 35, 60, 100),
 	},
 	"samurai": {
 		"name": "Samurai Errant", "style": "Mêlée rapide — coups de sabre",
 		"frames": "samurai", "scale": 0.85, "offset_y": -22.0, "shadow_y": 12.0, "shadow_r": 16.0,
-		"speed": 250.0, "maxhp": 135.0, "fire_interval": 0.5, "attack": "melee",
+		"speed": 250.0, "maxhp": 135.0, "fire_interval": 0.5, "attack": "melee", "dmg": 24.0,
 		"skills": ["slash_sk", "dash", "whirl", "guard", "blade"], "ult": "thousand_cuts",
+		"crop": Rect2(24, 12, 48, 80),
+	},
+	"knight": {
+		"name": "Chevalier de l'Aube", "style": "Tank sacré — épée lourde & égide",
+		"frames": "knight", "scale": 1.1, "offset_y": -18.0, "shadow_y": 14.0, "shadow_r": 17.0,
+		"speed": 190.0, "maxhp": 170.0, "fire_interval": 0.75, "attack": "melee", "dmg": 32.0,
+		"skills": ["slash_sk", "aegis", "dash", "heal", "blade"], "ult": "judgment",
+		"crop": Rect2(22, 8, 52, 74),
+	},
+	"kobold": {
+		"name": "Kobold Sauvage", "style": "Berserker féral — griffes & sang",
+		"frames": "kobold", "scale": 0.9, "offset_y": -20.0, "shadow_y": 13.0, "shadow_r": 15.0,
+		"speed": 265.0, "maxhp": 90.0, "fire_interval": 0.45, "attack": "melee", "dmg": 15.0,
+		"skills": ["arc_wave", "blood_nova", "war_stomp", "frenzy", "whirl"], "ult": "primal_rage",
+		"crop": Rect2(48, 10, 56, 84),
 	},
 }
 
 # Capacités (nom, icône dans assets/spells/, recharge)
 const SKILLS := {
-	"fire":     {"name": "Boule de feu", "icon": "fire",      "cd": 3.5},
-	"bolt":     {"name": "Éclair",       "icon": "lightning", "cd": 6.0},
-	"frost":    {"name": "Gel",          "icon": "frost",     "cd": 10.0},
-	"heal":     {"name": "Soin",         "icon": "heal",      "cd": 18.0},
-	"meteor":   {"name": "Météore",      "icon": "meteor",    "cd": 7.0},
-	"slash_sk": {"name": "Entaille",     "icon": "slash",     "cd": 2.0},
-	"dash":     {"name": "Ruée",         "icon": "dash",      "cd": 4.0},
-	"whirl":    {"name": "Tourbillon",   "icon": "whirl",     "cd": 6.0},
-	"guard":    {"name": "Garde",        "icon": "guard",     "cd": 14.0},
-	"blade":    {"name": "Lame volante", "icon": "blade",     "cd": 3.0},
+	"fire":       {"name": "Boule de feu",      "icon": "fire",      "cd": 3.5},
+	"bolt":       {"name": "Éclair",            "icon": "lightning", "cd": 6.0},
+	"frost":      {"name": "Gel",               "icon": "frost",     "cd": 10.0},
+	"heal":       {"name": "Soin",              "icon": "heal",      "cd": 18.0},
+	"meteor":     {"name": "Météore",           "icon": "meteor",    "cd": 7.0},
+	"slash_sk":   {"name": "Entaille",          "icon": "slash",     "cd": 2.0},
+	"dash":       {"name": "Ruée",              "icon": "dash",      "cd": 4.0},
+	"whirl":      {"name": "Tourbillon",        "icon": "whirl",     "cd": 6.0},
+	"guard":      {"name": "Garde",             "icon": "guard",     "cd": 14.0},
+	"blade":      {"name": "Lame volante",      "icon": "blade",     "cd": 3.0},
+	"aegis":      {"name": "Égide sacrée",      "icon": "aegis",     "cd": 16.0},
+	"arc_wave":   {"name": "Croissant sanglant","icon": "arcwave",   "cd": 5.0},
+	"blood_nova": {"name": "Nova écarlate",     "icon": "bloodnova", "cd": 9.0},
+	"war_stomp":  {"name": "Piétinement",       "icon": "stomp",     "cd": 7.0},
+	"frenzy":     {"name": "Frénésie",          "icon": "frenzy",    "cd": 14.0},
 	"arcane_storm":  {"name": "Tempête arcanique", "icon": "ult_wizard",  "cd": 0.0},
 	"thousand_cuts": {"name": "Mille coupures",    "icon": "ult_samurai", "cd": 0.0},
+	"judgment":      {"name": "Jugement",          "icon": "judgment",    "cd": 0.0},
+	"primal_rage":   {"name": "Rage primordiale",  "icon": "rage",        "cd": 0.0},
 }
 
 var state: int = State.MENU
@@ -88,6 +113,11 @@ var current_hero := "wizard"
 var power := 0.0
 var ult_icon: Texture2D
 var bosses_spawned := 0
+var final_spawned := false
+var enemy_shots: Array = []
+var zones: Array = []
+var spellfx_frames: SpriteFrames
+var intro_seen := false
 var _last_score := 0
 var _last_time := "00:00"
 
@@ -104,6 +134,7 @@ func _ready() -> void:
 		"skeleton":  _enemy_sf("res://assets/monsters/skeleton/walk.png", 4, "res://assets/monsters/skeleton/death.png", 4),
 		"bat":       _enemy_sf("res://assets/monsters/bat/fly.png", 9, "res://assets/monsters/bat/death.png", 12, 64),
 		"boss":      _boss_sf(),
+		"bringer":   _bringer_sf(),
 	}
 	item_tex = {
 		"weapon": load("res://assets/items/weapon.png"),
@@ -112,10 +143,16 @@ func _ready() -> void:
 	}
 
 	hero_frames = {
-		"wizard": _wizard_sf(),
+		"wizard":  _wizard_sf(),
 		"samurai": _samurai_sf(),
+		"knight":  _knight_sf(),
+		"kobold":  _kobold_sf(),
 	}
 	_build_spells(current_hero)
+
+	# VFX du sort des boss (explosion sombre du Porteur de Mort)
+	spellfx_frames = SpriteFrames.new()
+	_add_sheet(spellfx_frames, "boom", load("res://assets/boss/bringer_spell.png"), 16, 140, 20.0, false, 93)
 
 	# Sol
 	ground = Sprite2D.new()
@@ -165,6 +202,8 @@ func _ready() -> void:
 	hud.music_changed.connect(sfx.set_music_volume)
 	hud.hero_selected.connect(_on_hero_selected)
 	hud.name_submitted.connect(_on_name_submitted)
+	hud.intro_done.connect(_on_intro_done)
+	hud.history_pressed.connect(_on_history)
 	hud.show_menu()
 	state = State.MENU
 	sfx.play_music("menu")
@@ -235,18 +274,43 @@ func _clear_entities() -> void:
 	gems.clear()
 	items.clear()
 	floats.clear()
+	enemy_shots.clear()
+	zones.clear()
 
 func _on_play() -> void:
 	sfx.play("click", 0.5)
+	if intro_seen:
+		_open_select()
+	else:
+		intro_seen = true
+		hud.show_intro(_intro_slides(), false)
+
+func _on_intro_done(to_menu: bool) -> void:
+	if to_menu:
+		hud.show_menu()
+	else:
+		_open_select()
+
+func _on_history() -> void:
+	sfx.play("click", 0.5)
+	hud.show_intro(_intro_slides(), true)
+
+func _open_select() -> void:
 	var data: Array = []
 	for hid in HEROES:
 		var h: Dictionary = HEROES[hid]
 		var sk := ""
 		for sid in h["skills"]:
 			sk += (" · " if sk != "" else "") + SKILLS[sid]["name"]
+		# portrait : 1re frame d'idle recadrée sur le personnage
+		var base: AtlasTexture = hero_frames[hid].get_frame_texture("idle", 0)
+		var pt := AtlasTexture.new()
+		pt.atlas = base.atlas
+		var cr: Rect2 = h["crop"]
+		pt.region = Rect2(base.region.position + cr.position, cr.size)
 		data.append({
 			"id": hid, "name": h["name"], "style": h["style"],
-			"skills": sk, "ult": SKILLS[h["ult"]]["name"],
+			"skills": sk, "ult": SKILLS[h["ult"]]["name"], "tex": pt,
 		})
 	hud.show_select(data)
 
@@ -266,6 +330,7 @@ func start_game(hero_id := current_hero) -> void:
 	spawn_timer = 0.0
 	level_queue = 0
 	bosses_spawned = 0
+	final_spawned = false
 	power = 0.0
 	player.set_frames(hero_frames[h["frames"]])
 	player.setup_hero(h["scale"], h["offset_y"], h["shadow_y"], h["shadow_r"])
@@ -275,6 +340,7 @@ func start_game(hero_id := current_hero) -> void:
 	player.hp = h["maxhp"]
 	player.speed = h["speed"]
 	player.fire_interval = h["fire_interval"]
+	player.proj_damage = h["dmg"]
 	player.visible = true
 	hud.hide_overlays()
 	hud.show_hud(true)
@@ -302,6 +368,11 @@ func _to_menu() -> void:
 	sfx.play_music("menu")
 
 func _unhandled_input(event: InputEvent) -> void:
+	if hud.intro_active():
+		if (event is InputEventKey and event.pressed and not event.echo) \
+				or (event is InputEventMouseButton and event.pressed):
+			hud.intro_next()
+		return
 	if event.is_action_pressed("vs_pause"):
 		_toggle_pause()
 	elif event.is_action_pressed("vs_mute"):
@@ -337,10 +408,16 @@ func _update_playing(delta: float) -> void:
 		if sp["left"] > 0.0:
 			sp["left"] = maxf(0.0, sp["left"] - delta)
 
+	# Frénésie (buff kobold) : tout s'accélère
+	var frenzy := p.frenzy_timer > 0.0
+	if frenzy:
+		p.frenzy_timer -= delta
+
 	# Déplacement + animation
 	var dir := Input.get_vector("vs_left", "vs_right", "vs_up", "vs_down")
-	p.position.x = clampf(p.position.x + dir.x * p.speed * delta, 24.0, WORLD - 24.0)
-	p.position.y = clampf(p.position.y + dir.y * p.speed * delta, 24.0, WORLD - 24.0)
+	var spd := p.speed * (1.25 if frenzy else 1.0)
+	p.position.x = clampf(p.position.x + dir.x * spd * delta, 24.0, WORLD - 24.0)
+	p.position.y = clampf(p.position.y + dir.y * spd * delta, 24.0, WORLD - 24.0)
 	var moving := dir.length() > 0.01
 	if dir.x < 0.0:
 		p.facing = -1
@@ -356,31 +433,39 @@ func _update_playing(delta: float) -> void:
 	if p.invuln > 0.0:
 		p.invuln -= delta
 	p.anim.modulate.a = 0.45 if (p.invuln > 0.0 and int(time * 20.0) % 2 == 0) else 1.0
+	p.anim.self_modulate = Color(1.3, 0.85, 0.85) if frenzy else Color(1, 1, 1)
 
-	# Arme automatique
-	p.fire_cd -= delta
+	# Arme automatique (2x plus rapide sous Frénésie)
+	p.fire_cd -= delta * (2.0 if frenzy else 1.0)
 	if p.fire_cd <= 0.0 and enemies.size() > 0:
 		_fire()
 		p.fire_cd = p.fire_interval
 
 	_spawns(delta)
 	_update_enemies(delta)
+	_update_bosses(delta)
 	_update_projectiles(delta)
+	_update_enemy_shots(delta)
+	_update_zones(delta)
 	_update_gems(delta)
 	_update_items(delta)
 	_cull_enemies()
 	_update_floats(delta)
 
-	# Boss tous les 5 niveaux
-	if player.level >= (bosses_spawned + 1) * 5:
+	# Boss majeurs tous les 10 niveaux (10, 20, ..., 90)
+	while player.level >= (bosses_spawned + 1) * 10 and bosses_spawned < 9:
 		bosses_spawned += 1
-		_spawn_boss()
+		_spawn_boss(bosses_spawned)
+	# Niveau 99 : le Seigneur du Crépuscule en personne
+	if player.level >= MAX_LEVEL and not final_spawned:
+		final_spawned = true
+		_spawn_final_boss()
 
 	if level_queue > 0 and state == State.PLAYING:
 		_open_levelup()
 
 	if p.hp <= 0.0:
-		_game_over()
+		_end_run(false)
 		return
 
 	_refresh_hud()
@@ -446,9 +531,15 @@ func _pick_type() -> String:
 		elif r < 0.78: return "mushroom"
 		else: return "skeleton"
 
+# Les ennemis grossissent avec le temps ET avec le niveau du héros.
+func _hp_scale() -> float:
+	return (1.0 + (elapsed / 60.0) * 0.22) * (1.0 + (player.level - 1) * 0.02)
+
+func _dmg_scale() -> float:
+	return 1.0 + (player.level - 1) * 0.01
+
 func _spawn_one() -> void:
 	var tkey := _pick_type()
-	var hp_scale := 1.0 + (elapsed / 60.0) * 0.22
 	var vsize := get_viewport_rect().size
 	var radius := maxf(vsize.x, vsize.y) / 2.0 + 80.0
 	var ang := randf() * TAU
@@ -457,26 +548,58 @@ func _spawn_one() -> void:
 	pos.y = clampf(pos.y, 20.0, WORLD - 20.0)
 
 	var e := VSEnemy.new()
-	e.setup(tkey, pos, hp_scale, enemy_frames[tkey], ENEMY_DEF[tkey])
+	e.setup(tkey, pos, _hp_scale(), enemy_frames[tkey], ENEMY_DEF[tkey])
+	e.dmg *= _dmg_scale()
 	world.add_child(e)
 	enemies.append(e)
 
-# ----- Boss + objets -----
-func _spawn_boss() -> void:
-	var hp_scale := 1.0 + bosses_spawned * 0.6
+# ----- Boss majeurs (tous les 10 niveaux) + objets -----
+func _boss_spawn_pos(margin: float) -> Vector2:
 	var vsize := get_viewport_rect().size
 	var radius := maxf(vsize.x, vsize.y) / 2.0 + 90.0
 	var ang := randf() * TAU
 	var pos := player.position + Vector2.from_angle(ang) * radius
-	pos.x = clampf(pos.x, 40.0, WORLD - 40.0)
-	pos.y = clampf(pos.y, 40.0, WORLD - 40.0)
+	pos.x = clampf(pos.x, margin, WORLD - margin)
+	pos.y = clampf(pos.y, margin, WORLD - margin)
+	return pos
+
+func _spawn_boss(tier: int) -> void:
+	var kind := "night" if tier % 2 == 1 else "bringer"
+	var tkey := "boss" if kind == "night" else "bringer"
 	var e := VSEnemy.new()
-	e.setup("boss", pos, hp_scale, enemy_frames["boss"], ENEMY_DEF["boss"])
+	var hp_scale := _hp_scale() * (0.6 + 0.55 * tier)
+	e.setup(tkey, _boss_spawn_pos(40.0), hp_scale, enemy_frames[tkey], ENEMY_DEF[tkey])
 	e.is_boss = true
+	e.tier = tier
+	e.boss_kind = kind
+	e.dmg *= 1.0 + tier * 0.12
+	e.speed += tier * 2.0
+	if kind == "night":
+		e.boss_title = "NIGHTBORNE — GARDIEN DU NIVEAU %d" % (tier * 10)
+	else:
+		e.boss_title = "PORTEUR DE MORT — GARDIEN DU NIVEAU %d" % (tier * 10)
 	world.add_child(e)
 	enemies.append(e)
 	_spawn_text(player.position + Vector2(0, -120), "BOSS !", Color(0.85, 0.35, 1.0))
 	sfx.play("buff", 0.7)
+
+func _spawn_final_boss() -> void:
+	var e := VSEnemy.new()
+	e.setup("bringer", _boss_spawn_pos(80.0), _hp_scale() * 9.0, enemy_frames["bringer"], ENEMY_DEF["bringer"])
+	e.is_boss = true
+	e.tier = 10
+	e.boss_kind = "final"
+	e.boss_title = "☠ SEIGNEUR DU CRÉPUSCULE ☠"
+	e.dmg *= 1.5
+	e.speed = 52.0
+	e.radius = 64.0
+	e.disp_scale = 2.6   # appliqué par _ready() à l'ajout dans l'arbre
+	world.add_child(e)
+	e.anim.modulate = Color(1.05, 0.72, 1.2)   # teinte violette du Seigneur
+	enemies.append(e)
+	_spawn_text(player.position + Vector2(0, -130), "LE SEIGNEUR DU CRÉPUSCULE !", Color(1.0, 0.3, 0.9))
+	sfx.play("buff", 1.0)
+	sfx.play("lightning_cast", 0.8)
 
 func _drop_item(pos: Vector2) -> void:
 	var kinds := ["weapon", "armor", "potion"]
@@ -509,6 +632,142 @@ func _apply_item(kind: String) -> void:
 			p.hp = p.maxhp
 			_spawn_text(p.position + Vector2(0, -46), "POTION ! PV au max", Color(0.55, 1.0, 0.55))
 	sfx.play("blessing", 0.6)
+
+# ----- Patterns des boss : à esquiver ! -----
+func _update_bosses(delta: float) -> void:
+	for e in enemies:
+		if not is_instance_valid(e) or e.dead or not e.is_boss:
+			continue
+		e.pat_a -= delta
+		e.pat_b -= delta
+		var t := e.tier
+		match e.boss_kind:
+			"night":
+				# anneaux de projectiles + tirs visés
+				if e.pat_a <= 0.0:
+					e.pat_a = maxf(2.4, 5.2 - 0.3 * t)
+					_boss_ring(e, 8 + 2 * t, 130.0 + 9.0 * t)
+				if e.pat_b <= 0.0:
+					e.pat_b = maxf(1.6, 3.4 - 0.15 * t)
+					_boss_aimed(e, 3, 230.0 + 10.0 * t)
+			"bringer":
+				# zones d'explosion télégraphiées + invocations
+				if e.pat_a <= 0.0:
+					e.pat_a = maxf(3.2, 6.0 - 0.25 * t)
+					_boss_zones(e, 2 + int(t / 3.0), 90.0)
+				if e.pat_b <= 0.0:
+					e.pat_b = 8.0
+					_boss_summon(e, 3 + int(t / 2.0))
+			"final":
+				# tout à la fois, sans pitié
+				if e.pat_a <= 0.0:
+					e.pat_a = 3.0
+					if randf() < 0.5:
+						_boss_ring(e, 22, 200.0)
+					else:
+						_boss_zones(e, 4, 95.0)
+				if e.pat_b <= 0.0:
+					e.pat_b = 2.6
+					_boss_aimed(e, 5, 300.0)
+
+func _boss_ring(e: VSEnemy, n: int, spd: float) -> void:
+	var off := randf() * TAU
+	for i in n:
+		var a := off + TAU * float(i) / float(n)
+		var s := VSEnemyShot.new()
+		s.setup(e.position, Vector2.from_angle(a), spd, e.dmg * 0.45)
+		proj_layer.add_child(s)
+		enemy_shots.append(s)
+	sfx.play("magic", 0.25)
+
+func _boss_aimed(e: VSEnemy, n: int, spd: float) -> void:
+	var base_a := (player.position - e.position).angle()
+	var spread := 0.22
+	var start := base_a - spread * (n - 1) / 2.0
+	for i in n:
+		var s := VSEnemyShot.new()
+		s.setup(e.position, Vector2.from_angle(start + spread * i), spd, e.dmg * 0.5, 10.0)
+		proj_layer.add_child(s)
+		enemy_shots.append(s)
+	sfx.play("lightning_cast", 0.2)
+
+func _boss_zones(e: VSEnemy, k: int, r: float) -> void:
+	for i in k:
+		var pos := player.position
+		if i > 0:
+			pos += Vector2.from_angle(randf() * TAU) * randf_range(50.0, 180.0)
+		pos.x = clampf(pos.x, 30.0, WORLD - 30.0)
+		pos.y = clampf(pos.y, 30.0, WORLD - 30.0)
+		var z := VSDangerZone.new()
+		z.setup(pos, r, 1.0, e.dmg * 0.9)
+		fx_layer.add_child(z)
+		zones.append(z)
+	sfx.play("buff", 0.35)
+
+func _boss_summon(e: VSEnemy, n: int) -> void:
+	for i in n:
+		if enemies.size() >= MAX_ENEMIES:
+			break
+		var tkey := _pick_type()
+		var pos := e.position + Vector2.from_angle(randf() * TAU) * randf_range(60.0, 130.0)
+		pos.x = clampf(pos.x, 20.0, WORLD - 20.0)
+		pos.y = clampf(pos.y, 20.0, WORLD - 20.0)
+		var m := VSEnemy.new()
+		m.setup(tkey, pos, _hp_scale(), enemy_frames[tkey], ENEMY_DEF[tkey])
+		m.dmg *= _dmg_scale()
+		world.add_child(m)
+		enemies.append(m)
+	_spawn_text(e.position + Vector2(0, -e.radius * 2.0), "Invocation !", Color(0.8, 0.4, 1.0))
+	sfx.play("buff", 0.4)
+
+func _spawn_spellfx(pos: Vector2) -> void:
+	var fx := AnimatedSprite2D.new()
+	fx.sprite_frames = spellfx_frames
+	fx.position = pos + Vector2(0, -26.0)
+	fx.scale = Vector2(1.7, 1.7)
+	fx.z_index = 40
+	fx_layer.add_child(fx)
+	fx.play("boom")
+	fx.animation_finished.connect(fx.queue_free)
+
+func _update_enemy_shots(delta: float) -> void:
+	var p := player
+	for i in range(enemy_shots.size() - 1, -1, -1):
+		var s: VSEnemyShot = enemy_shots[i]
+		s.position += s.vel * delta
+		s.life -= delta
+		var sp := s.position
+		if s.life <= 0.0 or sp.x < -60.0 or sp.y < -60.0 or sp.x > WORLD + 60.0 or sp.y > WORLD + 60.0:
+			s.queue_free()
+			enemy_shots.remove_at(i)
+			continue
+		if p.invuln <= 0.0 and sp.distance_to(p.position) <= s.radius + p.radius:
+			p.hp -= s.dmg
+			p.invuln = 0.6
+			sfx.play("hurt", 0.4)
+			_spawn_text(p.position + Vector2(0, -34), "-" + str(int(s.dmg)), Color(1, 0.42, 0.42))
+			s.queue_free()
+			enemy_shots.remove_at(i)
+
+func _update_zones(delta: float) -> void:
+	var p := player
+	for i in range(zones.size() - 1, -1, -1):
+		var z: VSDangerZone = zones[i]
+		if not is_instance_valid(z):
+			zones.remove_at(i)
+			continue
+		if z.tick(delta):
+			# BOOM
+			_burst(z.position, z.radius, Color(1.0, 0.45, 0.3), Color(1.0, 0.2, 0.1))
+			_spawn_spellfx(z.position)
+			sfx.play("fire_cast", 0.45)
+			if p.invuln <= 0.0 and p.position.distance_to(z.position) <= z.radius + p.radius:
+				p.hp -= z.dmg
+				p.invuln = 0.7
+				sfx.play("hurt", 0.45)
+				_spawn_text(p.position + Vector2(0, -34), "-" + str(int(z.dmg)), Color(1, 0.42, 0.42))
+			z.queue_free()
+			zones.remove_at(i)
 
 # ----- Ennemis -----
 func _update_enemies(delta: float) -> void:
@@ -592,6 +851,8 @@ func _kill_enemy(e: VSEnemy) -> void:
 	gems.append(g)
 	if e.is_boss:
 		_drop_item(e.position)
+		if e.boss_kind == "final":
+			call_deferred("_end_run", true)
 	e.die()   # joue l'animation de mort puis se libère
 
 # ----- Gemmes -----
@@ -617,14 +878,23 @@ func _update_gems(delta: float) -> void:
 
 func _add_xp(amount: int) -> void:
 	var p := player
+	if p.level >= MAX_LEVEL:
+		return
 	var leveled := false
 	p.xp += amount
-	while p.xp >= p.xp_to_next:
+	while p.xp >= p.xp_to_next and p.level < MAX_LEVEL:
 		p.xp -= p.xp_to_next
 		p.level += 1
-		p.xp_to_next = int(round(p.xp_to_next * 1.32 + 3.0))
+		p.xp_to_next = 5 + p.level * 3
+		# le héros se renforce à chaque niveau (les ennemis aussi…)
+		p.maxhp += 2.0
+		p.hp = minf(p.maxhp, p.hp + 2.0)
+		p.proj_damage *= 1.015
+		p.speed *= 1.002
 		level_queue += 1
 		leveled = true
+	if p.level >= MAX_LEVEL:
+		p.xp = 0
 	if leveled:
 		_cast_nova()   # sort lancé à la montée de niveau
 
@@ -654,7 +924,7 @@ func _cast_nova() -> void:
 			if e.hp <= 0.0:
 				_kill_enemy(e)
 
-# ----- Sorts actifs (touches 1..4) -----
+# ----- Sorts actifs (touches 1..5 + ultime) -----
 func _wheel_data() -> Dictionary:
 	var out: Array = []
 	for sp in spells:
@@ -821,9 +1091,72 @@ func _do_cast(id: String) -> bool:
 				projectiles.append(bpr)
 			sfx.play("slice2", 0.4)
 			return true
+		"aegis":
+			# bouclier sacré : invincible plusieurs secondes + petit soin
+			p.invuln = maxf(p.invuln, 3.5)
+			p.hp = minf(p.maxhp, p.hp + 12.0)
+			_burst(p.position, 90.0, Color(1.0, 0.95, 0.6), Color(1.0, 0.85, 0.3))
+			_spawn_text(p.position + Vector2(0, -46), "ÉGIDE ! Invincible", Color(1.0, 0.9, 0.5))
+			sfx.play("blessing", 0.7)
+			return true
+		"arc_wave":
+			# éventail de 7 lames en arc de cercle
+			var aw_e := _nearest_enemy()
+			var aw_ang := 0.0
+			if aw_e != null:
+				aw_ang = (aw_e.position - p.position).angle()
+			elif p.facing < 0:
+				aw_ang = PI
+			var aw_n := 7
+			var aw_arc := 1.75   # ~100°
+			for k in aw_n:
+				var aa := aw_ang - aw_arc / 2.0 + aw_arc * float(k) / float(aw_n - 1)
+				var apr := VSProjectile.new()
+				apr.setup(p.position, Vector2.from_angle(aa), 500.0, 30.0 + p.level * 2.0, 1, 10.0)
+				proj_layer.add_child(apr)
+				projectiles.append(apr)
+			sfx.play("slice2", 0.5)
+			return true
+		"blood_nova":
+			# anneau complet de 14 projectiles autour du héros
+			for k in 14:
+				var na := TAU * float(k) / 14.0
+				var npr := VSProjectile.new()
+				npr.setup(p.position, Vector2.from_angle(na), 430.0, 26.0 + p.level * 2.0, 0, 10.0)
+				proj_layer.add_child(npr)
+				projectiles.append(npr)
+			_burst(p.position, 70.0, Color(1.0, 0.4, 0.4), Color(0.9, 0.15, 0.2))
+			sfx.play("fire_cast", 0.5)
+			return true
+		"war_stomp":
+			# onde de choc : dégâts + gros knockback + ralentissement
+			var st_rad := 150.0
+			_burst(p.position, st_rad, Color(0.9, 0.8, 0.6), Color(0.7, 0.5, 0.3))
+			var st_dmg := 30.0 + p.level * 2.0
+			for en in enemies:
+				if not is_instance_valid(en) or en.dead:
+					continue
+				var st_to := en.position - p.position
+				var st_d := st_to.length()
+				if st_d <= st_rad:
+					en.position += (st_to / maxf(st_d, 0.001)) * 90.0
+					en.slow_timer = maxf(en.slow_timer, 2.5)
+					en.hp -= st_dmg
+					en.hitflash = 0.12
+					if en.hp <= 0.0:
+						_kill_enemy(en)
+			sfx.play("ice_impact", 0.5)
+			return true
+		"frenzy":
+			# fureur : attaque 2x plus vite et court plus vite quelques secondes
+			p.frenzy_timer = maxf(p.frenzy_timer, 5.0)
+			_burst(p.position, 80.0, Color(1.0, 0.5, 0.4), Color(1.0, 0.25, 0.2))
+			_spawn_text(p.position + Vector2(0, -46), "FRÉNÉSIE !", Color(1.0, 0.45, 0.35))
+			sfx.play("buff", 0.6)
+			return true
 	return false
 
-# Attaque de mêlée (Samurai) : dégâts autour du héros + éclat.
+# Attaque de mêlée (Samurai / Chevalier / Kobold) : dégâts autour du héros.
 func _melee_attack() -> void:
 	var p := player
 	var rad := 100.0
@@ -873,6 +1206,38 @@ func _cast_ult() -> bool:
 					if en.hp <= 0.0:
 						_kill_enemy(en)
 			sfx.play("slice", 0.85)
+		"judgment":
+			# le ciel s'ouvre : énorme zone sainte + invincibilité
+			p.invuln = maxf(p.invuln, 2.5)
+			for k in 5:
+				var joff := Vector2.from_angle(randf() * TAU) * randf_range(0.0, 200.0)
+				_burst(p.position + joff, 130.0, Color(1.0, 0.95, 0.7), Color(1.0, 0.85, 0.4))
+			var jdmg := 150.0 + p.level * 6.0
+			for en in enemies:
+				if not is_instance_valid(en) or en.dead:
+					continue
+				if en.position.distance_to(p.position) <= 400.0:
+					en.hp -= jdmg
+					en.hitflash = 0.12
+					_spawn_text(en.position, str(int(jdmg)), Color(1, 0.95, 0.6))
+					if en.hp <= 0.0:
+						_kill_enemy(en)
+			sfx.play("blessing", 0.9)
+			sfx.play("buff", 0.7)
+		"primal_rage":
+			# rage primordiale : longue frénésie + double anneau de sang
+			p.frenzy_timer = maxf(p.frenzy_timer, 8.0)
+			for ring in 2:
+				var rn := 16
+				for k in rn:
+					var ra := TAU * float(k) / float(rn) + ring * 0.2
+					var rpr := VSProjectile.new()
+					rpr.setup(p.position, Vector2.from_angle(ra), 380.0 + ring * 140.0, 34.0 + p.level * 3.0, 1, 11.0)
+					proj_layer.add_child(rpr)
+					projectiles.append(rpr)
+			_burst(p.position, 160.0, Color(1.0, 0.4, 0.35), Color(0.95, 0.15, 0.2))
+			sfx.play("buff", 0.9)
+			sfx.play("slice", 0.6)
 	power = 0.0
 	_spawn_text(p.position + Vector2(0, -60), "ULTIME !", Color(1.0, 0.82, 0.32))
 	hud.wheel.set_data(_wheel_data())
@@ -965,19 +1330,25 @@ func _apply_upgrade(id: String) -> void:
 	else:
 		state = State.PLAYING
 
-# ----- Fin -----
-func _game_over() -> void:
+# ----- Fin de partie : défaite OU victoire -----
+func _end_run(victory: bool) -> void:
+	if state == State.GAMEOVER:
+		return
 	state = State.GAMEOVER
-	player.anim.play("death")
-	player.anim.modulate.a = 1.0
-	sfx.play("death", 0.7)
+	if victory:
+		sfx.play("blessing", 0.9)
+		sfx.play("buff", 0.9)
+	else:
+		player.anim.play("death")
+		player.anim.modulate.a = 1.0
+		sfx.play("death", 0.7)
 	sfx.play_music("menu")
 	hud.show_hud(false)
-	_last_score = kills * 10 + (player.level - 1) * 40 + int(elapsed)
+	_last_score = kills * 10 + (player.level - 1) * 40 + int(elapsed) + (10000 if victory else 0)
 	var m := int(elapsed / 60.0)
 	var s := int(fmod(elapsed, 60.0))
 	_last_time = "%02d:%02d" % [m, s]
-	hud.show_gameover_entry(_last_time, player.level, kills, _last_score, VSScores.last_name())
+	hud.show_gameover_entry(_last_time, player.level, kills, _last_score, VSScores.last_name(), victory)
 
 func _on_name_submitted(player_name: String) -> void:
 	var nm := player_name.strip_edges()
@@ -1000,6 +1371,46 @@ func _refresh_hud() -> void:
 	hud.set_time("%02d:%02d" % [m, s])
 	hud.set_kills(kills)
 	hud.wheel.set_data(_wheel_data())
+	# barre du boss le plus puissant en vie
+	var boss: VSEnemy = null
+	for e in enemies:
+		if is_instance_valid(e) and e.is_boss and not e.dead:
+			if boss == null or e.maxhp > boss.maxhp:
+				boss = e
+	if boss != null:
+		hud.set_boss(boss.hp / boss.maxhp, boss.boss_title)
+	else:
+		hud.set_boss(-1.0, "")
+
+# ----- Cinématique d'introduction -----
+func _intro_slides() -> Array:
+	return [
+		{
+			"texs": [load("res://assets/bg/forest.png")], "h": 230.0,
+			"title": "La forêt du Crépuscule",
+			"sub": "Depuis mille ans, elle veille, paisible, sur le monde des vivants.",
+		},
+		{
+			"texs": [enemy_frames["boss"].get_frame_texture("move", 0),
+					enemy_frames["bat"].get_frame_texture("move", 0),
+					enemy_frames["bringer"].get_frame_texture("move", 0)], "h": 150.0,
+			"title": "L'éveil du Seigneur",
+			"sub": "Sous la terre, le Seigneur du Crépuscule a rouvert les cavernes.\nSes hordes déferlent — et tous les 10 niveaux, un gardien les mène.",
+		},
+		{
+			"texs": [hero_frames["wizard"].get_frame_texture("idle", 0),
+					hero_frames["samurai"].get_frame_texture("idle", 0),
+					hero_frames["knight"].get_frame_texture("idle", 0),
+					hero_frames["kobold"].get_frame_texture("idle", 0)], "h": 150.0,
+			"title": "Quatre héros se lèvent",
+			"sub": "Sorcier, Samurai, Chevalier, Kobold.\nLeurs sorts sont notre dernier rempart.",
+		},
+		{
+			"texs": [enemy_frames["bringer"].get_frame_texture("move", 0)], "h": 210.0,
+			"title": "Ta quête",
+			"sub": "Survis aux vagues. Deviens plus fort. Atteins le NIVEAU 99.\nEt là, au bout de la nuit… affronte-le.",
+		},
+	]
 
 # ============================================================
 # Construction des animations
@@ -1017,15 +1428,20 @@ func _samurai_sf() -> SpriteFrames:
 	_add_sheet(sf, "death", load("res://assets/samurai/hurt.png"), 4, 96, 7.0, false)
 	return sf
 
-func _add_files(sf: SpriteFrames, anim: String, dir: String, count: int, fps: float, loop: bool) -> void:
-	if not sf.has_animation(anim):
-		sf.add_animation(anim)
-	sf.set_animation_speed(anim, fps)
-	sf.set_animation_loop(anim, loop)
-	for i in count:
-		var t = load(dir + str(i) + ".png")
-		if t:
-			sf.add_frame(anim, t)
+func _knight_sf() -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	_add_sheet(sf, "idle", load("res://assets/knight/idle.png"), 7, 96, 8.0, true, 84)
+	_add_sheet(sf, "run", load("res://assets/knight/run.png"), 8, 96, 12.0, true, 84)
+	_add_sheet(sf, "death", load("res://assets/knight/death.png"), 12, 96, 10.0, false, 84)
+	return sf
+
+func _kobold_sf() -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	_add_sheet(sf, "idle", load("res://assets/kobold/idle.png"), 6, 148, 8.0, true, 96)
+	_add_sheet(sf, "run", load("res://assets/kobold/run.png"), 8, 148, 13.0, true, 96)
+	# pas d'animation de mort dans le pack : on fige la 1re frame d'idle
+	_add_sheet(sf, "death", load("res://assets/kobold/idle.png"), 1, 148, 5.0, false, 96)
+	return sf
 
 func _enemy_sf(move_path: String, move_count: int, death_path: String, death_count: int, fsize: int = 150) -> SpriteFrames:
 	var sf := SpriteFrames.new()
@@ -1038,6 +1454,12 @@ func _boss_sf() -> SpriteFrames:
 	var tex = load("res://assets/boss/nightborne.png")
 	_add_sheet_row(sf, "move", tex, 0, 9, 80, 9.0, true)       # rangée 0 = idle
 	_add_sheet_row(sf, "death", tex, 4, 16, 80, 11.0, false)   # rangée 4 = mort / dissolution
+	return sf
+
+func _bringer_sf() -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	_add_sheet(sf, "move", load("res://assets/boss/bringer_walk.png"), 8, 140, 9.0, true, 93)
+	_add_sheet(sf, "death", load("res://assets/boss/bringer_death.png"), 10, 140, 11.0, false, 93)
 	return sf
 
 func _add_sheet_row(sf: SpriteFrames, anim: String, tex: Texture2D, row: int, count: int, fsize: int, fps: float, loop: bool) -> void:
@@ -1053,45 +1475,17 @@ func _add_sheet_row(sf: SpriteFrames, anim: String, tex: Texture2D, row: int, co
 		at.region = Rect2(i * fsize, row * fsize, fsize, fsize)
 		sf.add_frame(anim, at)
 
-func _add_sheet(sf: SpriteFrames, anim: String, tex: Texture2D, count: int, fsize: int, fps: float, loop: bool) -> void:
+# Découpe une planche horizontale ; `fh` = hauteur de frame si différente de la largeur.
+func _add_sheet(sf: SpriteFrames, anim: String, tex: Texture2D, count: int, fsize: int, fps: float, loop: bool, fh: int = -1) -> void:
 	if not sf.has_animation(anim):
 		sf.add_animation(anim)
 	sf.set_animation_speed(anim, fps)
 	sf.set_animation_loop(anim, loop)
 	if tex == null:
 		return
+	var h := fh if fh > 0 else fsize
 	for i in count:
 		var at := AtlasTexture.new()
 		at.atlas = tex
-		at.region = Rect2(i * fsize, 0, fsize, fsize)
+		at.region = Rect2(i * fsize, 0, fsize, h)
 		sf.add_frame(anim, at)
-
-# ----- Sol procédural (tuile sans couture) -----
-func _make_ground_texture() -> Texture2D:
-	var s := 96
-	var img := Image.create(s, s, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0.108, 0.168, 0.122))
-	var r := RandomNumberGenerator.new()
-	r.seed = 20240625
-	# taches de teinte (intérieur -> sans couture) pour casser l'uniformité
-	for n in 7:
-		var px := r.randi_range(8, s - 12)
-		var py := r.randi_range(8, s - 12)
-		var lighter := r.randf() < 0.55
-		var col := Color(0.135, 0.205, 0.140) if lighter else Color(0.078, 0.123, 0.092)
-		for dy in range(0, r.randi_range(4, 9)):
-			for dx in range(0, r.randi_range(4, 9)):
-				img.set_pixel(px + dx, py + dy, col)
-	# brins d'herbe
-	for n in 60:
-		var x := r.randi_range(5, s - 5)
-		var y := r.randi_range(6, s - 5)
-		var c := Color(0.16, 0.26, 0.16) if r.randf() < 0.65 else Color(0.06, 0.10, 0.07)
-		img.set_pixel(x, y, c)
-		img.set_pixel(x, y - 1, c)
-	# quelques fleurs/cailloux
-	for n in 5:
-		var x := r.randi_range(6, s - 6)
-		var y := r.randi_range(6, s - 6)
-		img.set_pixel(x, y, Color(0.58, 0.52, 0.30) if r.randf() < 0.5 else Color(0.45, 0.30, 0.45))
-	return ImageTexture.create_from_image(img)

@@ -11,6 +11,8 @@ signal sfx_changed(v: float)
 signal music_changed(v: float)
 signal hero_selected(hero_id: String)
 signal name_submitted(player_name: String)
+signal intro_done(to_menu: bool)
+signal history_pressed
 
 const GOLD := Color(1.0, 0.847, 0.420)
 const CREAM := Color(0.957, 0.925, 0.776)
@@ -26,8 +28,12 @@ var hp_label: Label
 var timer_label: Label
 var kills_label: Label
 var mute_label: Label
+var boss_bg: ColorRect
+var boss_fill: ColorRect
+var boss_label: Label
 var hp_full_w := 240.0
 var xp_full_w := 720.0
+var boss_full_w := 520.0
 
 var overlay_menu: Control
 var overlay_options: Control
@@ -36,10 +42,19 @@ var overlay_select: Control
 var overlay_levelup: Control
 var overlay_gameover: Control
 var overlay_pause: Control
+var overlay_intro: Control
 var cards_box: HBoxContainer
 var go_box: VBoxContainer
 var sfx_pct: Label
 var music_pct: Label
+
+# Cinématique d'intro
+var intro_slides: Array = []
+var intro_idx := 0
+var intro_t := 0.0
+var intro_to_menu := false
+var intro_box: VBoxContainer
+const INTRO_SLIDE_TIME := 5.2
 
 # ============================================================
 func build() -> void:
@@ -52,6 +67,7 @@ func build() -> void:
 	_build_levelup()
 	_build_gameover()
 	_build_pause()
+	_build_intro()
 	bars.visible = false
 	wheel.visible = false
 
@@ -122,6 +138,23 @@ func _build_bars() -> void:
 	mute_label.visible = false
 	bars.add_child(mute_label)
 
+	# Barre de vie du boss (haut, sous le chrono)
+	boss_bg = ColorRect.new()
+	boss_bg.color = Color(0, 0, 0, 0.6)
+	_anchor(boss_bg, 0.5, 0.0, 0.5, 0.0, -boss_full_w / 2.0 - 2.0, 76.0, boss_full_w / 2.0 + 2.0, 96.0)
+	boss_bg.visible = false
+	bars.add_child(boss_bg)
+	boss_fill = ColorRect.new()
+	boss_fill.color = Color(0.72, 0.25, 0.95)
+	_anchor(boss_fill, 0.5, 0.0, 0.5, 0.0, -boss_full_w / 2.0, 78.0, boss_full_w / 2.0, 94.0)
+	boss_fill.visible = false
+	bars.add_child(boss_fill)
+	boss_label = _label("", 12, Color(1, 1, 1))
+	_anchor(boss_label, 0.5, 0.0, 0.5, 0.0, -boss_full_w / 2.0, 77.0, boss_full_w / 2.0, 95.0)
+	boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	boss_label.visible = false
+	bars.add_child(boss_label)
+
 	# Roue de sorts (bas-gauche)
 	wheel = VSWheel.new()
 	wheel.anchor_right = 1.0
@@ -131,25 +164,28 @@ func _build_bars() -> void:
 
 func _build_menu() -> void:
 	overlay_menu = _overlay(false)
-	var p := _panel(600, 470)
+	var p := _panel(600, 560)
 	overlay_menu.add_child(p)
 	var v := _vbox(p)
 	v.add_child(_title("CRÉPUSCULE"))
 	v.add_child(_divider())
-	v.add_child(_label("Survis aux vagues. Ton arme frappe toute seule.", 16, CREAM, true))
+	v.add_child(_label("Atteins le niveau 99 et vaincs le Seigneur du Crépuscule.", 16, CREAM, true))
 	v.add_child(_spacer(6))
 	var b1 := _button("NOUVELLE PARTIE")
 	b1.pressed.connect(func(): play_pressed.emit())
 	v.add_child(b1)
-	var b2 := _button("OPTIONS")
-	b2.pressed.connect(func(): show_options())
+	var b2 := _button("HISTOIRE")
+	b2.pressed.connect(func(): history_pressed.emit())
 	v.add_child(b2)
-	var b3 := _button("SCORES")
-	b3.pressed.connect(func(): show_scoreboard())
+	var b3 := _button("OPTIONS")
+	b3.pressed.connect(func(): show_options())
 	v.add_child(b3)
-	var b4 := _button("QUITTER")
-	b4.pressed.connect(func(): get_tree().quit())
+	var b4 := _button("SCORES")
+	b4.pressed.connect(func(): show_scoreboard())
 	v.add_child(b4)
+	var b5 := _button("QUITTER")
+	b5.pressed.connect(func(): get_tree().quit())
+	v.add_child(b5)
 	v.add_child(_spacer(2))
 	v.add_child(_label("WASD/ZQSD/flèches ou manette  ·  Sorts : 1-5  ·  Ultime : 6/Espace  ·  Pause : P  ·  Son : M", 12, LILAC, true))
 	add_child(overlay_menu)
@@ -195,7 +231,7 @@ func _build_scores() -> void:
 
 func _build_select() -> void:
 	overlay_select = _overlay(false)
-	var p := _panel(900, 600)
+	var p := _panel(1240, 660)
 	overlay_select.add_child(p)
 	var v := _vbox(p)
 	v.name = "box"
@@ -234,6 +270,120 @@ func _build_pause() -> void:
 	add_child(overlay_pause)
 	overlay_pause.visible = false
 
+# ----- Cinématique d'introduction -----
+func _build_intro() -> void:
+	overlay_intro = _full_control()
+	overlay_intro.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var black := ColorRect.new()
+	black.color = Color(0.02, 0.015, 0.04, 1.0)
+	black.anchor_right = 1.0
+	black.anchor_bottom = 1.0
+	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay_intro.add_child(black)
+	intro_box = VBoxContainer.new()
+	intro_box.anchor_right = 1.0
+	intro_box.anchor_bottom = 1.0
+	intro_box.offset_left = 80
+	intro_box.offset_top = 60
+	intro_box.offset_right = -80
+	intro_box.offset_bottom = -80
+	intro_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	intro_box.add_theme_constant_override("separation", 22)
+	intro_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay_intro.add_child(intro_box)
+	var hint := _label("clic / touche : suite", 13, LILAC)
+	_anchor(hint, 0.0, 1.0, 0.0, 1.0, 24.0, -44.0, 320.0, -18.0)
+	overlay_intro.add_child(hint)
+	var skip := _button("PASSER  ▶")
+	skip.custom_minimum_size = Vector2(170, 44)
+	_anchor(skip, 1.0, 1.0, 1.0, 1.0, -200.0, -66.0, -24.0, -22.0)
+	skip.pressed.connect(func(): _end_intro())
+	overlay_intro.add_child(skip)
+	add_child(overlay_intro)
+	overlay_intro.visible = false
+
+func show_intro(slides: Array, to_menu: bool) -> void:
+	hide_overlays()
+	bars.visible = false
+	wheel.visible = false
+	intro_slides = slides
+	intro_to_menu = to_menu
+	intro_idx = 0
+	intro_t = 0.0
+	_show_slide(0)
+	overlay_intro.visible = true
+
+func intro_active() -> bool:
+	return overlay_intro != null and overlay_intro.visible
+
+func intro_next() -> void:
+	intro_idx += 1
+	intro_t = 0.0
+	if intro_idx >= intro_slides.size():
+		_end_intro()
+	else:
+		_show_slide(intro_idx)
+
+func _end_intro() -> void:
+	overlay_intro.visible = false
+	intro_done.emit(intro_to_menu)
+
+func _show_slide(i: int) -> void:
+	for c in intro_box.get_children():
+		c.queue_free()
+	var slide: Dictionary = intro_slides[i]
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 30)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var h: float = slide.get("h", 160.0)
+	for tex in slide.get("texs", []):
+		if tex == null:
+			continue
+		var tr := TextureRect.new()
+		tr.texture = tex
+		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var aspect := float(tex.get_width()) / float(maxf(1.0, tex.get_height()))
+		tr.custom_minimum_size = Vector2(h * aspect, h)
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(tr)
+	intro_box.add_child(row)
+	intro_box.add_child(_spacer(4))
+	var t := _label(str(slide.get("title", "")), 34, GOLD, true)
+	t.add_theme_color_override("font_shadow_color", Color(0.48, 0.29, 0.08))
+	t.add_theme_constant_override("shadow_offset_x", 2)
+	t.add_theme_constant_override("shadow_offset_y", 2)
+	intro_box.add_child(t)
+	var sub := _label(str(slide.get("sub", "")), 17, CREAM, true)
+	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sub.custom_minimum_size = Vector2(760, 0)
+	sub.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	intro_box.add_child(sub)
+	var dots := ""
+	for k in intro_slides.size():
+		dots += "●" if k == i else "○"
+		if k < intro_slides.size() - 1:
+			dots += "  "
+	intro_box.add_child(_spacer(2))
+	intro_box.add_child(_label(dots, 14, LILAC, true))
+	intro_box.modulate.a = 0.0
+
+func _process(delta: float) -> void:
+	if not intro_active():
+		return
+	intro_t += delta
+	# fondu d'entrée / de sortie du tableau
+	var a := 1.0
+	if intro_t < 0.5:
+		a = intro_t / 0.5
+	elif intro_t > INTRO_SLIDE_TIME - 0.5:
+		a = maxf(0.0, (INTRO_SLIDE_TIME - intro_t) / 0.5)
+	intro_box.modulate.a = a
+	if intro_t >= INTRO_SLIDE_TIME:
+		intro_next()
+
 # ----- API jeu -----
 func set_xp(pct: float, level: int) -> void:
 	xp_fill.offset_right = xp_fill.offset_left + xp_full_w * clampf(pct, 0.0, 1.0)
@@ -252,6 +402,17 @@ func set_kills(k: int) -> void:
 func set_muted(m: bool) -> void:
 	mute_label.visible = m
 
+# Barre du boss : frac < 0 = cachée.
+func set_boss(frac: float, boss_name: String) -> void:
+	var show := frac >= 0.0
+	boss_bg.visible = show
+	boss_fill.visible = show
+	boss_label.visible = show
+	if show:
+		boss_fill.offset_left = -boss_full_w / 2.0
+		boss_fill.offset_right = -boss_full_w / 2.0 + boss_full_w * clampf(frac, 0.0, 1.0)
+		boss_label.text = boss_name
+
 func show_hud(b: bool) -> void:
 	bars.visible = b
 	wheel.visible = b
@@ -265,6 +426,7 @@ func hide_overlays() -> void:
 	overlay_levelup.visible = false
 	overlay_gameover.visible = false
 	overlay_pause.visible = false
+	overlay_intro.visible = false
 
 func show_menu() -> void:
 	hide_overlays()
@@ -317,16 +479,16 @@ func show_select(heroes: Array) -> void:
 		c.queue_free()
 	box.add_child(_title2("CHOISIS TON HÉROS"))
 	box.add_child(_divider())
-	box.add_child(_spacer(6))
+	box.add_child(_spacer(4))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 24)
+	row.add_theme_constant_override("separation", 16)
 	for h in heroes:
 		row.add_child(_hero_card(h))
 	box.add_child(row)
-	box.add_child(_spacer(10))
+	box.add_child(_spacer(8))
 	var back := _button("RETOUR")
-	back.custom_minimum_size = Vector2(220, 46)
+	back.custom_minimum_size = Vector2(220, 44)
 	back.pressed.connect(func(): show_menu())
 	box.add_child(back)
 	overlay_select.visible = true
@@ -344,29 +506,43 @@ func _hero_card(h: Dictionary) -> Control:
 	var v := VBoxContainer.new()
 	v.anchor_right = 1.0
 	v.anchor_bottom = 1.0
-	v.offset_left = 16
-	v.offset_top = 14
-	v.offset_right = -16
-	v.offset_bottom = -14
+	v.offset_left = 12
+	v.offset_top = 12
+	v.offset_right = -12
+	v.offset_bottom = -12
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
-	v.add_theme_constant_override("separation", 8)
+	v.add_theme_constant_override("separation", 6)
 	card.add_child(v)
-	v.add_child(_label(str(h.get("name", "?")), 24, GOLD, true))
-	var style_lbl := _label(str(h.get("style", "")), 14, LILAC, true)
+	# portrait animé (1re frame d'idle)
+	var tex: Texture2D = h.get("tex", null)
+	if tex != null:
+		var tr := TextureRect.new()
+		tr.texture = tex
+		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tr.custom_minimum_size = Vector2(0, 108)
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(tr)
+	v.add_child(_label(str(h.get("name", "?")), 20, GOLD, true))
+	var style_lbl := _label(str(h.get("style", "")), 12, LILAC, true)
 	style_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	style_lbl.custom_minimum_size = Vector2(280, 0)
+	style_lbl.custom_minimum_size = Vector2(240, 0)
 	v.add_child(style_lbl)
-	v.add_child(_spacer(4))
-	v.add_child(_label("Capacités", 13, GOLD, true))
-	var skills_lbl := _label(str(h.get("skills", "")), 13, CREAM, true)
+	v.add_child(_spacer(2))
+	v.add_child(_label("Capacités", 12, GOLD, true))
+	var skills_lbl := _label(str(h.get("skills", "")), 12, CREAM, true)
 	skills_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	skills_lbl.custom_minimum_size = Vector2(280, 0)
+	skills_lbl.custom_minimum_size = Vector2(240, 0)
 	v.add_child(skills_lbl)
+	v.add_child(_spacer(2))
+	var ult_lbl := _label("Ultime : %s" % str(h.get("ult", "")), 13, Color(1.0, 0.82, 0.32), true)
+	ult_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ult_lbl.custom_minimum_size = Vector2(240, 0)
+	v.add_child(ult_lbl)
 	v.add_child(_spacer(4))
-	v.add_child(_label("Ultime : %s" % str(h.get("ult", "")), 14, Color(1.0, 0.82, 0.32), true))
-	v.add_child(_spacer(8))
 	var pick := _button("CHOISIR")
-	pick.custom_minimum_size = Vector2(240, 46)
+	pick.custom_minimum_size = Vector2(200, 42)
 	var hid := str(h.get("id", ""))
 	pick.pressed.connect(func(): hero_selected.emit(hid))
 	v.add_child(pick)
@@ -374,7 +550,7 @@ func _hero_card(h: Dictionary) -> Control:
 
 func _card_panel() -> Panel:
 	var p := Panel.new()
-	p.custom_minimum_size = Vector2(324, 372)
+	p.custom_minimum_size = Vector2(280, 442)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.16, 0.13, 0.22, 0.96)
 	sb.border_color = Color(0.55, 0.44, 0.28)
@@ -394,13 +570,17 @@ func show_levelup(choices: Array) -> void:
 		cards_box.add_child(card)
 	overlay_levelup.visible = true
 
-# Écran de fin : phase 1 = saisie du nom
-func show_gameover_entry(time_str: String, level: int, kills: int, score: int, last_name: String) -> void:
+# Écran de fin : phase 1 = saisie du nom (défaite… ou victoire !)
+func show_gameover_entry(time_str: String, level: int, kills: int, score: int, last_name: String, won: bool = false) -> void:
 	hide_overlays()
 	menu_bg.visible = true
 	for c in go_box.get_children():
 		c.queue_free()
-	go_box.add_child(_title2("TU ES TOMBÉ"))
+	if won:
+		go_box.add_child(_title2("★ VICTOIRE ★"))
+		go_box.add_child(_label("Le Seigneur du Crépuscule est vaincu. La forêt respire à nouveau.", 15, GOLD, true))
+	else:
+		go_box.add_child(_title2("TU ES TOMBÉ"))
 	go_box.add_child(_label("Temps %s   ·   Niveau %d   ·   %d tués" % [time_str, level, kills], 15, CREAM, true))
 	go_box.add_child(_label("Score : %d" % score, 22, GOLD, true))
 	go_box.add_child(_spacer(4))
