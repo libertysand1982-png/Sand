@@ -1,0 +1,32 @@
+Fantasy Game Interface
+
+The pack includes more than 45 elements you will need to begin your fantasy browser or mobile 
+game project. The asset in made with vectors and Layer Styles, the layers are well grouped and
+groups are properly named for easy management, it is separated in 3 .psd files.
+
+GUI Elements Included:
+
+- Window Frame
+- Game Menu
+- Health/Energy Globe
+- Horizontal Scale
+- Vertical Scale
+- Unitframe
+- Castbar
+- Loading Bar
+- Seperator
+- Radio Button
+- Checkbox
+- Action Bar
+- 32 Unique Icons
+- 2 Different shapes for buttons
+- Old Papper/Leather Container
+- Inner Container
+
+
+Files Included: PSD (Seperated in 3 .psd Files)
+
+Fonts: Sylfaen, Arial
+
+If you have any problems feel free to contact me and ask for assistance!
+Regards!
