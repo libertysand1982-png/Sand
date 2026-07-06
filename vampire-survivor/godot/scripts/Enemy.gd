@@ -20,8 +20,10 @@ var boss_kind: String = ""    # "night" / "bringer" / "final"
 var boss_title: String = ""   # nom affiché sur la barre de boss
 var pat_a: float = 2.5        # recharge pattern A (anneaux / zones)
 var pat_b: float = 4.0        # recharge pattern B (tirs visés / invocations)
+var pat_c: float = 2.5        # recharge corps-à-corps (fauchage / bond)
 var phase: int = 1            # phase du boss final (1..3)
 var spin: float = 0.0         # angle courant des patterns en spirale
+var is_elite: bool = false    # ennemi d'élite (doré, coriace, lâche un coffre)
 var dead: bool = false
 var dying: bool = false
 
@@ -64,6 +66,10 @@ func _draw() -> void:
 	draw_set_transform(Vector2(0, radius * 1.25), 0.0, Vector2(1, 0.4))
 	draw_circle(Vector2.ZERO, radius * 0.85, Color(0, 0, 0, 0.25))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# aura dorée des élites
+	if is_elite:
+		draw_circle(Vector2.ZERO, radius * 1.35, Color(1.0, 0.82, 0.25, 0.16))
+		draw_arc(Vector2.ZERO, radius * 1.35, 0.0, TAU, 40, Color(1.0, 0.85, 0.35, 0.7), 2.5)
 	# barre de vie (monstres costauds blessés)
 	if show_bar and hp < maxhp and hp > 0.0:
 		var w := 48.0

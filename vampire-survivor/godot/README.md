@@ -75,9 +75,18 @@ Toute la horde **s'évapore** : place au **duel final**. Une **intro cinématiqu
 se déclenche — l'écran **tremble**, le boss t'adresse une réplique, puis le combat
 s'engage (clic/touche pour l'écourter). C'est un **combat de raid en 3 phases**
 (barre de vie + « PHASE x/3 ») de plus en plus violent : volées visées, anneaux
-d'orbes, **spirales**, zones télégraphiées, et **souffle** en phase finale. À toi
-d'**esquiver**, de lever le **bouclier** et de te **soigner** au bon moment.
-Vaincs-le pour la **VICTOIRE** (bonus de **+10 000** au score) !
+d'orbes, **spirales**, zones télégraphiées, **souffle** en phase finale — **et il
+te charge au corps-à-corps** : coups d'épée télégraphiés (**Fauchage**) et **bonds
+dévastateurs** avec onde de choc. À toi d'**esquiver**, de lever le **bouclier** et
+de te **soigner** au bon moment. Vaincs-le pour la **VICTOIRE** (+**10 000** au score) !
+
+## Intensité : vagues & élites
+
+Pour que ça ne ronronne jamais :
+- **Vagues de horde** (~toutes les 40 s) : un **mur d'ennemis** apparaît en cercle
+  et se referme sur toi — annoncé par « UNE HORDE DÉFERLE ! ».
+- **Ennemis d'élite** (~toutes les 25 s) : versions **dorées, énormes et coriaces**
+  (aura brillante) qui lâchent un **coffre** à leur mort → **amélioration gratuite**.
 
 ## Montée en puissance (des deux côtés)
 

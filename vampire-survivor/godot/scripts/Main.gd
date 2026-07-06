@@ -164,6 +164,10 @@ var shake_str := 0.0
 var shake_dur := 0.0
 var shake_time := 0.0
 var boss_intro_t := 0.0
+
+# Événements d'intensité (vagues de horde, élites)
+var surge_timer := 34.0
+var elite_timer := 22.0
 var ult_icon: Texture2D
 var bosses_spawned := 0
 var final_spawned := false
@@ -201,6 +205,7 @@ func _ready() -> void:
 		"weapon": load("res://assets/items/weapon.png"),
 		"armor":  load("res://assets/items/armor.png"),
 		"potion": load("res://assets/items/potion.png"),
+		"chest":  _make_chest_texture(),
 	}
 
 	hero_frames = {
@@ -396,6 +401,8 @@ func start_game(hero_id := current_hero) -> void:
 	bosses_spawned = 0
 	final_spawned = false
 	final_fight = false
+	surge_timer = 34.0
+	elite_timer = 22.0
 	power = 0.0
 	buffs.clear()
 	hud.set_buffs([])
@@ -555,6 +562,17 @@ func _update_playing(delta: float) -> void:
 	# Boules de feu en orbite (Mage)
 	if not orbit_balls.is_empty():
 		_update_orbit(delta)
+
+	# Événements d'intensité (hors combat final)
+	if not final_fight:
+		surge_timer -= delta
+		if surge_timer <= 0.0:
+			surge_timer = randf_range(36.0, 50.0)
+			_horde_surge()
+		elite_timer -= delta
+		if elite_timer <= 0.0:
+			elite_timer = randf_range(20.0, 30.0)
+			_spawn_elite()
 
 	_spawns(delta)
 	_update_enemies(delta)
@@ -738,6 +756,87 @@ func _spawn_one() -> void:
 	world.add_child(e)
 	enemies.append(e)
 
+# ----- Événements d'intensité -----
+# Vague de horde : un cercle d'ennemis apparaît et se referme sur le joueur.
+func _horde_surge() -> void:
+	var count := mini(40, 14 + int(elapsed / 25.0))
+	var vsize := get_viewport_rect().size
+	var radius := maxf(vsize.x, vsize.y) / 2.0 + 55.0
+	var ang0 := randf() * TAU
+	for i in count:
+		if enemies.size() >= MAX_ENEMIES:
+			break
+		var a := ang0 + TAU * float(i) / float(count)
+		var pos := player.position + Vector2.from_angle(a) * radius
+		pos.x = clampf(pos.x, 20.0, WORLD - 20.0)
+		pos.y = clampf(pos.y, 20.0, WORLD - 20.0)
+		var tkey := _pick_type()
+		var e := VSEnemy.new()
+		e.setup(tkey, pos, _hp_scale() * 1.05, enemy_frames[tkey], ENEMY_DEF[tkey])
+		e.dmg *= _dmg_scale()
+		world.add_child(e)
+		enemies.append(e)
+	_spawn_text(player.position + Vector2(0, -120), "UNE HORDE DÉFERLE !", Color(1.0, 0.4, 0.35))
+	_add_shake(3.5, 0.3)
+	sfx.play("buff", 0.7)
+
+# Ennemi d'élite : doré, énorme, coriace — lâche un coffre à sa mort.
+func _spawn_elite() -> void:
+	var tkey := "skeleton"
+	var r := randf()
+	if elapsed > 200.0 and r < 0.5:
+		tkey = "demon"
+	elif r < 0.5:
+		tkey = "mushroom"
+	var vsize := get_viewport_rect().size
+	var radius := maxf(vsize.x, vsize.y) / 2.0 + 70.0
+	var pos := player.position + Vector2.from_angle(randf() * TAU) * radius
+	pos.x = clampf(pos.x, 30.0, WORLD - 30.0)
+	pos.y = clampf(pos.y, 30.0, WORLD - 30.0)
+	var e := VSEnemy.new()
+	e.setup(tkey, pos, _hp_scale() * 8.0, enemy_frames[tkey], ENEMY_DEF[tkey])
+	e.is_elite = true
+	e.dmg *= _dmg_scale() * 1.5
+	e.xp = int(e.xp * 10)
+	e.disp_scale *= 1.7
+	e.radius *= 1.5
+	e.show_bar = true
+	world.add_child(e)
+	enemies.append(e)
+	_spawn_text(pos + Vector2(0, -60.0), "ÉLITE !", Color(1.0, 0.85, 0.3))
+	sfx.play("buff", 0.5)
+
+# Petite texture de coffre dorée (générée, pas d'asset).
+func _make_chest_texture() -> Texture2D:
+	var w := 26
+	var h := 20
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var body := Color(0.62, 0.42, 0.16)
+	var body2 := Color(0.72, 0.5, 0.2)
+	var gold := Color(1.0, 0.82, 0.3)
+	var dark := Color(0.28, 0.17, 0.06)
+	for y in range(6, h - 1):
+		for x in range(2, w - 2):
+			img.set_pixel(x, y, body if (x + y) % 2 == 0 else body2)
+	# couvercle
+	for y in range(2, 7):
+		for x in range(2, w - 2):
+			img.set_pixel(x, y, body2)
+	# bandes / bords dorés
+	for x in range(2, w - 2):
+		img.set_pixel(x, 2, gold)
+		img.set_pixel(x, 6, dark)
+		img.set_pixel(x, h - 2, gold)
+	for y in range(2, h - 1):
+		img.set_pixel(2, y, gold)
+		img.set_pixel(w - 3, y, gold)
+	# serrure
+	img.set_pixel(w / 2, 8, gold)
+	img.set_pixel(w / 2, 9, gold)
+	img.set_pixel(w / 2, 10, dark)
+	return ImageTexture.create_from_image(img)
+
 # ----- Boss majeurs (tous les 10 niveaux) + objets -----
 func _boss_spawn_pos(margin: float) -> Vector2:
 	var vsize := get_viewport_rect().size
@@ -783,6 +882,8 @@ func _spawn_final_boss() -> void:
 	e.dmg *= 1.4
 	e.pat_a = 1.5
 	e.pat_b = 3.0
+	e.pat_c = 2.5
+	e.speed = 72.0   # rapide et pressant : il vient te chercher
 	world.add_child(e)
 	enemies.append(e)
 	sfx.play("buff", 1.0)
@@ -837,6 +938,13 @@ func _drop_item(pos: Vector2) -> void:
 	gem_layer.add_child(it)
 	items.append(it)
 
+# Coffre lâché par les élites : ramassé, il offre une amélioration gratuite.
+func _drop_chest(pos: Vector2) -> void:
+	var it := VSItem.new()
+	it.setup(pos, "chest", item_tex["chest"])
+	gem_layer.add_child(it)
+	items.append(it)
+
 func _update_items(_delta: float) -> void:
 	var p := player
 	for i in range(items.size() - 1, -1, -1):
@@ -859,6 +967,10 @@ func _apply_item(kind: String) -> void:
 		"potion":
 			p.hp = p.maxhp
 			_spawn_text(p.position + Vector2(0, -46), "POTION ! PV au max", Color(0.55, 1.0, 0.55))
+		"chest":
+			# amélioration gratuite (ouvre un choix de carte au prochain tick)
+			level_queue += 1
+			_spawn_text(p.position + Vector2(0, -46), "COFFRE ! Amélioration", Color(1.0, 0.85, 0.35))
 	sfx.play("blessing", 0.6)
 
 # ----- Patterns des boss : à esquiver ! -----
@@ -868,6 +980,17 @@ func _update_bosses(delta: float) -> void:
 			continue
 		e.pat_a -= delta
 		e.pat_b -= delta
+		e.pat_c -= delta
+		# Corps-à-corps : tous les boss frappent quand tu es proche ;
+		# le Seigneur bondit sur toi quand tu es loin.
+		if e.pat_c <= 0.0:
+			var dist := e.position.distance_to(player.position)
+			if dist < 150.0:
+				e.pat_c = 2.4
+				_boss_cleave(e)
+			elif e.boss_kind == "final":
+				e.pat_c = maxf(2.6, 4.5 - 0.5 * e.phase)
+				_boss_leap(e)
 		var t := e.tier
 		match e.boss_kind:
 			"night":
@@ -960,6 +1083,39 @@ func _boss_breath(e: VSEnemy, n: int, spd: float) -> void:
 		proj_layer.add_child(s)
 		enemy_shots.append(s)
 	sfx.play("fire_cast", 0.4)
+
+# Zone d'impact de mêlée (télégraphiée, un peu plus vive qu'une zone normale).
+func _boss_slam(pos: Vector2, r: float, delay: float, dmg: float) -> void:
+	var z := VSDangerZone.new()
+	z.setup(pos, r, delay, dmg)
+	fx_layer.add_child(z)
+	zones.append(z)
+
+# Fauchage : coup d'épée télégraphié devant le boss (esquive latérale).
+func _boss_cleave(e: VSEnemy) -> void:
+	var dir := (player.position - e.position)
+	if dir.length() < 0.01:
+		dir = Vector2.RIGHT
+	dir = dir.normalized()
+	var pos := e.position + dir * 78.0
+	_boss_slam(pos, 118.0, 0.42, e.dmg * 1.15)
+	_burst(pos, 96.0, Color(1.0, 0.95, 0.8), Color(1.0, 0.6, 0.25))
+	_spawn_text(e.position + Vector2(0, -e.radius * 1.9), "Fauchage !", Color(1.0, 0.8, 0.5))
+	_add_shake(3.0, 0.2)
+	sfx.play("slice", 0.6)
+
+# Bond dévastateur : le Seigneur se propulse sur le héros puis écrase le sol.
+func _boss_leap(e: VSEnemy) -> void:
+	_spawn_text(e.position + Vector2(0, -e.radius * 2.0), "BOND !", Color(1.0, 0.4, 0.95))
+	_burst(e.position, 90.0, Color(0.9, 0.5, 1.0), Color(0.6, 0.2, 1.0))
+	# il bondit près du joueur (déplacement quasi complet)
+	var land := e.position.lerp(player.position, 0.88)
+	land.x = clampf(land.x, 40.0, WORLD - 40.0)
+	land.y = clampf(land.y, 40.0, WORLD - 40.0)
+	e.position = land
+	_boss_slam(land, 165.0, 0.55, e.dmg * 1.3)   # onde de choc à l'atterrissage
+	_add_shake(6.0, 0.35)
+	sfx.play("buff", 0.6)
 
 # Spirale rotative : chaque salve tourne un peu, formant des bras qui balaient.
 func _boss_spiral(e: VSEnemy, arms: int) -> void:
@@ -1142,6 +1298,8 @@ func _kill_enemy(e: VSEnemy) -> void:
 		if e.boss_kind == "final":
 			final_fight = false
 			call_deferred("_end_run", true)
+	elif e.is_elite:
+		_drop_chest(e.position)
 	e.die()   # joue l'animation de mort puis se libère
 
 # ----- Gemmes -----
