@@ -100,12 +100,17 @@ et devant **chaque ligne du classement**.
 - **Boss** : NightBorne, **Bringer of Death**, **3 Démons**, **3 Dragons**, **MegaBoss** final.
 - **Monstres** : gobelin, chauve-souris, œil volant, champignon, squelette + **démons** (tard).
 - **Carte** : sol **RPGW Caves v2.1** en patchwork varié (cristaux, rochers).
-- **Interface : pack CraftPix RPG UI Elements** (vraies textures, styles de calques
-  rendus via Photopea) — cadres **dorés à pointes de flèche** pour PV/XP, **bannière
-  ornée** pour la barre de boss, **slots dorés** de la barre de skills, grand **panneau
-  sombre à bordure dorée** pour tous les menus, **boutons-plaques** dorés, **bannières
-  parchemin** (fins de partie, niveau supérieur), curseurs à **poignée diamant**.
-  Polices **Ringbearer** (titres/boutons) et **Palatino** (texte).
+- **HUD façon World of Warcraft** (pack CraftPix RPG & MMO User Interface, rendu via
+  Photopea) : **globe de VIE** (liquide rouge, bas-gauche) et **globe de PUISSANCE/mana**
+  (liquide bleu, bas-droite — plein = **ultime prêt**) encadrant une **barre d'action**
+  de 5 slots, chacun avec son **icône de sort, sa touche et sa recharge**.
+- **Icônes de sorts unifiées** : les 20 capacités puisent dans **un seul** pack
+  (CraftPix *100 RPG Skill Icons*) — chaque classe montre son propre kit.
+- **Menus & bandeaux : pack CraftPix RPG UI Elements** (styles de calques rendus via
+  Photopea) — cadres **dorés à pointes de flèche** (XP en haut), **bannière ornée**
+  pour la barre de boss, grand **panneau sombre à bordure dorée**, **boutons-plaques**
+  dorés, **bannières parchemin**, curseurs à **poignée diamant**. Polices **Ringbearer**
+  (titres) et **Palatino** (texte).
 - **Rangs : pack Fantasy Ranks** — 18 emblèmes à chevrons (Bronze/Argent/Or I→VI).
 - **Menus** : forêt crépusculaire + **cinématique d'intro** + séparateurs Kenney.
 - **Icônes de sorts** : Raven Fantasy + **BloodMage** + **Spell Icons Vol.1** (packs peints).
@@ -149,7 +154,9 @@ godot/
 - **NightBorne** · **Bringer of Death** · **Demon Pack** · **Dragon Pack** · **Mega Boss** — boss animés.
 - **Monsters Creatures Fantasy** · **Dark Fantasy Enemies** — monstres.
 - **Raven Fantasy Icons** · **BloodMage Free** · **Spell Icons Volume 1** — icônes de sorts.
-- **CraftPix — RPG UI Elements** — cadres dorés, bannières, parchemin, panneaux, slots, curseurs (rendus depuis les PSD).
+- **CraftPix — RPG & MMO User Interface** — globes de vie/mana + barre d'action WoW (rendus depuis le PSD).
+- **CraftPix — 100 RPG Skill Icons** — les 20 icônes de sorts (jeu unifié).
+- **CraftPix — RPG UI Elements** — cadres dorés, bannières, parchemin, panneaux, curseurs (rendus depuis les PSD).
 - **CraftPix — RPG MMO UI** — polices (Ringbearer / Palatino).
 - **CraftPix — Fantasy Ranks** — 18 emblèmes de rang.
 - **Kenney — Fantasy UI Borders** — séparateurs dorés.

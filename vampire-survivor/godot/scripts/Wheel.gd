@@ -1,29 +1,33 @@
-# Wheel.gd — barre de skills horizontale (bas-centre) : 5 capacités + jauge de
-# puissance + emplacement d'ultime. Affichage seul ; tout se lance au clavier/manette.
+# Wheel.gd — barre d'action façon WoW (bas-centre) : globe de VIE (gauche),
+# 5 capacités (centre), globe de PUISSANCE/mana (droite, plein = ultime prêt).
+# Affichage seul ; tout se lance au clavier/manette.
 class_name VSWheel
 extends Control
 
-var slots: Array = []        # [{icon, key, frac, left, ready}]
-var power: float = 0.0       # 0..1
-var ult: Dictionary = {}     # {icon, key, ready}
-var slot_tex: Texture2D      # cadre de slot (RPG MMO UI, teinté selon l'état)
-var gauge_bg: Texture2D      # barre "flèche" (RPG UI Elements)
-var gauge_fill: Texture2D
-var banner_tex: Texture2D    # bannière derrière la barre de skills
+var slots: Array = []        # [{icon, key, frac, left, ready}]  (5 capacités)
+var power: float = 0.0       # 0..1  (jauge d'ultime = globe de mana)
+var ult: Dictionary = {}     # {icon, key}
+var hp_frac: float = 1.0
+var hp_text: String = ""
 
-const FRAME_READY := Color(1.0, 0.88, 0.55)
-const FRAME_CD := Color(0.44, 0.42, 0.52)
+var slot_tex: Texture2D
+var orb_frame: Texture2D
+var orb_fill: Texture2D
+
+const GOLD := Color(1.0, 0.88, 0.55)
+const CD := Color(0.5, 0.48, 0.56)
 
 func _ready() -> void:
-	slot_tex = load("res://assets/ui/rpg/slot_frame.png")
-	gauge_bg = load("res://assets/ui/rpg/arrow_frame.png")
-	gauge_fill = load("res://assets/ui/rpg/arrow_fill.png")
-	banner_tex = load("res://assets/ui/rpg/banner.png")
+	slot_tex = load("res://assets/ui/wow/slot.png")
+	orb_frame = load("res://assets/ui/wow/orb_frame.png")
+	orb_fill = load("res://assets/ui/wow/orb_fill.png")
 
 func set_data(d: Dictionary) -> void:
 	slots = d.get("slots", [])
 	power = d.get("power", 0.0)
 	ult = d.get("ult", {})
+	hp_frac = d.get("hp", 1.0)
+	hp_text = d.get("hp_text", "")
 	queue_redraw()
 
 func _draw() -> void:
@@ -31,75 +35,83 @@ func _draw() -> void:
 	if n == 0:
 		return
 	var font := get_theme_default_font()
-	var pitch := 60.0
-	var r := 26.0
-	var has_ult: bool = not ult.is_empty()
-	var total := n * pitch + (pitch * 1.3 if has_ult else 0.0)
+	var pitch := 68.0
+	var slot_r := 29.0
+	var orb := 122.0
+	var gap := 20.0
+	var slots_w := n * pitch
+	var total := orb + gap + slots_w + gap + orb
 	var cx := size.x / 2.0
-	var y := size.y - 52.0
-	var x0 := cx - total / 2.0 + pitch / 2.0
+	var cy := size.y - 88.0
+	var x0 := cx - total / 2.0
 
-	# bannière sombre derrière toute la barre (RPG UI Elements)
-	if banner_tex:
-		draw_texture_rect(banner_tex, Rect2(cx - total / 2.0 - 46.0, y - r - 36.0, total + 92.0, r * 2.0 + 66.0),
-				false, Color(0.62, 0.56, 0.80, 0.88))
+	# Globe de VIE (gauche)
+	_draw_orb(Vector2(x0 + orb / 2.0, cy), orb, hp_frac, Color(1.0, 0.24, 0.20), font, false)
+	if font and hp_text != "":
+		var hw := font.get_string_size(hp_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+		draw_string(font, Vector2(x0 + orb / 2.0 - hw / 2.0, cy + orb / 2.0 + 16.0),
+				hp_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1, 0.9, 0.9))
 
-	# jauge de puissance (barre "flèche")
-	var full := power >= 1.0
-	var gw := n * pitch - 8.0
-	var gx := cx - total / 2.0 + 4.0
-	var gy := y - r - 20.0
-	var pc := Color(1.0, 0.82, 0.32) if full else Color(0.55, 0.65, 1.0)
-	if gauge_bg:
-		draw_texture_rect(gauge_bg, Rect2(gx - 4, gy - 5, gw + 8, 20), false)
-	if gauge_fill and power > 0.02:
-		var pw := clampf(power, 0.0, 1.0)
-		draw_texture_rect_region(gauge_fill,
-				Rect2(gx - 4, gy - 5, (gw + 8) * pw, 20),
-				Rect2(0, 0, gauge_fill.get_width() * pw, gauge_fill.get_height()), pc)
-	if font:
-		var lbl := "ULTIME PRÊT !" if full else "Puissance"
-		draw_string(font, Vector2(gx + 4, gy - 8), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, pc)
-
-	# slots de capacités
+	# Capacités (centre)
+	var sx := x0 + orb + gap + pitch / 2.0
 	for i in n:
-		_draw_slot(Vector2(x0 + i * pitch, y), r, slots[i], font, false)
+		_draw_slot(Vector2(sx + i * pitch, cy), slot_r, slots[i], font)
 
-	# emplacement d'ultime (un peu plus gros, séparé)
-	if has_ult:
-		var ux := x0 + (n - 1) * pitch + pitch * 1.3
-		var ud: Dictionary = ult.duplicate()
-		ud["ready"] = full
-		ud["frac"] = 0.0
-		ud["left"] = 0.0
-		_draw_slot(Vector2(ux, y), r + 4.0, ud, font, true)
+	# Globe de PUISSANCE / mana (droite) — plein = ULTIME prêt
+	var full := power >= 1.0
+	var oc := Color(0.55, 0.82, 1.0) if full else Color(0.30, 0.55, 1.0)
+	var opos := Vector2(x0 + total - orb / 2.0, cy)
+	_draw_orb(opos, orb, power, oc, font, true)
+	var uicon: Texture2D = ult.get("icon", null)
+	if uicon:
+		var isz := orb * 0.42
+		var col := Color(1, 1, 1, 1.0) if full else Color(1, 1, 1, 0.5)
+		draw_texture_rect(uicon, Rect2(opos - Vector2(isz / 2.0, isz / 2.0), Vector2(isz, isz)), false, col)
+	if font:
+		var lbl := "ULTIME !" if full else "Ultime"
+		var lc := GOLD if full else Color(0.7, 0.8, 1.0)
+		var lw := font.get_string_size(lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+		draw_string(font, Vector2(opos.x - lw / 2.0, cy + orb / 2.0 + 16.0), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, lc)
+		draw_string(font, Vector2(opos.x - 6.0, cy - orb / 2.0 + 2.0), "6", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, GOLD)
 
-func _draw_slot(c: Vector2, r: float, s: Dictionary, font: Font, is_ult: bool) -> void:
+# Globe rempli bas->haut (liquide) + cadre par-dessus.
+func _draw_orb(c: Vector2, s: float, frac: float, tint: Color, font: Font, ready_glow: bool) -> void:
+	var f := clampf(frac, 0.0, 1.0)
+	if orb_fill and f > 0.01:
+		var texw := float(orb_fill.get_width())
+		var texh := float(orb_fill.get_height())
+		var src := Rect2(0.0, texh * (1.0 - f), texw, texh * f)
+		var dst := Rect2(c.x - s / 2.0, c.y - s / 2.0 + s * (1.0 - f), s, s * f)
+		draw_texture_rect_region(orb_fill, dst, src, tint)
+	if ready_glow and frac >= 1.0:
+		draw_arc(c, s / 2.0 - 6.0, 0.0, TAU, 48, Color(1.0, 0.9, 0.4, 0.85), 3.0)
+	if orb_frame:
+		draw_texture_rect(orb_frame, Rect2(c - Vector2(s / 2.0, s / 2.0), Vector2(s, s)), false)
+
+func _draw_slot(c: Vector2, r: float, s: Dictionary, font: Font) -> void:
 	var ready: bool = s.get("ready", true)
-	# halo doré pour l'ultime prêt
-	if is_ult and ready:
-		draw_rect(Rect2(c - Vector2(r + 6.0, r + 6.0), Vector2((r + 6.0) * 2.0, (r + 6.0) * 2.0)),
-				Color(1.0, 0.85, 0.35, 0.28))
-	# cadre-slot doré RPG (fond opaque sombre) — dessiné D'ABORD
-	var fsz := r * 2.35
+	var fsz := r * 2.15
+	# cadre-slot (fond sombre opaque) d'abord
 	if slot_tex:
 		draw_texture_rect(slot_tex, Rect2(c - Vector2(fsz / 2.0, fsz / 2.0), Vector2(fsz, fsz)), false,
-				FRAME_READY if ready else FRAME_CD)
-	# icône par-dessus, dans la rainure du cadre
+				Color(1, 1, 1) if ready else CD)
+	# icône par-dessus
 	var tex: Texture2D = s.get("icon", null)
 	if tex:
-		var isz := r * 1.5
+		var isz := r * 1.72
 		var col := Color(1, 1, 1, 1.0) if ready else Color(1, 1, 1, 0.4)
 		draw_texture_rect(tex, Rect2(c - Vector2(isz / 2.0, isz / 2.0), Vector2(isz, isz)), false, col)
+	# recharge (camembert + secondes)
 	if not ready and float(s.get("left", 0.0)) > 0.0:
-		_draw_pie(c, r * 0.9, clampf(float(s.get("frac", 0.0)), 0.0, 1.0), Color(0, 0, 0, 0.5))
+		_draw_pie(c, r * 0.94, clampf(float(s.get("frac", 0.0)), 0.0, 1.0), Color(0, 0, 0, 0.55))
 		if font:
 			var txt := str(int(ceil(float(s["left"]))))
 			var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
 			draw_string(font, c + Vector2(-w / 2.0, 6), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 1, 1, 0.95))
+	# touche
 	if font:
-		var kp := c + Vector2(-r + 1.0, r + 12.0)
-		draw_string(font, kp, str(s.get("key", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1.0, 0.9, 0.55))
+		draw_string(font, c + Vector2(-r + 3.0, -r + 14.0), str(s.get("key", "")),
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 13, GOLD)
 
 func _draw_pie(c: Vector2, r: float, frac: float, col: Color) -> void:
 	if frac <= 0.0:

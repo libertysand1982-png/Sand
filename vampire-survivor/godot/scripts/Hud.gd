@@ -27,8 +27,6 @@ var menu_bg: Control
 var wheel: VSWheel
 var xp_bar: TextureProgressBar
 var xp_label: Label
-var hp_bar: TextureProgressBar
-var hp_label: Label
 var timer_label: Label
 var kills_label: Label
 var mute_label: Label
@@ -124,14 +122,7 @@ func _build_bars() -> void:
 	_anchor(kills_label, 0.5, 0.0, 0.5, 0.0, 14.0, 42.0, 140.0, 70.0)
 	bars.add_child(kills_label)
 
-	# Vie (bas-gauche — la barre de skills occupe le centre)
-	hp_bar = _arrow_bar(Color(0.95, 0.28, 0.30))
-	_anchor(hp_bar, 0.0, 1.0, 0.0, 1.0, 14.0, -54.0, 14.0 + hp_full_w, -14.0)
-	bars.add_child(hp_bar)
-	hp_label = _label("PV 100 / 100", 13, Color(1, 1, 1))
-	_anchor(hp_label, 0.0, 1.0, 0.0, 1.0, 44.0, -45.0, 44.0 + hp_full_w, -23.0)
-	bars.add_child(hp_label)
-
+	# La vie est affichée dans le GLOBE de la barre d'action (voir Wheel).
 	mute_label = _label("Muet", 14, LILAC)
 	_anchor(mute_label, 1.0, 0.0, 1.0, 0.0, -110.0, 12.0, -12.0, 34.0)
 	mute_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -387,9 +378,9 @@ func set_xp(pct: float, level: int) -> void:
 	xp_bar.value = clampf(pct, 0.0, 1.0)
 	xp_label.text = "Niv. %d" % level
 
-func set_hp(hp: float, maxhp: float) -> void:
-	hp_bar.value = clampf(hp / maxhp, 0.0, 1.0)
-	hp_label.text = "PV %d / %d" % [maxi(0, int(ceil(hp))), int(maxhp)]
+func set_hp(_hp: float, _maxhp: float) -> void:
+	# La vie est affichée par le globe de la barre d'action (Wheel). Rien à faire ici.
+	pass
 
 func set_time(t: String) -> void:
 	timer_label.text = t

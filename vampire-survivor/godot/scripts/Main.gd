@@ -1003,7 +1003,11 @@ func _wheel_data() -> Dictionary:
 			"frac": (sp["left"] / sp["cd"]) if sp["cd"] > 0.0 else 0.0,
 			"ready": sp["left"] <= 0.0,
 		})
-	return {"slots": out, "power": power, "ult": {"icon": ult_icon, "key": "6"}}
+	return {
+		"slots": out, "power": power, "ult": {"icon": ult_icon, "key": "6"},
+		"hp": player.hp / player.maxhp,
+		"hp_text": "%d / %d" % [maxi(0, int(ceil(player.hp))), int(player.maxhp)],
+	}
 
 func _try_cast(i: int) -> void:
 	var sp = spells[i]
