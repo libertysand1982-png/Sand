@@ -38,16 +38,26 @@ const BOSS_TIERS := {
 	9: {"tkey": "dragon3", "kind": "dragon",  "title": "DRAGON DU CRÉPUSCULE"},
 }
 
+# Améliorations de niveau. `kind`: "off"=offensif, "def"=défensif (→ marque de buff
+# en haut-droite), ""=utilitaire (pas de marque). `icon` = fichier dans ui/upgrades/.
 const UPGRADES := [
-	{"name": "Lame jumelle",     "desc": "+1 projectile",        "id": "count"},
-	{"name": "Frappe rapide",    "desc": "-15% recharge",        "id": "rate"},
-	{"name": "Affûtage",         "desc": "+30% dégâts",          "id": "dmg"},
-	{"name": "Bottes ailées",    "desc": "+12% vitesse",         "id": "speed"},
-	{"name": "Vitalité",         "desc": "+25 PV max (soigne)",  "id": "hp"},
-	{"name": "Aimant",           "desc": "+30% ramassage",       "id": "magnet"},
-	{"name": "Perforation",      "desc": "traverse +1 ennemi",   "id": "pierce"},
-	{"name": "Projectile lourd", "desc": "+25% vitesse/taille",  "id": "heavy"},
-	{"name": "Onde arcanique",   "desc": "+30% puissance du sort", "id": "spell"},
+	# --- Offensif (marque de buff) ---
+	{"id": "dmg",      "name": "Affûtage",        "desc": "+25% dégâts d'arme",         "icon": "dmg",       "kind": "off"},
+	{"id": "count",    "name": "Multi-tir",       "desc": "+1 projectile",              "icon": "count",     "kind": "off"},
+	{"id": "rate",     "name": "Cadence",         "desc": "-15% recharge d'arme",       "icon": "rate",      "kind": "off"},
+	{"id": "pierce",   "name": "Perforation",     "desc": "traverse +1 ennemi",         "icon": "pierce",    "kind": "off"},
+	{"id": "crit",     "name": "Coups critiques", "desc": "+10% chance de dégâts x2",   "icon": "crit",      "kind": "off"},
+	{"id": "heavy",    "name": "Projectile lourd","desc": "+25% taille & vitesse",      "icon": "heavy",     "kind": "off"},
+	{"id": "lifesteal","name": "Vampirisme",      "desc": "+2 PV par ennemi tué",       "icon": "lifesteal", "kind": "off"},
+	{"id": "spell_power","name": "Maître des sorts","desc": "+25% dégâts des capacités","icon": "spell_power","kind": "off"},
+	# --- Défensif (marque de buff) ---
+	{"id": "hp",       "name": "Vitalité",        "desc": "+30 PV max (soigne)",        "icon": "hp",        "kind": "def"},
+	{"id": "armor",    "name": "Armure",          "desc": "-8% dégâts subis",           "icon": "armor",     "kind": "def"},
+	{"id": "regen",    "name": "Régénération",    "desc": "+1.5 PV / seconde",          "icon": "regen",     "kind": "def"},
+	{"id": "nova",     "name": "Onde renforcée",  "desc": "+30% puissance de l'onde",   "icon": "nova",      "kind": "def"},
+	# --- Utilitaire (pas de marque) ---
+	{"id": "speed",    "name": "Célérité",        "desc": "+12% vitesse de déplacement","icon": "speed",     "kind": ""},
+	{"id": "magnet",   "name": "Aimant",          "desc": "+35% rayon de ramassage",    "icon": "magnet",    "kind": ""},
 ]
 
 # Héros jouables (sélection au début)
@@ -140,6 +150,7 @@ var item_tex: Dictionary = {}
 var hero_frames: Dictionary = {}
 var current_hero := "wizard"
 var power := 0.0
+var buffs: Dictionary = {}   # id d'amélioration off/def -> nombre de stacks
 var ult_icon: Texture2D
 var bosses_spawned := 0
 var final_spawned := false
@@ -370,6 +381,8 @@ func start_game(hero_id := current_hero) -> void:
 	bosses_spawned = 0
 	final_spawned = false
 	power = 0.0
+	buffs.clear()
+	hud.set_buffs([])
 	player.set_frames(hero_frames[h["frames"]])
 	player.setup_hero(h["scale"], h["offset_y"], h["shadow_y"], h["shadow_r"])
 	_build_spells(hero_id)
@@ -470,6 +483,9 @@ func _update_playing(delta: float) -> void:
 			p.step_timer = 0.33
 	if p.invuln > 0.0:
 		p.invuln -= delta
+	# Régénération passive (carte Régénération)
+	if p.regen > 0.0 and p.hp < p.maxhp:
+		p.hp = minf(p.maxhp, p.hp + p.regen * delta)
 	p.anim.modulate.a = 0.45 if (p.invuln > 0.0 and int(time * 20.0) % 2 == 0) else 1.0
 	p.anim.self_modulate = Color(1.3, 0.85, 0.85) if frenzy else Color(1, 1, 1)
 
@@ -530,7 +546,10 @@ func _fire() -> void:
 	for i in n:
 		var a := start + spread * i
 		var pr := VSProjectile.new()
-		pr.setup(p.position, Vector2.from_angle(a), p.proj_speed, p.proj_damage, p.pierce, p.proj_size)
+		var dmg := p.proj_damage
+		if randf() < p.crit_chance:
+			dmg *= 2.0   # coup critique
+		pr.setup(p.position, Vector2.from_angle(a), p.proj_speed, dmg, p.pierce, p.proj_size)
 		proj_layer.add_child(pr)
 		projectiles.append(pr)
 	sfx.play("magic", 0.30)
@@ -812,10 +831,11 @@ func _update_enemy_shots(delta: float) -> void:
 			enemy_shots.remove_at(i)
 			continue
 		if p.invuln <= 0.0 and sp.distance_to(p.position) <= s.radius + p.radius:
-			p.hp -= s.dmg
+			var dmg := s.dmg * (1.0 - p.dmg_reduction)
+			p.hp -= dmg
 			p.invuln = 0.6
 			sfx.play("hurt", 0.4)
-			_spawn_text(p.position + Vector2(0, -34), "-" + str(int(s.dmg)), Color(1, 0.42, 0.42))
+			_spawn_text(p.position + Vector2(0, -34), "-" + str(int(dmg)), Color(1, 0.42, 0.42))
 			s.queue_free()
 			enemy_shots.remove_at(i)
 
@@ -832,10 +852,11 @@ func _update_zones(delta: float) -> void:
 			_spawn_spellfx(z.position)
 			sfx.play("fire_cast", 0.45)
 			if p.invuln <= 0.0 and p.position.distance_to(z.position) <= z.radius + p.radius:
-				p.hp -= z.dmg
+				var dmg := z.dmg * (1.0 - p.dmg_reduction)
+				p.hp -= dmg
 				p.invuln = 0.7
 				sfx.play("hurt", 0.45)
-				_spawn_text(p.position + Vector2(0, -34), "-" + str(int(z.dmg)), Color(1, 0.42, 0.42))
+				_spawn_text(p.position + Vector2(0, -34), "-" + str(int(dmg)), Color(1, 0.42, 0.42))
 			z.queue_free()
 			zones.remove_at(i)
 
@@ -870,10 +891,11 @@ func _update_enemies(delta: float) -> void:
 			e.queue_redraw()
 
 		if d < e.radius + p.radius and p.invuln <= 0.0:
-			p.hp -= e.dmg
+			var dmg := e.dmg * (1.0 - p.dmg_reduction)
+			p.hp -= dmg
 			p.invuln = 0.6
 			sfx.play("hurt", 0.4)
-			_spawn_text(p.position + Vector2(0, -34), "-" + str(int(e.dmg)), Color(1, 0.42, 0.42))
+			_spawn_text(p.position + Vector2(0, -34), "-" + str(int(dmg)), Color(1, 0.42, 0.42))
 
 func _cull_enemies() -> void:
 	for i in range(enemies.size() - 1, -1, -1):
@@ -915,6 +937,9 @@ func _kill_enemy(e: VSEnemy) -> void:
 	e.dead = true
 	kills += 1
 	power = minf(1.0, power + (0.25 if e.is_boss else 0.045))
+	# Vampirisme (carte)
+	if player.heal_on_kill > 0.0 and player.hp < player.maxhp:
+		player.hp = minf(player.maxhp, player.hp + player.heal_on_kill)
 	var g := VSGem.new()
 	g.setup(e.position, e.xp)
 	gem_layer.add_child(g)
@@ -1025,7 +1050,7 @@ func _do_cast(id: String) -> bool:
 			if e == null:
 				return false
 			_burst(e.position, 90.0, Color(1.0, 0.7, 0.3), Color(1.0, 0.45, 0.15))
-			var fdmg := 55.0 + p.level * 3.0
+			var fdmg := (55.0 + p.level * 3.0) * p.spell_mul
 			for en in enemies:
 				if not is_instance_valid(en) or en.dead:
 					continue
@@ -1041,7 +1066,7 @@ func _do_cast(id: String) -> bool:
 			var targets := _nearest_enemies(4, 540.0)
 			if targets.is_empty():
 				return false
-			var bdmg := 75.0 + p.level * 4.0
+			var bdmg := (75.0 + p.level * 4.0) * p.spell_mul
 			var pts: Array = []
 			for en in targets:
 				pts.append(en.position)
@@ -1058,7 +1083,7 @@ func _do_cast(id: String) -> bool:
 		"frost":
 			var frad := 240.0
 			_burst(p.position, frad, Color(0.8, 0.95, 1.0), Color(0.4, 0.7, 1.0))
-			var cdmg := 22.0 + p.level * 2.0
+			var cdmg := (22.0 + p.level * 2.0) * p.spell_mul
 			for en in enemies:
 				if not is_instance_valid(en) or en.dead:
 					continue
@@ -1083,7 +1108,7 @@ func _do_cast(id: String) -> bool:
 			if me == null:
 				return false
 			_burst(me.position, 130.0, Color(1.0, 0.6, 0.2), Color(1.0, 0.35, 0.1))
-			var mdmg := 90.0 + p.level * 4.0
+			var mdmg := (90.0 + p.level * 4.0) * p.spell_mul
 			for en in enemies:
 				if not is_instance_valid(en) or en.dead:
 					continue
@@ -1098,7 +1123,7 @@ func _do_cast(id: String) -> bool:
 		"slash_sk":
 			var skrad := 135.0
 			_burst(p.position, skrad, Color(1.0, 0.95, 0.7), Color(1.0, 0.7, 0.3))
-			var skdmg := 55.0 + p.level * 3.0
+			var skdmg := (55.0 + p.level * 3.0) * p.spell_mul
 			for en in enemies:
 				if not is_instance_valid(en) or en.dead:
 					continue
@@ -1118,7 +1143,7 @@ func _do_cast(id: String) -> bool:
 			p.position.x = clampf(p.position.x + dvx, 24.0, WORLD - 24.0)
 			p.invuln = maxf(p.invuln, 0.45)
 			_burst(p.position, 95.0, Color(0.9, 0.95, 1.0), Color(0.6, 0.8, 1.0))
-			var ddmg := 45.0 + p.level * 2.0
+			var ddmg := (45.0 + p.level * 2.0) * p.spell_mul
 			for en in enemies:
 				if not is_instance_valid(en) or en.dead:
 					continue
@@ -1132,7 +1157,7 @@ func _do_cast(id: String) -> bool:
 		"whirl":
 			var wrad := 165.0
 			_burst(p.position, wrad, Color(1.0, 0.9, 0.6), Color(1.0, 0.6, 0.2))
-			var wdmg := 40.0 + p.level * 3.0
+			var wdmg := (40.0 + p.level * 3.0) * p.spell_mul
 			for en in enemies:
 				if not is_instance_valid(en) or en.dead:
 					continue
@@ -1160,7 +1185,7 @@ func _do_cast(id: String) -> bool:
 				bld_ang = PI
 			for k in 3:
 				var bpr := VSProjectile.new()
-				bpr.setup(p.position, Vector2.from_angle(bld_ang + (k - 1) * 0.2), 560.0, 40.0 + p.level * 3.0, 2, 11.0)
+				bpr.setup(p.position, Vector2.from_angle(bld_ang + (k - 1) * 0.2), 560.0, (40.0 + p.level * 3.0) * p.spell_mul, 2, 11.0)
 				proj_layer.add_child(bpr)
 				projectiles.append(bpr)
 			sfx.play("slice2", 0.4)
@@ -1186,7 +1211,7 @@ func _do_cast(id: String) -> bool:
 			for k in aw_n:
 				var aa := aw_ang - aw_arc / 2.0 + aw_arc * float(k) / float(aw_n - 1)
 				var apr := VSProjectile.new()
-				apr.setup(p.position, Vector2.from_angle(aa), 500.0, 30.0 + p.level * 2.0, 1, 10.0)
+				apr.setup(p.position, Vector2.from_angle(aa), 500.0, (30.0 + p.level * 2.0) * p.spell_mul, 1, 10.0)
 				proj_layer.add_child(apr)
 				projectiles.append(apr)
 			sfx.play("slice2", 0.5)
@@ -1196,7 +1221,7 @@ func _do_cast(id: String) -> bool:
 			for k in 14:
 				var na := TAU * float(k) / 14.0
 				var npr := VSProjectile.new()
-				npr.setup(p.position, Vector2.from_angle(na), 430.0, 26.0 + p.level * 2.0, 0, 10.0)
+				npr.setup(p.position, Vector2.from_angle(na), 430.0, (26.0 + p.level * 2.0) * p.spell_mul, 0, 10.0)
 				proj_layer.add_child(npr)
 				projectiles.append(npr)
 			_burst(p.position, 70.0, Color(1.0, 0.4, 0.4), Color(0.9, 0.15, 0.2))
@@ -1206,7 +1231,7 @@ func _do_cast(id: String) -> bool:
 			# onde de choc : dégâts + gros knockback + ralentissement
 			var st_rad := 150.0
 			_burst(p.position, st_rad, Color(0.9, 0.8, 0.6), Color(0.7, 0.5, 0.3))
-			var st_dmg := 30.0 + p.level * 2.0
+			var st_dmg := (30.0 + p.level * 2.0) * p.spell_mul
 			for en in enemies:
 				if not is_instance_valid(en) or en.dead:
 					continue
@@ -1235,13 +1260,17 @@ func _melee_attack() -> void:
 	var p := player
 	var rad := 100.0
 	_burst(p.position + Vector2(p.facing * 28, 0), 80.0, Color(1.0, 0.97, 0.8), Color(1.0, 0.8, 0.4))
+	var mdmg := p.proj_damage
+	var crit := randf() < p.crit_chance
+	if crit:
+		mdmg *= 2.0
 	for e in enemies:
 		if not is_instance_valid(e) or e.dead:
 			continue
 		if p.position.distance_to(e.position) <= rad:
-			e.hp -= p.proj_damage
+			e.hp -= mdmg
 			e.hitflash = 0.12
-			_spawn_text(e.position + Vector2(0, -e.radius * 1.6), str(int(p.proj_damage)), Color(1, 0.9, 0.6))
+			_spawn_text(e.position + Vector2(0, -e.radius * 1.6), str(int(mdmg)), Color(1, 0.7, 0.3) if crit else Color(1, 0.9, 0.6))
 			if e.hp <= 0.0:
 				_kill_enemy(e)
 	sfx.play("slice" if randf() < 0.5 else "slice2", 0.25)
@@ -1404,27 +1433,55 @@ func _open_levelup() -> void:
 func _apply_upgrade(id: String) -> void:
 	var p := player
 	match id:
+		"dmg": p.proj_damage = round(p.proj_damage * 1.25)
 		"count": p.proj_count += 1
 		"rate": p.fire_interval = maxf(0.16, p.fire_interval * 0.85)
-		"dmg": p.proj_damage = round(p.proj_damage * 1.3)
-		"speed": p.speed *= 1.12
-		"hp":
-			p.maxhp += 25.0
-			p.hp = minf(p.maxhp, p.hp + 25.0)
-		"magnet": p.pickup *= 1.3
 		"pierce": p.pierce += 1
+		"crit": p.crit_chance = minf(0.75, p.crit_chance + 0.10)
 		"heavy":
 			p.proj_speed *= 1.25
 			p.proj_size *= 1.25
-		"spell":
+		"lifesteal": p.heal_on_kill += 2.0
+		"spell_power": p.spell_mul *= 1.25
+		"hp":
+			p.maxhp += 30.0
+			p.hp = minf(p.maxhp, p.hp + 30.0)
+		"armor": p.dmg_reduction = minf(0.6, p.dmg_reduction + 0.08)
+		"regen": p.regen += 1.5
+		"nova":
 			p.nova_radius_mul *= 1.3
 			p.nova_dmg_mul *= 1.3
+		"speed": p.speed *= 1.12
+		"magnet": p.pickup *= 1.35
+	_register_buff(id)
 	sfx.play("click", 0.5)
 	hud.hide_overlays()
 	if level_queue > 0:
 		_open_levelup()
 	else:
 		state = State.PLAYING
+
+# Enregistre une marque de buff (offensif/défensif) et rafraîchit la barre.
+func _register_buff(id: String) -> void:
+	for u in UPGRADES:
+		if u["id"] == id:
+			if u["kind"] != "":
+				buffs[id] = int(buffs.get(id, 0)) + 1
+				_refresh_buffs()
+			return
+
+func _refresh_buffs() -> void:
+	var out: Array = []
+	for u in UPGRADES:   # ordre stable : offensifs puis défensifs
+		var uid: String = u["id"]
+		if buffs.has(uid):
+			out.append({
+				"icon": load("res://assets/ui/upgrades/%s.png" % u["icon"]),
+				"count": int(buffs[uid]),
+				"name": u["name"],
+				"off": u["kind"] == "off",
+			})
+	hud.set_buffs(out)
 
 # ----- Fin de partie : défaite OU victoire -----
 func _end_run(victory: bool) -> void:

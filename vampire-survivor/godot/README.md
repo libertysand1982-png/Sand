@@ -75,10 +75,18 @@ anneaux, zones, souffle et tirs à la fois. Vaincs-le pour la **VICTOIRE**
 
 ## Montée en puissance (des deux côtés)
 
-- Chaque niveau : choix d'**amélioration** + **Onde arcanique** + petits bonus
-  passifs (+2 PV max, +1,5% dégâts, vitesse).
-- Mais les ennemis gagnent aussi en vie et en dégâts **avec ton niveau** et avec
-  le temps — la course à la puissance ne s'arrête jamais.
+À chaque niveau, choisis **1 carte parmi 3** (icône + nom + description). 14 améliorations :
+- **Offensives** : Affûtage (+dégâts), Multi-tir, Cadence, Perforation, **Coups critiques**
+  (chance de ×2), Projectile lourd, **Vampirisme** (PV par kill), **Maître des sorts**
+  (+dégâts des capacités).
+- **Défensives** : Vitalité (+PV max), **Armure** (−% dégâts subis), **Régénération**
+  (PV/s), Onde renforcée.
+- **Utilitaires** : Célérité (+vitesse), Aimant (+ramassage).
+
+Les cartes **offensives et défensives** prises s'empilent en **marques de buff**
+(façon MMO/WoW) en **haut à droite** : icône + nombre de stacks, bordure **rouge**
+(offensif) ou **bleue** (défensif) — pour visualiser ton build d'un coup d'œil.
+Les ennemis se renforcent aussi avec ton niveau : la course ne s'arrête jamais.
 
 ## Tableau des scores
 

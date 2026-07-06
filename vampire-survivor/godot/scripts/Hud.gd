@@ -25,6 +25,7 @@ var font_text: FontFile    # Palatino — texte courant
 var bars: Control
 var menu_bg: Control
 var wheel: VSWheel
+var buff_bar: VSBuffBar
 var xp_bar: TextureProgressBar
 var xp_label: Label
 var timer_label: Label
@@ -151,6 +152,17 @@ func _build_bars() -> void:
 	wheel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(wheel)
 
+	# Marques de buff (haut-droite)
+	buff_bar = VSBuffBar.new()
+	buff_bar.anchor_right = 1.0
+	buff_bar.anchor_bottom = 1.0
+	buff_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bars.add_child(buff_bar)
+
+func set_buffs(b: Array) -> void:
+	if buff_bar:
+		buff_bar.set_buffs(b)
+
 func _build_menu() -> void:
 	overlay_menu = _overlay(false)
 	var p := _panel(600, 560)
@@ -229,14 +241,15 @@ func _build_select() -> void:
 
 func _build_levelup() -> void:
 	overlay_levelup = _overlay(true)
-	var p := _panel(680, 320)
+	var p := _panel(760, 430)
 	overlay_levelup.add_child(p)
 	var v := _vbox(p)
-	v.add_child(_paper_title("NIVEAU SUPÉRIEUR !", 480.0, 58.0, 26))
+	v.add_child(_paper_title("NIVEAU SUPÉRIEUR !", 500.0, 58.0, 26))
 	v.add_child(_label("Choisis une amélioration", 16, CREAM, true))
+	v.add_child(_spacer(6))
 	cards_box = HBoxContainer.new()
 	cards_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	cards_box.add_theme_constant_override("separation", 14)
+	cards_box.add_theme_constant_override("separation", 18)
 	v.add_child(cards_box)
 	add_child(overlay_levelup)
 	overlay_levelup.visible = false
@@ -579,11 +592,45 @@ func show_levelup(choices: Array) -> void:
 	for c in cards_box.get_children():
 		c.queue_free()
 	for choice in choices:
-		var card := _button("%s\n%s" % [choice["name"], choice["desc"]])
-		card.custom_minimum_size = Vector2(190, 104)
-		card.pressed.connect(func(): upgrade_chosen.emit(choice["id"]))
-		cards_box.add_child(card)
+		cards_box.add_child(_levelup_card(choice))
 	overlay_levelup.visible = true
+
+# Carte de niveau : plaque cliquable avec icône + nom + description.
+func _levelup_card(choice: Dictionary) -> Control:
+	var b := _button("")
+	b.custom_minimum_size = Vector2(210, 224)
+	var kind: String = choice.get("kind", "")
+	var accent := GOLD
+	if kind == "off":
+		accent = Color(1.0, 0.55, 0.45)
+	elif kind == "def":
+		accent = Color(0.55, 0.8, 1.0)
+	var v := VBoxContainer.new()
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.anchor_right = 1.0
+	v.anchor_bottom = 1.0
+	v.offset_left = 12
+	v.offset_top = 14
+	v.offset_right = -12
+	v.offset_bottom = -14
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_theme_constant_override("separation", 8)
+	var tr := TextureRect.new()
+	tr.texture = load("res://assets/ui/upgrades/%s.png" % choice.get("icon", "dmg"))
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr.custom_minimum_size = Vector2(0, 88)
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(tr)
+	v.add_child(_label(str(choice["name"]), 18, accent, true))
+	var d := _label(str(choice["desc"]), 13, CREAM, true)
+	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	d.custom_minimum_size = Vector2(180, 0)
+	v.add_child(d)
+	b.add_child(v)
+	var uid: String = choice["id"]
+	b.pressed.connect(func(): upgrade_chosen.emit(uid))
+	return b
 
 # Écran de fin : phase 1 = saisie du nom (défaite… ou victoire !)
 func show_gameover_entry(time_str: String, level: int, kills: int, score: int, last_name: String, won: bool = false) -> void:

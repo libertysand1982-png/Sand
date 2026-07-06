@@ -37,6 +37,13 @@ var proj_size := 12.0
 var nova_radius_mul := 1.0
 var nova_dmg_mul := 1.0
 
+# Améliorations passives (cartes de niveau)
+var crit_chance := 0.0      # chance de dégâts x2 (arme + mêlée)
+var spell_mul := 1.0        # multiplicateur de dégâts des capacités
+var dmg_reduction := 0.0    # armure : fraction de dégâts subis en moins
+var regen := 0.0            # PV régénérés par seconde
+var heal_on_kill := 0.0     # vampirisme : PV rendus par ennemi tué
+
 func _ready() -> void:
 	anim = AnimatedSprite2D.new()
 	anim.scale = Vector2(disp_scale, disp_scale)
@@ -85,6 +92,11 @@ func reset(pos: Vector2) -> void:
 	proj_size = 12.0
 	nova_radius_mul = 1.0
 	nova_dmg_mul = 1.0
+	crit_chance = 0.0
+	spell_mul = 1.0
+	dmg_reduction = 0.0
+	regen = 0.0
+	heal_on_kill = 0.0
 	anim.scale = Vector2(disp_scale, disp_scale)
 	anim.modulate = Color(1, 1, 1, 1)
 	anim.flip_h = false
