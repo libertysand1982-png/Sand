@@ -5,7 +5,8 @@ const WORLD := 4000.0
 const MAX_ENEMIES := 280
 const MAX_LEVEL := 99   # niveau maximum — le Seigneur du Crépuscule y attend
 
-enum State { MENU, PLAYING, LEVELUP, PAUSED, GAMEOVER }
+enum State { MENU, PLAYING, LEVELUP, PAUSED, GAMEOVER, BOSSINTRO }
+const BOSS_INTRO_TIME := 5.0
 
 const ENEMY_DEF := {
 	"goblin":    {"hp": 26.0,  "speed": 82.0, "dmg": 8.0,  "xp": 1, "radius": 18.0, "scale": 0.58, "bar": false},
@@ -63,9 +64,9 @@ const UPGRADES := [
 # Héros jouables (sélection au début)
 const HEROES := {
 	"wizard": {
-		"name": "Sorcier Maudit", "style": "Mage à distance — boules de feu auto",
+		"name": "Sorcier Maudit", "style": "Mage — boules de feu tournoyantes",
 		"frames": "wizard", "scale": 0.95, "offset_y": -16.0, "shadow_y": 16.0, "shadow_r": 18.0,
-		"speed": 205.0, "maxhp": 100.0, "fire_interval": 0.85, "attack": "fireball", "dmg": 24.0,
+		"speed": 205.0, "maxhp": 100.0, "fire_interval": 0.85, "attack": "orbit", "dmg": 24.0,
 		"skills": ["fire", "bolt", "frost", "heal", "meteor"], "ult": "arcane_storm",
 		"crop": Rect2(45, 35, 60, 100),
 	},
@@ -151,6 +152,18 @@ var hero_frames: Dictionary = {}
 var current_hero := "wizard"
 var power := 0.0
 var buffs: Dictionary = {}   # id d'amélioration off/def -> nombre de stacks
+var final_fight := false      # duel contre le boss final (plus aucun mob ne spawn)
+
+# Boules de feu en orbite (attaque auto du Mage)
+var orbit_balls: Array = []
+var orbit_angle := 0.0
+var orbit_tick := 0.0
+
+# Secousse d'écran + intro cinématique du boss
+var shake_str := 0.0
+var shake_dur := 0.0
+var shake_time := 0.0
+var boss_intro_t := 0.0
 var ult_icon: Texture2D
 var bosses_spawned := 0
 var final_spawned := false
@@ -325,6 +338,8 @@ func _clear_entities() -> void:
 	floats.clear()
 	enemy_shots.clear()
 	zones.clear()
+	orbit_balls.clear()   # les boules d'orbite sont dans proj_layer (déjà libérées)
+	final_fight = false
 
 func _on_play() -> void:
 	sfx.play("click", 0.5)
@@ -380,6 +395,7 @@ func start_game(hero_id := current_hero) -> void:
 	level_queue = 0
 	bosses_spawned = 0
 	final_spawned = false
+	final_fight = false
 	power = 0.0
 	buffs.clear()
 	hud.set_buffs([])
@@ -393,6 +409,7 @@ func start_game(hero_id := current_hero) -> void:
 	player.fire_interval = h["fire_interval"]
 	player.proj_damage = h["dmg"]
 	player.visible = true
+	_rebuild_orbit()
 	hud.hide_overlays()
 	hud.show_hud(true)
 	sfx.play_music("game")
@@ -414,6 +431,9 @@ func _to_menu() -> void:
 	state = State.MENU
 	_clear_entities()
 	player.visible = false
+	if player.cam:
+		player.cam.offset = Vector2.ZERO
+	shake_time = 0.0
 	hud.show_hud(false)
 	hud.show_menu()
 	sfx.play_music("menu")
@@ -423,6 +443,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		if (event is InputEventKey and event.pressed and not event.echo) \
 				or (event is InputEventMouseButton and event.pressed):
 			hud.intro_next()
+		return
+	if state == State.BOSSINTRO:
+		if (event is InputEventKey and event.pressed and not event.echo) \
+				or (event is InputEventMouseButton and event.pressed):
+			_end_boss_intro()
 		return
 	if event.is_action_pressed("vs_pause"):
 		_toggle_pause()
@@ -449,8 +474,40 @@ func _toggle_pause() -> void:
 # ============================================================
 func _process(delta: float) -> void:
 	time += delta
-	if state == State.PLAYING:
+	_update_shake(delta)
+	if state == State.BOSSINTRO:
+		boss_intro_t += delta
+		if boss_intro_t >= BOSS_INTRO_TIME:
+			_end_boss_intro()
+	elif state == State.PLAYING:
 		_update_playing(delta)
+
+# ----- Secousse d'écran -----
+func _add_shake(strength: float, duration: float) -> void:
+	shake_str = maxf(shake_str, strength)
+	shake_dur = duration
+	shake_time = maxf(shake_time, duration)
+
+func _update_shake(delta: float) -> void:
+	var amt := 0.0
+	if state == State.BOSSINTRO:
+		amt = 4.5 + 2.5 * absf(sin(time * 26.0))   # tremblement soutenu pendant l'intro
+	if shake_time > 0.0:
+		shake_time -= delta
+		amt = maxf(amt, shake_str * (shake_time / maxf(0.01, shake_dur)))
+	if player and player.cam:
+		if amt > 0.05:
+			player.cam.offset = Vector2(randf_range(-amt, amt), randf_range(-amt, amt))
+		elif player.cam.offset != Vector2.ZERO:
+			player.cam.offset = Vector2.ZERO
+
+func _end_boss_intro() -> void:
+	if state != State.BOSSINTRO:
+		return
+	state = State.PLAYING
+	hud.hide_boss_intro()
+	_add_shake(5.0, 0.4)
+	sfx.play("buff", 0.6)
 
 func _update_playing(delta: float) -> void:
 	var p := player
@@ -495,6 +552,10 @@ func _update_playing(delta: float) -> void:
 		_fire()
 		p.fire_cd = p.fire_interval
 
+	# Boules de feu en orbite (Mage)
+	if not orbit_balls.is_empty():
+		_update_orbit(delta)
+
 	_spawns(delta)
 	_update_enemies(delta)
 	_update_bosses(delta)
@@ -527,9 +588,12 @@ func _update_playing(delta: float) -> void:
 # ----- Arme -----
 func _fire() -> void:
 	var p := player
-	if HEROES[current_hero]["attack"] == "melee":
+	var atk: String = HEROES[current_hero]["attack"]
+	if atk == "melee":
 		_melee_attack()
 		return
+	if atk == "orbit":
+		return   # les boules tournent en continu (voir _update_orbit)
 	var best: VSEnemy = null
 	var bd := INF
 	for e in enemies:
@@ -554,8 +618,64 @@ func _fire() -> void:
 		projectiles.append(pr)
 	sfx.play("magic", 0.30)
 
+# ----- Boules de feu en orbite (Mage) -----
+func _orbit_target_count() -> int:
+	if HEROES[current_hero]["attack"] != "orbit":
+		return 0
+	return 3 + (player.proj_count - 1)   # +1 boule par Multi-tir
+
+func _rebuild_orbit() -> void:
+	for b in orbit_balls:
+		if is_instance_valid(b):
+			b.queue_free()
+	orbit_balls.clear()
+	for i in _orbit_target_count():
+		var b := VSOrbitBall.new()
+		b.size = maxf(11.0, player.proj_size)
+		proj_layer.add_child(b)
+		orbit_balls.append(b)
+
+func _update_orbit(delta: float) -> void:
+	var p := player
+	if orbit_balls.size() != _orbit_target_count():
+		_rebuild_orbit()
+		if orbit_balls.is_empty():
+			return
+	orbit_angle += delta * 2.3
+	var n := orbit_balls.size()
+	var rad := 96.0
+	for i in n:
+		var a := orbit_angle + TAU * float(i) / float(n)
+		var b: VSOrbitBall = orbit_balls[i]
+		b.position = p.position + Vector2.from_angle(a) * rad
+		b.rotation = a
+	# dégâts périodiques au contact
+	orbit_tick -= delta
+	if orbit_tick <= 0.0:
+		orbit_tick = 0.25
+		var base := p.proj_damage * 0.42
+		var hit := false
+		for b in orbit_balls:
+			for e in enemies:
+				if not is_instance_valid(e) or e.dead:
+					continue
+				if b.position.distance_to(e.position) <= b.size + 8.0 + e.radius:
+					var d := base
+					if randf() < p.crit_chance:
+						d *= 2.0
+					e.hp -= d
+					e.hitflash = 0.12
+					_spawn_text(e.position + Vector2(0, -e.radius * 1.6), str(int(d)), Color(1.0, 0.7, 0.3))
+					hit = true
+					if e.hp <= 0.0:
+						_kill_enemy(e)
+		if hit:
+			sfx.play("hit", 0.10)
+
 # ----- Spawn -----
 func _spawns(delta: float) -> void:
+	if final_fight:
+		return   # combat de boss final : plus aucun mob ne réapparaît
 	spawn_timer -= delta
 	if spawn_timer > 0.0:
 		return
@@ -646,18 +766,68 @@ func _spawn_boss(tier: int) -> void:
 	sfx.play("buff", 0.7)
 
 func _spawn_final_boss() -> void:
+	# Le duel final : la horde s'évapore, place au Seigneur.
+	final_fight = true
+	_clear_mobs_for_final()
+	# apparaît à l'écran, face au héros (duel visible)
+	var fpos := player.position + Vector2.from_angle(-PI / 2.0 + randf_range(-0.4, 0.4)) * 270.0
+	fpos.x = clampf(fpos.x, 80.0, WORLD - 80.0)
+	fpos.y = clampf(fpos.y, 80.0, WORLD - 80.0)
 	var e := VSEnemy.new()
-	e.setup("megaboss", _boss_spawn_pos(80.0), _hp_scale() * 9.0, enemy_frames["megaboss"], ENEMY_DEF["megaboss"])
+	e.setup("megaboss", fpos, _hp_scale() * 9.0, enemy_frames["megaboss"], ENEMY_DEF["megaboss"])
 	e.is_boss = true
 	e.tier = 10
 	e.boss_kind = "final"
-	e.boss_title = "☠ SEIGNEUR DU CRÉPUSCULE ☠"
+	e.phase = 1
+	e.boss_title = "☠ SEIGNEUR DU CRÉPUSCULE — PHASE 1/3 ☠"
 	e.dmg *= 1.4
+	e.pat_a = 1.5
+	e.pat_b = 3.0
 	world.add_child(e)
 	enemies.append(e)
-	_spawn_text(player.position + Vector2(0, -130), "LE SEIGNEUR DU CRÉPUSCULE !", Color(1.0, 0.3, 0.9))
 	sfx.play("buff", 1.0)
 	sfx.play("lightning_cast", 0.8)
+	# Intro cinématique : l'écran tremble, le boss parle, puis le combat démarre.
+	state = State.BOSSINTRO
+	boss_intro_t = 0.0
+	_add_shake(11.0, 0.7)
+	hud.show_boss_intro(
+		"SEIGNEUR DU CRÉPUSCULE",
+		"Tu as gravi mes quatre-vingt-dix-neuf cercles, mortel. Admirable... et vain.\nJe suis la nuit qui dévore l'aube — et TON heure a sonné. Qu'il en soit fini !",
+		enemy_frames["megaboss"].get_frame_texture("move", 0))
+
+# Efface TOUTE la horde (mobs ET boss de palier restants) avant le duel final.
+func _clear_mobs_for_final() -> void:
+	for e in enemies:
+		if is_instance_valid(e):
+			e.queue_free()
+	enemies.clear()
+	for s in enemy_shots:
+		if is_instance_valid(s):
+			s.queue_free()
+	enemy_shots.clear()
+	for z in zones:
+		if is_instance_valid(z):
+			z.queue_free()
+	zones.clear()
+
+# Transition de phase du boss final (façon raid WoW).
+func _final_phase_change(e: VSEnemy, ph: int) -> void:
+	e.phase = ph
+	e.boss_title = "☠ SEIGNEUR DU CRÉPUSCULE — PHASE %d/3 ☠" % ph
+	_spawn_text(e.position + Vector2(0, -e.radius * 2.0), "PHASE %d !" % ph, Color(1.0, 0.35, 0.95))
+	_burst(e.position, 240.0, Color(0.9, 0.45, 1.0), Color(0.6, 0.2, 1.0))
+	# on efface les projectiles en cours : transition équitable
+	for s in enemy_shots:
+		if is_instance_valid(s):
+			s.queue_free()
+	enemy_shots.clear()
+	e.pat_a = 1.2
+	e.pat_b = 1.8
+	e.anim.modulate = Color(1.0 + 0.06 * ph, 0.72 - 0.08 * ph, 1.2)
+	_add_shake(7.0, 0.45)
+	sfx.play("buff", 0.9)
+	sfx.play("lightning_cast", 0.75)
 
 func _drop_item(pos: Vector2) -> void:
 	var kinds := ["weapon", "armor", "potion"]
@@ -733,19 +903,30 @@ func _update_bosses(delta: float) -> void:
 					e.pat_b = 6.5
 					_boss_zones(e, 3, 85.0)
 			"final":
-				# tout à la fois, sans pitié
+				# Combat de raid : 3 phases de plus en plus violentes.
+				var frac := e.hp / e.maxhp
+				var tp := 1
+				if frac <= 0.34:
+					tp = 3
+				elif frac <= 0.67:
+					tp = 2
+				if tp > e.phase:
+					_final_phase_change(e, tp)
+				var ph := e.phase
 				if e.pat_a <= 0.0:
-					e.pat_a = 3.0
-					var pick := randi() % 3
-					if pick == 0:
-						_boss_ring(e, 22, 200.0)
-					elif pick == 1:
-						_boss_zones(e, 4, 95.0)
-					else:
-						_boss_breath(e, 8, 240.0)
+					e.pat_a = maxf(1.0, 2.2 - 0.4 * ph)
+					_boss_aimed(e, 2 + ph, 250.0 + 25.0 * ph)   # tirs visés (esquive)
+					if ph >= 3:
+						_boss_breath(e, 9, 250.0)               # souffle en phase finale
 				if e.pat_b <= 0.0:
-					e.pat_b = 2.6
-					_boss_aimed(e, 5, 300.0)
+					e.pat_b = maxf(1.9, 4.0 - 0.7 * ph)
+					var pick := (int(time * 1.7) + ph) % 3
+					if pick == 0:
+						_boss_ring(e, 12 + 5 * ph, 185.0 + 15.0 * ph)   # anneau d'orbes
+					elif pick == 1:
+						_boss_zones(e, 1 + ph, 92.0)                    # zones télégraphiées
+					else:
+						_boss_spiral(e, 1 + ph)                          # spirale rotative
 
 func _boss_ring(e: VSEnemy, n: int, spd: float) -> void:
 	var off := randf() * TAU
@@ -779,6 +960,17 @@ func _boss_breath(e: VSEnemy, n: int, spd: float) -> void:
 		proj_layer.add_child(s)
 		enemy_shots.append(s)
 	sfx.play("fire_cast", 0.4)
+
+# Spirale rotative : chaque salve tourne un peu, formant des bras qui balaient.
+func _boss_spiral(e: VSEnemy, arms: int) -> void:
+	e.spin += 0.55
+	for k in arms:
+		var a := e.spin + TAU * float(k) / float(arms)
+		var s := VSEnemyShot.new()
+		s.setup(e.position, Vector2.from_angle(a), 205.0, e.dmg * 0.42)
+		proj_layer.add_child(s)
+		enemy_shots.append(s)
+	sfx.play("magic", 0.2)
 
 func _boss_zones(e: VSEnemy, k: int, r: float) -> void:
 	for i in k:
@@ -946,7 +1138,9 @@ func _kill_enemy(e: VSEnemy) -> void:
 	gems.append(g)
 	if e.is_boss:
 		_drop_item(e.position)
+		_add_shake(6.0 if e.boss_kind != "final" else 12.0, 0.6)
 		if e.boss_kind == "final":
+			final_fight = false
 			call_deferred("_end_run", true)
 	e.die()   # joue l'animation de mort puis se libère
 

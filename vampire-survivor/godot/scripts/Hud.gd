@@ -45,6 +45,10 @@ var overlay_levelup: Control
 var overlay_gameover: Control
 var overlay_pause: Control
 var overlay_intro: Control
+var overlay_bossintro: Control
+var bi_name: Label
+var bi_line: Label
+var bi_portrait: TextureRect
 var cards_box: HBoxContainer
 var go_box: VBoxContainer
 var sfx_pct: Label
@@ -73,6 +77,7 @@ func build() -> void:
 	_build_gameover()
 	_build_pause()
 	_build_intro()
+	_build_bossintro()
 	bars.visible = false
 	wheel.visible = false
 
@@ -330,6 +335,80 @@ func _end_intro() -> void:
 	overlay_intro.visible = false
 	intro_done.emit(intro_to_menu)
 
+# ----- Intro cinématique du BOSS FINAL -----
+func _build_bossintro() -> void:
+	overlay_bossintro = _full_control()
+	overlay_bossintro.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var dim := ColorRect.new()
+	dim.color = Color(0.02, 0.0, 0.05, 0.62)
+	dim.anchor_right = 1.0
+	dim.anchor_bottom = 1.0
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay_bossintro.add_child(dim)
+	# bandes cinéma (haut / bas)
+	var topbar := ColorRect.new()
+	topbar.color = Color(0, 0, 0, 0.92)
+	_anchor(topbar, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 74.0)
+	overlay_bossintro.add_child(topbar)
+	var botbar := ColorRect.new()
+	botbar.color = Color(0, 0, 0, 0.92)
+	_anchor(botbar, 0.0, 1.0, 1.0, 1.0, 0.0, -74.0, 0.0, 0.0)
+	overlay_bossintro.add_child(botbar)
+	# bande centrale rougeoyante
+	var band := ColorRect.new()
+	band.color = Color(0.12, 0.01, 0.10, 0.70)
+	_anchor(band, 0.0, 0.5, 1.0, 0.5, 0.0, -150.0, 0.0, 150.0)
+	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay_bossintro.add_child(band)
+	# contenu : portrait + nom + réplique
+	var hb := HBoxContainer.new()
+	_anchor(hb, 0.5, 0.5, 0.5, 0.5, -520.0, -140.0, 520.0, 140.0)
+	hb.alignment = BoxContainer.ALIGNMENT_CENTER
+	hb.add_theme_constant_override("separation", 28)
+	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay_bossintro.add_child(hb)
+	bi_portrait = TextureRect.new()
+	bi_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bi_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	bi_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bi_portrait.custom_minimum_size = Vector2(210, 210)
+	bi_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hb.add_child(bi_portrait)
+	var tv := VBoxContainer.new()
+	tv.alignment = BoxContainer.ALIGNMENT_CENTER
+	tv.add_theme_constant_override("separation", 12)
+	tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hb.add_child(tv)
+	bi_name = _label("", 40, Color(1.0, 0.28, 0.42), false)
+	if font_title:
+		bi_name.add_theme_font_override("font", font_title)
+	bi_name.add_theme_color_override("font_shadow_color", Color(0.3, 0.0, 0.1))
+	bi_name.add_theme_constant_override("shadow_offset_x", 2)
+	bi_name.add_theme_constant_override("shadow_offset_y", 2)
+	tv.add_child(bi_name)
+	bi_line = _label("", 20, Color(0.95, 0.88, 0.82), false)
+	bi_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bi_line.custom_minimum_size = Vector2(660, 0)
+	tv.add_child(bi_line)
+	var hint := _label("clic / touche : engager le combat", 14, LILAC, true)
+	_anchor(hint, 0.5, 1.0, 0.5, 1.0, -200.0, -52.0, 200.0, -28.0)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	overlay_bossintro.add_child(hint)
+	add_child(overlay_bossintro)
+	overlay_bossintro.visible = false
+
+func show_boss_intro(boss_name: String, line: String, portrait: Texture2D) -> void:
+	bi_name.text = "☠  " + boss_name + "  ☠"
+	bi_line.text = "« " + line + " »"
+	bi_portrait.texture = portrait
+	overlay_bossintro.visible = true
+	overlay_bossintro.modulate.a = 0.0
+	var tw := create_tween()
+	tw.tween_property(overlay_bossintro, "modulate:a", 1.0, 0.35)
+
+func hide_boss_intro() -> void:
+	overlay_bossintro.visible = false
+
 func _show_slide(i: int) -> void:
 	for c in intro_box.get_children():
 		c.queue_free()
@@ -453,6 +532,7 @@ func hide_overlays() -> void:
 	overlay_gameover.visible = false
 	overlay_pause.visible = false
 	overlay_intro.visible = false
+	overlay_bossintro.visible = false
 
 func show_menu() -> void:
 	hide_overlays()

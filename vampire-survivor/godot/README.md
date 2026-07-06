@@ -24,7 +24,7 @@ de plus en plus puissant se dresse sur la route.
 
 | Héros | Style | PV | Vitesse | Capacités (1→5) | Ultime |
 |-------|-------|----|---------|----|--------|
-| **Sorcier Maudit** | mage à distance (boules de feu auto) | 100 | ●●○ | Boule de feu · Éclair · Gel · Soin · Météore | Tempête arcanique |
+| **Sorcier Maudit** | mage — **boules de feu qui tournoient autour de lui** | 100 | ●●○ | Boule de feu · Éclair · Gel · Soin · Météore | Tempête arcanique |
 | **Samurai Errant** | mêlée rapide | 135 | ●●● | Entaille · Ruée · Tourbillon · Garde · Lame volante | Mille coupures |
 | **Chevalier de l'Aube** | tank sacré, gros dégâts | 170 | ●○○ | Entaille · **Égide sacrée** · Ruée · Soin · Lame volante | Jugement |
 | **Kobold Sauvage** | berserker féral, fragile et véloce | 90 | ●●●● | **Croissant sanglant** · **Nova écarlate** · Piétinement · **Frénésie** · Tourbillon | Rage primordiale |
@@ -41,7 +41,8 @@ Nouveaux sorts marquants :
 ## Commandes
 
 - **Déplacement :** WASD / ZQSD / flèches — ou **stick gauche** (manette).
-- **Attaque de base : automatique** (boules de feu ou coups de mêlée selon le héros).
+- **Attaque de base : automatique** (le Mage a des **boules de feu en orbite** ;
+  les autres frappent au corps-à-corps).
 - **Capacités : déclenchées par toi** — touches **1 2 3 4 5** (ou **A B X Y / LB**).
 - **Ultime :** touche **6** / **Espace** (ou **RB**) — quand la **jauge de puissance**
   est pleine (elle monte en tuant, +25% par boss).
@@ -69,9 +70,14 @@ Passé 4 minutes, des **démons** rejoignent aussi la horde de base.
 
 Chaque gardien vaincu lâche un **objet** (⚔️ +30% dégâts · 🛡️ +40 PV max · 🧪 soin complet).
 
-Au **niveau 99** : le **☠ SEIGNEUR DU CRÉPUSCULE ☠** (MegaBoss enflammé, géant) —
-anneaux, zones, souffle et tirs à la fois. Vaincs-le pour la **VICTOIRE**
-(bonus de **+10 000** au score) !
+Au **niveau 99** : le **☠ SEIGNEUR DU CRÉPUSCULE ☠** (MegaBoss enflammé, géant).
+Toute la horde **s'évapore** : place au **duel final**. Une **intro cinématique**
+se déclenche — l'écran **tremble**, le boss t'adresse une réplique, puis le combat
+s'engage (clic/touche pour l'écourter). C'est un **combat de raid en 3 phases**
+(barre de vie + « PHASE x/3 ») de plus en plus violent : volées visées, anneaux
+d'orbes, **spirales**, zones télégraphiées, et **souffle** en phase finale. À toi
+d'**esquiver**, de lever le **bouclier** et de te **soigner** au bon moment.
+Vaincs-le pour la **VICTOIRE** (bonus de **+10 000** au score) !
 
 ## Montée en puissance (des deux côtés)
 

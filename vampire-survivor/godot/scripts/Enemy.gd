@@ -20,6 +20,8 @@ var boss_kind: String = ""    # "night" / "bringer" / "final"
 var boss_title: String = ""   # nom affiché sur la barre de boss
 var pat_a: float = 2.5        # recharge pattern A (anneaux / zones)
 var pat_b: float = 4.0        # recharge pattern B (tirs visés / invocations)
+var phase: int = 1            # phase du boss final (1..3)
+var spin: float = 0.0         # angle courant des patterns en spirale
 var dead: bool = false
 var dying: bool = false
 
