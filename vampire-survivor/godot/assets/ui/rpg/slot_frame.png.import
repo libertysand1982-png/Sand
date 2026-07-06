@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://u8hsh15va7gr"
-path="res://.godot/imported/container.png-d1bce25ad46bc1f823d68ac715a9e173.ctex"
+uid="uid://bxv7m8fqwfsrn"
+path="res://.godot/imported/slot_frame.png-cbcf0795507674110900ba00a42f7db1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/mmo/container.png"
-dest_files=["res://.godot/imported/container.png-d1bce25ad46bc1f823d68ac715a9e173.ctex"]
+source_file="res://assets/ui/rpg/slot_frame.png"
+dest_files=["res://.godot/imported/slot_frame.png-cbcf0795507674110900ba00a42f7db1.ctex"]
 
 [params]
 

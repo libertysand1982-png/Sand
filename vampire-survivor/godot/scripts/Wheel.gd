@@ -15,7 +15,7 @@ const FRAME_READY := Color(1.0, 0.88, 0.55)
 const FRAME_CD := Color(0.44, 0.42, 0.52)
 
 func _ready() -> void:
-	slot_tex = load("res://assets/ui/mmo/slot_frame.png")
+	slot_tex = load("res://assets/ui/rpg/slot_frame.png")
 	gauge_bg = load("res://assets/ui/rpg/arrow_frame.png")
 	gauge_fill = load("res://assets/ui/rpg/arrow_fill.png")
 	banner_tex = load("res://assets/ui/rpg/banner.png")
@@ -76,22 +76,21 @@ func _draw() -> void:
 
 func _draw_slot(c: Vector2, r: float, s: Dictionary, font: Font, is_ult: bool) -> void:
 	var ready: bool = s.get("ready", true)
-	# fond sombre carré (style action bar MMO)
-	var bsz := r * 1.9
-	draw_rect(Rect2(c - Vector2(bsz / 2.0, bsz / 2.0), Vector2(bsz, bsz)), Color(0.03, 0.02, 0.06, 0.72))
 	# halo doré pour l'ultime prêt
 	if is_ult and ready:
-		draw_circle(c, r + 7.0, Color(1.0, 0.85, 0.35, 0.30))
-	var tex: Texture2D = s.get("icon", null)
-	if tex:
-		var isz := r * 1.55
-		var col := Color(1, 1, 1, 1.0) if ready else Color(1, 1, 1, 0.45)
-		draw_texture_rect(tex, Rect2(c - Vector2(isz / 2.0, isz / 2.0), Vector2(isz, isz)), false, col)
-	# cadre grunge par-dessus, doré si prêt
-	var fsz := r * 2.3
+		draw_rect(Rect2(c - Vector2(r + 6.0, r + 6.0), Vector2((r + 6.0) * 2.0, (r + 6.0) * 2.0)),
+				Color(1.0, 0.85, 0.35, 0.28))
+	# cadre-slot doré RPG (fond opaque sombre) — dessiné D'ABORD
+	var fsz := r * 2.35
 	if slot_tex:
 		draw_texture_rect(slot_tex, Rect2(c - Vector2(fsz / 2.0, fsz / 2.0), Vector2(fsz, fsz)), false,
 				FRAME_READY if ready else FRAME_CD)
+	# icône par-dessus, dans la rainure du cadre
+	var tex: Texture2D = s.get("icon", null)
+	if tex:
+		var isz := r * 1.5
+		var col := Color(1, 1, 1, 1.0) if ready else Color(1, 1, 1, 0.4)
+		draw_texture_rect(tex, Rect2(c - Vector2(isz / 2.0, isz / 2.0), Vector2(isz, isz)), false, col)
 	if not ready and float(s.get("left", 0.0)) > 0.0:
 		_draw_pie(c, r * 0.9, clampf(float(s.get("frac", 0.0)), 0.0, 1.0), Color(0, 0, 0, 0.5))
 		if font:

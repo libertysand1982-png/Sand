@@ -104,11 +104,11 @@ func _build_bars() -> void:
 
 	# XP (haut centré) — barre à pointes de flèche (RPG UI Elements)
 	xp_bar = _tex_bar("res://assets/ui/rpg/xp_frame.png", "res://assets/ui/rpg/xp_fill.png", Color(0.55, 0.95, 0.55))
-	xp_bar.stretch_margin_left = 52
-	xp_bar.stretch_margin_right = 52
-	xp_bar.stretch_margin_top = 14
-	xp_bar.stretch_margin_bottom = 14
-	_anchor(xp_bar, 0.5, 0.0, 0.5, 0.0, -xp_full_w / 2.0, 4.0, xp_full_w / 2.0, 50.0)
+	xp_bar.stretch_margin_left = 44
+	xp_bar.stretch_margin_right = 44
+	xp_bar.stretch_margin_top = 28
+	xp_bar.stretch_margin_bottom = 28
+	_anchor(xp_bar, 0.5, 0.0, 0.5, 0.0, -xp_full_w / 2.0, 2.0, xp_full_w / 2.0, 54.0)
 	bars.add_child(xp_bar)
 	xp_label = _label("Niv. 1", 14, CREAM)
 	_anchor(xp_label, 0.5, 0.0, 0.5, 0.0, -60.0, 16.0, 60.0, 38.0)
@@ -138,13 +138,17 @@ func _build_bars() -> void:
 	mute_label.visible = false
 	bars.add_child(mute_label)
 
-	# Barre de vie du boss (haut, sous le chrono) — flèche violette
-	boss_bar = _arrow_bar(Color(0.82, 0.42, 1.0))
-	_anchor(boss_bar, 0.5, 0.0, 0.5, 0.0, -boss_full_w / 2.0, 72.0, boss_full_w / 2.0, 112.0)
+	# Barre de vie du boss (haut, sous le chrono) — bannière ornée violette
+	boss_bar = _tex_bar("res://assets/ui/rpg/boss_frame.png", "res://assets/ui/rpg/boss_fill.png", Color(0.82, 0.42, 1.0))
+	boss_bar.stretch_margin_left = 58
+	boss_bar.stretch_margin_right = 58
+	boss_bar.stretch_margin_top = 34
+	boss_bar.stretch_margin_bottom = 34
+	_anchor(boss_bar, 0.5, 0.0, 0.5, 0.0, -boss_full_w / 2.0 - 20.0, 70.0, boss_full_w / 2.0 + 20.0, 128.0)
 	boss_bar.visible = false
 	bars.add_child(boss_bar)
 	boss_label = _label("", 12, Color(1, 1, 1))
-	_anchor(boss_label, 0.5, 0.0, 0.5, 0.0, -boss_full_w / 2.0, 82.0, boss_full_w / 2.0, 102.0)
+	_anchor(boss_label, 0.5, 0.0, 0.5, 0.0, -boss_full_w / 2.0, 89.0, boss_full_w / 2.0, 109.0)
 	boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	boss_label.visible = false
 	bars.add_child(boss_label)
@@ -410,8 +414,8 @@ func _arrow_bar(tint: Color) -> TextureProgressBar:
 	var b := _tex_bar("res://assets/ui/rpg/arrow_frame.png", "res://assets/ui/rpg/arrow_fill.png", tint)
 	b.stretch_margin_left = 44
 	b.stretch_margin_right = 44
-	b.stretch_margin_top = 16
-	b.stretch_margin_bottom = 16
+	b.stretch_margin_top = 26
+	b.stretch_margin_bottom = 26
 	return b
 
 # Barre texturée MMO (fond + remplissage nine-patch)
@@ -571,11 +575,11 @@ func _card_panel() -> Panel:
 	p.custom_minimum_size = Vector2(224, 442)
 	var sb := StyleBoxTexture.new()
 	sb.texture = load("res://assets/ui/rpg/panel.png")
-	sb.texture_margin_left = 24
-	sb.texture_margin_right = 24
-	sb.texture_margin_top = 24
-	sb.texture_margin_bottom = 24
-	sb.modulate_color = Color(1.35, 1.22, 1.55, 0.98)
+	sb.texture_margin_left = 16
+	sb.texture_margin_right = 16
+	sb.texture_margin_top = 16
+	sb.texture_margin_bottom = 16
+	sb.modulate_color = Color(1.1, 1.05, 1.2, 0.99)
 	sb.set_content_margin_all(6)
 	p.add_theme_stylebox_override("panel", sb)
 	return p
@@ -633,17 +637,19 @@ func show_gameover_entry(time_str: String, level: int, kills: int, score: int, l
 	if font_text:
 		edit.add_theme_font_override("font", font_text)
 	var ebox := StyleBoxTexture.new()
-	ebox.texture = load("res://assets/ui/mmo/input_bg.png")
-	ebox.texture_margin_left = 24
-	ebox.texture_margin_right = 24
-	ebox.texture_margin_top = 20
-	ebox.texture_margin_bottom = 20
-	ebox.modulate_color = Color(0.32, 0.28, 0.42)
+	ebox.texture = load("res://assets/ui/rpg/panel.png")
+	ebox.texture_margin_left = 16
+	ebox.texture_margin_right = 16
+	ebox.texture_margin_top = 16
+	ebox.texture_margin_bottom = 16
+	ebox.modulate_color = Color(0.7, 0.62, 0.55)
 	ebox.set_content_margin_all(8)
 	var efocus: StyleBoxTexture = ebox.duplicate()
-	efocus.modulate_color = Color(0.48, 0.42, 0.62)
+	efocus.modulate_color = Color(1.0, 0.88, 0.6)
 	edit.add_theme_stylebox_override("normal", ebox)
 	edit.add_theme_stylebox_override("focus", efocus)
+	edit.add_theme_color_override("font_color", CREAM)
+	edit.add_theme_color_override("caret_color", GOLD)
 	edit.text_submitted.connect(func(_t): name_submitted.emit(edit.text))
 	row.add_child(edit)
 	var ok := _button("VALIDER")
@@ -734,11 +740,11 @@ func _panel(w: float, h: float) -> Panel:
 	_anchor(p, 0.5, 0.5, 0.5, 0.5, -w / 2.0, -h / 2.0, w / 2.0, h / 2.0)
 	var sb := StyleBoxTexture.new()
 	sb.texture = load("res://assets/ui/rpg/panel.png")
-	sb.texture_margin_left = 24
-	sb.texture_margin_right = 24
-	sb.texture_margin_top = 24
-	sb.texture_margin_bottom = 24
-	sb.modulate_color = Color(1.06, 1.02, 1.18, 0.985)
+	sb.texture_margin_left = 16
+	sb.texture_margin_right = 16
+	sb.texture_margin_top = 16
+	sb.texture_margin_bottom = 16
+	sb.modulate_color = Color(1.0, 1.0, 1.0, 0.99)
 	sb.set_content_margin_all(26)
 	p.add_theme_stylebox_override("panel", sb)
 	return p
@@ -862,26 +868,27 @@ func _button(text: String) -> Button:
 	b.add_theme_font_override("font", font_title)
 	b.add_theme_font_size_override("font_size", 20)
 	b.custom_minimum_size = Vector2(300, 52)
-	var tex: Texture2D = load("res://assets/ui/mmo/button.png")
-	var normal := _btn_box(tex, Color(0.34, 0.47, 0.78))
-	var hover := _btn_box(tex, Color(0.46, 0.62, 0.95))
-	var pressed := _btn_box(tex, Color(0.22, 0.30, 0.52))
+	# plaque sombre à bordure dorée (pack RPG UI Elements)
+	var tex: Texture2D = load("res://assets/ui/rpg/panel.png")
+	var normal := _btn_box(tex, Color(0.62, 0.55, 0.50))
+	var hover := _btn_box(tex, Color(1.05, 0.9, 0.6))
+	var pressed := _btn_box(tex, Color(0.42, 0.37, 0.34))
 	b.add_theme_stylebox_override("normal", normal)
 	b.add_theme_stylebox_override("hover", hover)
 	b.add_theme_stylebox_override("pressed", pressed)
-	b.add_theme_stylebox_override("focus", hover)
-	b.add_theme_color_override("font_color", Color(0.97, 0.95, 0.86))
-	b.add_theme_color_override("font_hover_color", Color(1, 1, 1))
-	b.add_theme_color_override("font_pressed_color", Color(0.85, 0.82, 0.72))
+	b.add_theme_stylebox_override("focus", normal)
+	b.add_theme_color_override("font_color", GOLD)
+	b.add_theme_color_override("font_hover_color", Color(1, 0.97, 0.85))
+	b.add_theme_color_override("font_pressed_color", Color(0.8, 0.7, 0.45))
 	return b
 
 func _btn_box(tex: Texture2D, mod: Color) -> StyleBoxTexture:
 	var sb := StyleBoxTexture.new()
 	sb.texture = tex
-	sb.texture_margin_left = 70
-	sb.texture_margin_right = 70
-	sb.texture_margin_top = 56
-	sb.texture_margin_bottom = 56
+	sb.texture_margin_left = 16
+	sb.texture_margin_right = 16
+	sb.texture_margin_top = 16
+	sb.texture_margin_bottom = 16
 	sb.modulate_color = mod
 	sb.content_margin_left = 14.0
 	sb.content_margin_right = 14.0

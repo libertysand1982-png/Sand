@@ -100,11 +100,12 @@ et devant **chaque ligne du classement**.
 - **Boss** : NightBorne, **Bringer of Death**, **3 Démons**, **3 Dragons**, **MegaBoss** final.
 - **Monstres** : gobelin, chauve-souris, œil volant, champignon, squelette + **démons** (tard).
 - **Carte** : sol **RPGW Caves v2.1** en patchwork varié (cristaux, rochers).
-- **Interface : pack CraftPix RPG UI Elements** — barres PV/XP/boss **à pointes
-  de flèche**, bannière sombre derrière la barre de skills, panneaux sombres,
-  **bannières parchemin** (fins de partie, niveau supérieur), curseurs à **poignée
-  diamant** — complété par le pack **RPG MMO UI** (boutons pinceau, slots grunge,
-  champ de saisie) et les **polices fantasy** (Ringbearer titres, Palatino texte).
+- **Interface : pack CraftPix RPG UI Elements** (vraies textures, styles de calques
+  rendus via Photopea) — cadres **dorés à pointes de flèche** pour PV/XP, **bannière
+  ornée** pour la barre de boss, **slots dorés** de la barre de skills, grand **panneau
+  sombre à bordure dorée** pour tous les menus, **boutons-plaques** dorés, **bannières
+  parchemin** (fins de partie, niveau supérieur), curseurs à **poignée diamant**.
+  Polices **Ringbearer** (titres/boutons) et **Palatino** (texte).
 - **Rangs : pack Fantasy Ranks** — 18 emblèmes à chevrons (Bronze/Argent/Or I→VI).
 - **Menus** : forêt crépusculaire + **cinématique d'intro** + séparateurs Kenney.
 - **Icônes de sorts** : Raven Fantasy + **BloodMage** + **Spell Icons Vol.1** (packs peints).
@@ -148,8 +149,8 @@ godot/
 - **NightBorne** · **Bringer of Death** · **Demon Pack** · **Dragon Pack** · **Mega Boss** — boss animés.
 - **Monsters Creatures Fantasy** · **Dark Fantasy Enemies** — monstres.
 - **Raven Fantasy Icons** · **BloodMage Free** · **Spell Icons Volume 1** — icônes de sorts.
-- **CraftPix — RPG UI Elements** — barres flèches, parchemin, panneaux, curseurs.
-- **CraftPix — RPG MMO UI** — boutons, slots, saisie, polices (Ringbearer/Palatino).
+- **CraftPix — RPG UI Elements** — cadres dorés, bannières, parchemin, panneaux, slots, curseurs (rendus depuis les PSD).
+- **CraftPix — RPG MMO UI** — polices (Ringbearer / Palatino).
 - **CraftPix — Fantasy Ranks** — 18 emblèmes de rang.
 - **Kenney — Fantasy UI Borders** — séparateurs dorés.
 - **RPGW Caves v2.1** — tileset de la carte.

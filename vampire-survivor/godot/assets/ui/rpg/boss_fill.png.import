@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c47hp5jtr77gx"
-path="res://.godot/imported/bar_bg.png-8157aef1d773db06537267d5f6516365.ctex"
+uid="uid://bn462duj22ki0"
+path="res://.godot/imported/boss_fill.png-88038eac3d0acbfd3e313a594af9d193.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/mmo/bar_bg.png"
-dest_files=["res://.godot/imported/bar_bg.png-8157aef1d773db06537267d5f6516365.ctex"]
+source_file="res://assets/ui/rpg/boss_fill.png"
+dest_files=["res://.godot/imported/boss_fill.png-88038eac3d0acbfd3e313a594af9d193.ctex"]
 
 [params]
 
