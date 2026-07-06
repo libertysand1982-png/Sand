@@ -20,7 +20,7 @@ le Seigneur du Crépuscule a rouvert les cavernes, ses hordes déferlent.
 Seigneur du Crépuscule en personne.** Tous les **10 niveaux**, un **gardien**
 de plus en plus puissant se dresse sur la route.
 
-## Choix du héros (4 jouables)
+## Choix du héros (5 jouables, avec portraits)
 
 | Héros | Style | PV | Vitesse | Capacités (1→5) | Ultime |
 |-------|-------|----|---------|----|--------|
@@ -28,6 +28,7 @@ de plus en plus puissant se dresse sur la route.
 | **Samurai Errant** | mêlée rapide | 135 | ●●● | Entaille · Ruée · Tourbillon · Garde · Lame volante | Mille coupures |
 | **Chevalier de l'Aube** | tank sacré, gros dégâts | 170 | ●○○ | Entaille · **Égide sacrée** · Ruée · Soin · Lame volante | Jugement |
 | **Kobold Sauvage** | berserker féral, fragile et véloce | 90 | ●●●● | **Croissant sanglant** · **Nova écarlate** · Piétinement · **Frénésie** · Tourbillon | Rage primordiale |
+| **Gladiateur** | champion d'arène, équilibré | 150 | ●●○ | Entaille · Piétinement · Ruée · Garde · Lame volante | Rugissement de l'arène |
 
 Nouveaux sorts marquants :
 - **Égide sacrée** — bouclier d'**invincibilité (3,5 s)** + soin.
@@ -51,14 +52,26 @@ Nouveaux sorts marquants :
 Aux niveaux **10, 20, …, 90**, un **boss gardien** apparaît (barre de vie en haut
 de l'écran), de plus en plus fort, avec des attaques à **esquiver** :
 
-- **NightBorne** (niv 10, 30, 50, 70, 90) — **anneaux d'orbes** violets + **tirs visés**.
-- **Porteur de Mort** (niv 20, 40, 60, 80) — **zones d'explosion télégraphiées**
-  (cercles rouges : sors-en avant le boom !) + **invocations** de monstres.
+| Niveau | Gardien | Attaques |
+|--------|---------|----------|
+| 10 | **NightBorne** | anneaux d'orbes + tirs visés |
+| 20 | **Porteur de Mort** | zones télégraphiées + invocations |
+| 30 | **L'Œil Dévoreur** (démon) | volées de tirs + invocations |
+| 40 | **Dragon Écarlate** | **souffle enflammé** (éventail d'orbes lourds) + nappes de feu |
+| 50 | **Brute Démoniaque** | volées de tirs + invocations |
+| 60 | **Porteur de Mort** | zones + invocations |
+| 70 | **Ombre Cornue** (démon) | volées de tirs + invocations |
+| 80 | **Dragon d'Ivoire** | souffle + nappes |
+| 90 | **Dragon du Crépuscule** | souffle + nappes |
+
+Astuce : les **cercles rouges** annoncent une explosion — sors-en avant le boom !
+Passé 4 minutes, des **démons** rejoignent aussi la horde de base.
 
 Chaque gardien vaincu lâche un **objet** (⚔️ +30% dégâts · 🛡️ +40 PV max · 🧪 soin complet).
 
-Au **niveau 99** : le **☠ SEIGNEUR DU CRÉPUSCULE ☠** — géant, tous les patterns
-à la fois. Vaincs-le pour la **VICTOIRE** (bonus de **+10 000** au score) !
+Au **niveau 99** : le **☠ SEIGNEUR DU CRÉPUSCULE ☠** (MegaBoss enflammé, géant) —
+anneaux, zones, souffle et tirs à la fois. Vaincs-le pour la **VICTOIRE**
+(bonus de **+10 000** au score) !
 
 ## Montée en puissance (des deux côtés)
 
@@ -73,13 +86,27 @@ Au **niveau 99** : le **☠ SEIGNEUR DU CRÉPUSCULE ☠** — géant, tous les p
 (persistant dans `user://scores.json`), et le **classement** s'affiche.
 Accessible aussi depuis le menu (**Scores**).
 
+### Rangs (pack Fantasy Ranks)
+
+Chaque fin de partie t'attribue un **rang** selon ton score — **18 paliers** :
+**Bronze I→VI** (dès 0), **Argent I→VI** (dès 4 000), **Or I→VI** (dès 14 000 —
+la victoire au niveau 99 et son bonus de +10 000 t'ouvrent les rangs Or !).
+L'**emblème** (chevrons bronze/argent/or) s'affiche en grand sur l'écran de fin
+et devant **chaque ligne du classement**.
+
 ## Contenu visuel & audio
 
-- **4 héros animés** : Evil Wizard, Samurai, **Knight**, **Kobold Warrior** (LuizMelo & co).
-- **Boss** : NightBorne + **Bringer of Death** (marche/mort/sort d'explosion animés).
-- **Monstres** : gobelin, chauve-souris, œil volant, champignon, squelette.
+- **5 héros animés** : Evil Wizard, Samurai, Knight, Kobold Warrior, **Gladiator** (CraftPix).
+- **Boss** : NightBorne, **Bringer of Death**, **3 Démons**, **3 Dragons**, **MegaBoss** final.
+- **Monstres** : gobelin, chauve-souris, œil volant, champignon, squelette + **démons** (tard).
 - **Carte** : sol **RPGW Caves v2.1** en patchwork varié (cristaux, rochers).
-- **Menus** : forêt crépusculaire + **cadre fantasy Kenney** + **cinématique d'intro**.
+- **Interface : pack CraftPix RPG UI Elements** — barres PV/XP/boss **à pointes
+  de flèche**, bannière sombre derrière la barre de skills, panneaux sombres,
+  **bannières parchemin** (fins de partie, niveau supérieur), curseurs à **poignée
+  diamant** — complété par le pack **RPG MMO UI** (boutons pinceau, slots grunge,
+  champ de saisie) et les **polices fantasy** (Ringbearer titres, Palatino texte).
+- **Rangs : pack Fantasy Ranks** — 18 emblèmes à chevrons (Bronze/Argent/Or I→VI).
+- **Menus** : forêt crépusculaire + **cinématique d'intro** + séparateurs Kenney.
 - **Icônes de sorts** : Raven Fantasy + **BloodMage** + **Spell Icons Vol.1** (packs peints).
 - **Audio** : musique menu/jeu + un son par sort.
 
@@ -116,13 +143,15 @@ godot/
 - **Entrées** : `InputMap` au démarrage, clavier QWERTY/AZERTY **et** manette.
 - Astuce dev : argument `--smoke` = démarre une partie automatiquement (tests).
 
-## Crédits assets (tous CC0 / libres, via le dépôt `Sand`)
-- **Evil Wizard**, **Samurai**, **Knight 2D**, **Kobold Warrior** — héros animés.
-- **NightBorne** · **Bringer of Death** — boss animés.
+## Crédits assets (tous CC0 / libres, via le dépôt `Sand` + CraftPix)
+- **Evil Wizard**, **Samurai**, **Knight 2D**, **Kobold Warrior**, **Gladiator** — héros animés.
+- **NightBorne** · **Bringer of Death** · **Demon Pack** · **Dragon Pack** · **Mega Boss** — boss animés.
 - **Monsters Creatures Fantasy** · **Dark Fantasy Enemies** — monstres.
 - **Raven Fantasy Icons** · **BloodMage Free** · **Spell Icons Volume 1** — icônes de sorts.
-- **CraftPix — Basic Pixel Art UI** — cadres de la barre de skills.
-- **Kenney — Fantasy UI Borders** — cadre des menus + séparateurs.
+- **CraftPix — RPG UI Elements** — barres flèches, parchemin, panneaux, curseurs.
+- **CraftPix — RPG MMO UI** — boutons, slots, saisie, polices (Ringbearer/Palatino).
+- **CraftPix — Fantasy Ranks** — 18 emblèmes de rang.
+- **Kenney — Fantasy UI Borders** — séparateurs dorés.
 - **RPGW Caves v2.1** — tileset de la carte.
 - **Fire Bullet Pack** (boule de feu) · **16x16 Assorted RPG Icons** (loot).
 - **Musique / SFX** — boucles d'ambiance & d'action + banque de sons + clics Kenney.

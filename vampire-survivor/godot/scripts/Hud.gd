@@ -18,20 +18,23 @@ const GOLD := Color(1.0, 0.847, 0.420)
 const CREAM := Color(0.957, 0.925, 0.776)
 const LILAC := Color(0.72, 0.66, 0.81)
 
+# Polices du pack RPG MMO UI
+var font_title: FontFile   # Ringbearer — titres & boutons
+var font_text: FontFile    # Palatino — texte courant
+
 var bars: Control
 var menu_bg: Control
 var wheel: VSWheel
-var xp_fill: ColorRect
+var xp_bar: TextureProgressBar
 var xp_label: Label
-var hp_fill: ColorRect
+var hp_bar: TextureProgressBar
 var hp_label: Label
 var timer_label: Label
 var kills_label: Label
 var mute_label: Label
-var boss_bg: ColorRect
-var boss_fill: ColorRect
+var boss_bar: TextureProgressBar
 var boss_label: Label
-var hp_full_w := 240.0
+var hp_full_w := 250.0
 var xp_full_w := 720.0
 var boss_full_w := 520.0
 
@@ -47,6 +50,7 @@ var cards_box: HBoxContainer
 var go_box: VBoxContainer
 var sfx_pct: Label
 var music_pct: Label
+var last_won := false
 
 # Cinématique d'intro
 var intro_slides: Array = []
@@ -58,6 +62,8 @@ const INTRO_SLIDE_TIME := 5.2
 
 # ============================================================
 func build() -> void:
+	font_title = load("res://assets/ui/mmo/font_title.ttf")
+	font_text = load("res://assets/ui/mmo/font_text.ttf")
 	_build_menu_bg()
 	_build_bars()
 	_build_menu()
@@ -96,17 +102,16 @@ func _build_bars() -> void:
 	bars.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bars)
 
-	# XP (haut centré)
-	var xp_bg := ColorRect.new()
-	xp_bg.color = Color(0, 0, 0, 0.55)
-	_anchor(xp_bg, 0.5, 0.0, 0.5, 0.0, -xp_full_w / 2.0, 12.0, xp_full_w / 2.0, 36.0)
-	bars.add_child(xp_bg)
-	xp_fill = ColorRect.new()
-	xp_fill.color = Color(0.36, 0.78, 1.0)
-	_anchor(xp_fill, 0.5, 0.0, 0.5, 0.0, -xp_full_w / 2.0, 14.0, -xp_full_w / 2.0, 34.0)
-	bars.add_child(xp_fill)
+	# XP (haut centré) — barre à pointes de flèche (RPG UI Elements)
+	xp_bar = _tex_bar("res://assets/ui/rpg/xp_frame.png", "res://assets/ui/rpg/xp_fill.png", Color(0.55, 0.95, 0.55))
+	xp_bar.stretch_margin_left = 52
+	xp_bar.stretch_margin_right = 52
+	xp_bar.stretch_margin_top = 14
+	xp_bar.stretch_margin_bottom = 14
+	_anchor(xp_bar, 0.5, 0.0, 0.5, 0.0, -xp_full_w / 2.0, 4.0, xp_full_w / 2.0, 50.0)
+	bars.add_child(xp_bar)
 	xp_label = _label("Niv. 1", 14, CREAM)
-	_anchor(xp_label, 0.5, 0.0, 0.5, 0.0, -60.0, 13.0, 60.0, 35.0)
+	_anchor(xp_label, 0.5, 0.0, 0.5, 0.0, -60.0, 16.0, 60.0, 38.0)
 	xp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bars.add_child(xp_label)
 
@@ -120,16 +125,11 @@ func _build_bars() -> void:
 	bars.add_child(kills_label)
 
 	# Vie (bas-gauche — la barre de skills occupe le centre)
-	var hp_bg := ColorRect.new()
-	hp_bg.color = Color(0, 0, 0, 0.55)
-	_anchor(hp_bg, 0.0, 1.0, 0.0, 1.0, 18.0, -42.0, 18.0 + hp_full_w, -18.0)
-	bars.add_child(hp_bg)
-	hp_fill = ColorRect.new()
-	hp_fill.color = Color(0.85, 0.26, 0.31)
-	_anchor(hp_fill, 0.0, 1.0, 0.0, 1.0, 20.0, -40.0, 20.0, -20.0)
-	bars.add_child(hp_fill)
-	hp_label = _label("PV 100 / 100", 14, Color(1, 1, 1))
-	_anchor(hp_label, 0.0, 1.0, 0.0, 1.0, 28.0, -41.0, 28.0 + hp_full_w, -19.0)
+	hp_bar = _arrow_bar(Color(0.95, 0.28, 0.30))
+	_anchor(hp_bar, 0.0, 1.0, 0.0, 1.0, 14.0, -54.0, 14.0 + hp_full_w, -14.0)
+	bars.add_child(hp_bar)
+	hp_label = _label("PV 100 / 100", 13, Color(1, 1, 1))
+	_anchor(hp_label, 0.0, 1.0, 0.0, 1.0, 44.0, -45.0, 44.0 + hp_full_w, -23.0)
 	bars.add_child(hp_label)
 
 	mute_label = _label("Muet", 14, LILAC)
@@ -138,19 +138,13 @@ func _build_bars() -> void:
 	mute_label.visible = false
 	bars.add_child(mute_label)
 
-	# Barre de vie du boss (haut, sous le chrono)
-	boss_bg = ColorRect.new()
-	boss_bg.color = Color(0, 0, 0, 0.6)
-	_anchor(boss_bg, 0.5, 0.0, 0.5, 0.0, -boss_full_w / 2.0 - 2.0, 76.0, boss_full_w / 2.0 + 2.0, 96.0)
-	boss_bg.visible = false
-	bars.add_child(boss_bg)
-	boss_fill = ColorRect.new()
-	boss_fill.color = Color(0.72, 0.25, 0.95)
-	_anchor(boss_fill, 0.5, 0.0, 0.5, 0.0, -boss_full_w / 2.0, 78.0, boss_full_w / 2.0, 94.0)
-	boss_fill.visible = false
-	bars.add_child(boss_fill)
+	# Barre de vie du boss (haut, sous le chrono) — flèche violette
+	boss_bar = _arrow_bar(Color(0.82, 0.42, 1.0))
+	_anchor(boss_bar, 0.5, 0.0, 0.5, 0.0, -boss_full_w / 2.0, 72.0, boss_full_w / 2.0, 112.0)
+	boss_bar.visible = false
+	bars.add_child(boss_bar)
 	boss_label = _label("", 12, Color(1, 1, 1))
-	_anchor(boss_label, 0.5, 0.0, 0.5, 0.0, -boss_full_w / 2.0, 77.0, boss_full_w / 2.0, 95.0)
+	_anchor(boss_label, 0.5, 0.0, 0.5, 0.0, -boss_full_w / 2.0, 82.0, boss_full_w / 2.0, 102.0)
 	boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	boss_label.visible = false
 	bars.add_child(boss_label)
@@ -243,7 +237,7 @@ func _build_levelup() -> void:
 	var p := _panel(680, 320)
 	overlay_levelup.add_child(p)
 	var v := _vbox(p)
-	v.add_child(_title2("NIVEAU SUPÉRIEUR !"))
+	v.add_child(_paper_title("NIVEAU SUPÉRIEUR !", 480.0, 58.0, 26))
 	v.add_child(_label("Choisis une amélioration", 16, CREAM, true))
 	cards_box = HBoxContainer.new()
 	cards_box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -386,11 +380,11 @@ func _process(delta: float) -> void:
 
 # ----- API jeu -----
 func set_xp(pct: float, level: int) -> void:
-	xp_fill.offset_right = xp_fill.offset_left + xp_full_w * clampf(pct, 0.0, 1.0)
+	xp_bar.value = clampf(pct, 0.0, 1.0)
 	xp_label.text = "Niv. %d" % level
 
 func set_hp(hp: float, maxhp: float) -> void:
-	hp_fill.offset_right = hp_fill.offset_left + hp_full_w * clampf(hp / maxhp, 0.0, 1.0)
+	hp_bar.value = clampf(hp / maxhp, 0.0, 1.0)
 	hp_label.text = "PV %d / %d" % [maxi(0, int(ceil(hp))), int(maxhp)]
 
 func set_time(t: String) -> void:
@@ -405,13 +399,37 @@ func set_muted(m: bool) -> void:
 # Barre du boss : frac < 0 = cachée.
 func set_boss(frac: float, boss_name: String) -> void:
 	var show := frac >= 0.0
-	boss_bg.visible = show
-	boss_fill.visible = show
+	boss_bar.visible = show
 	boss_label.visible = show
 	if show:
-		boss_fill.offset_left = -boss_full_w / 2.0
-		boss_fill.offset_right = -boss_full_w / 2.0 + boss_full_w * clampf(frac, 0.0, 1.0)
+		boss_bar.value = clampf(frac, 0.0, 1.0)
 		boss_label.text = boss_name
+
+# Barre "flèche" du pack RPG UI Elements (cadre + remplissage alignés)
+func _arrow_bar(tint: Color) -> TextureProgressBar:
+	var b := _tex_bar("res://assets/ui/rpg/arrow_frame.png", "res://assets/ui/rpg/arrow_fill.png", tint)
+	b.stretch_margin_left = 44
+	b.stretch_margin_right = 44
+	b.stretch_margin_top = 16
+	b.stretch_margin_bottom = 16
+	return b
+
+# Barre texturée MMO (fond + remplissage nine-patch)
+func _tex_bar(bg_path: String, fill_path: String, tint: Color) -> TextureProgressBar:
+	var b := TextureProgressBar.new()
+	b.texture_under = load(bg_path)
+	b.texture_progress = load(fill_path)
+	b.nine_patch_stretch = true
+	b.stretch_margin_left = 12
+	b.stretch_margin_right = 12
+	b.stretch_margin_top = 6
+	b.stretch_margin_bottom = 6
+	b.min_value = 0.0
+	b.max_value = 1.0
+	b.value = 1.0
+	b.tint_progress = tint
+	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return b
 
 func show_hud(b: bool) -> void:
 	bars.visible = b
@@ -482,7 +500,7 @@ func show_select(heroes: Array) -> void:
 	box.add_child(_spacer(4))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 16)
+	row.add_theme_constant_override("separation", 12)
 	for h in heroes:
 		row.add_child(_hero_card(h))
 	box.add_child(row)
@@ -521,28 +539,28 @@ func _hero_card(h: Dictionary) -> Control:
 		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		tr.custom_minimum_size = Vector2(0, 108)
+		tr.custom_minimum_size = Vector2(0, 100)
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(tr)
-	v.add_child(_label(str(h.get("name", "?")), 20, GOLD, true))
+	v.add_child(_label(str(h.get("name", "?")), 18, GOLD, true))
 	var style_lbl := _label(str(h.get("style", "")), 12, LILAC, true)
 	style_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	style_lbl.custom_minimum_size = Vector2(240, 0)
+	style_lbl.custom_minimum_size = Vector2(192, 0)
 	v.add_child(style_lbl)
 	v.add_child(_spacer(2))
 	v.add_child(_label("Capacités", 12, GOLD, true))
 	var skills_lbl := _label(str(h.get("skills", "")), 12, CREAM, true)
 	skills_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	skills_lbl.custom_minimum_size = Vector2(240, 0)
+	skills_lbl.custom_minimum_size = Vector2(192, 0)
 	v.add_child(skills_lbl)
 	v.add_child(_spacer(2))
 	var ult_lbl := _label("Ultime : %s" % str(h.get("ult", "")), 13, Color(1.0, 0.82, 0.32), true)
 	ult_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	ult_lbl.custom_minimum_size = Vector2(240, 0)
+	ult_lbl.custom_minimum_size = Vector2(192, 0)
 	v.add_child(ult_lbl)
 	v.add_child(_spacer(4))
 	var pick := _button("CHOISIR")
-	pick.custom_minimum_size = Vector2(200, 42)
+	pick.custom_minimum_size = Vector2(170, 40)
 	var hid := str(h.get("id", ""))
 	pick.pressed.connect(func(): hero_selected.emit(hid))
 	v.add_child(pick)
@@ -550,12 +568,14 @@ func _hero_card(h: Dictionary) -> Control:
 
 func _card_panel() -> Panel:
 	var p := Panel.new()
-	p.custom_minimum_size = Vector2(280, 442)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.16, 0.13, 0.22, 0.96)
-	sb.border_color = Color(0.55, 0.44, 0.28)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(12)
+	p.custom_minimum_size = Vector2(224, 442)
+	var sb := StyleBoxTexture.new()
+	sb.texture = load("res://assets/ui/rpg/panel.png")
+	sb.texture_margin_left = 24
+	sb.texture_margin_right = 24
+	sb.texture_margin_top = 24
+	sb.texture_margin_bottom = 24
+	sb.modulate_color = Color(1.35, 1.22, 1.55, 0.98)
 	sb.set_content_margin_all(6)
 	p.add_theme_stylebox_override("panel", sb)
 	return p
@@ -572,17 +592,34 @@ func show_levelup(choices: Array) -> void:
 
 # Écran de fin : phase 1 = saisie du nom (défaite… ou victoire !)
 func show_gameover_entry(time_str: String, level: int, kills: int, score: int, last_name: String, won: bool = false) -> void:
+	last_won = won
 	hide_overlays()
 	menu_bg.visible = true
 	for c in go_box.get_children():
 		c.queue_free()
 	if won:
-		go_box.add_child(_title2("★ VICTOIRE ★"))
-		go_box.add_child(_label("Le Seigneur du Crépuscule est vaincu. La forêt respire à nouveau.", 15, GOLD, true))
+		go_box.add_child(_paper_title("★  VICTOIRE  ★"))
+		go_box.add_child(_label("Le Seigneur du Crépuscule est vaincu. La forêt respire à nouveau.", 14, GOLD, true))
 	else:
-		go_box.add_child(_title2("TU ES TOMBÉ"))
-	go_box.add_child(_label("Temps %s   ·   Niveau %d   ·   %d tués" % [time_str, level, kills], 15, CREAM, true))
-	go_box.add_child(_label("Score : %d" % score, 22, GOLD, true))
+		go_box.add_child(_paper_title("TU ES TOMBÉ"))
+	go_box.add_child(_label("Temps %s   ·   Niveau %d   ·   %d tués" % [time_str, level, kills], 14, CREAM, true))
+	# Rang gagné (emblème Fantasy Ranks)
+	var ridx := VSScores.rank_for(score)
+	var rrow := HBoxContainer.new()
+	rrow.alignment = BoxContainer.ALIGNMENT_CENTER
+	rrow.add_theme_constant_override("separation", 14)
+	var remb := TextureRect.new()
+	remb.texture = VSScores.rank_icon(ridx)
+	remb.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	remb.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	remb.custom_minimum_size = Vector2(120, 61)
+	rrow.add_child(remb)
+	var rv := VBoxContainer.new()
+	rv.alignment = BoxContainer.ALIGNMENT_CENTER
+	rv.add_child(_label("Score : %d" % score, 20, GOLD))
+	rv.add_child(_label("Rang : %s" % VSScores.rank_name(ridx), 16, CREAM))
+	rrow.add_child(rv)
+	go_box.add_child(rrow)
 	go_box.add_child(_spacer(4))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -590,9 +627,23 @@ func show_gameover_entry(time_str: String, level: int, kills: int, score: int, l
 	var edit := LineEdit.new()
 	edit.text = last_name
 	edit.max_length = 14
-	edit.custom_minimum_size = Vector2(220, 38)
+	edit.custom_minimum_size = Vector2(230, 42)
 	edit.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	edit.placeholder_text = "Ton nom"
+	if font_text:
+		edit.add_theme_font_override("font", font_text)
+	var ebox := StyleBoxTexture.new()
+	ebox.texture = load("res://assets/ui/mmo/input_bg.png")
+	ebox.texture_margin_left = 24
+	ebox.texture_margin_right = 24
+	ebox.texture_margin_top = 20
+	ebox.texture_margin_bottom = 20
+	ebox.modulate_color = Color(0.32, 0.28, 0.42)
+	ebox.set_content_margin_all(8)
+	var efocus: StyleBoxTexture = ebox.duplicate()
+	efocus.modulate_color = Color(0.48, 0.42, 0.62)
+	edit.add_theme_stylebox_override("normal", ebox)
+	edit.add_theme_stylebox_override("focus", efocus)
 	edit.text_submitted.connect(func(_t): name_submitted.emit(edit.text))
 	row.add_child(edit)
 	var ok := _button("VALIDER")
@@ -611,8 +662,8 @@ func show_gameover_entry(time_str: String, level: int, kills: int, score: int, l
 func show_gameover_result(scores: Array, rank: int, score: int) -> void:
 	for c in go_box.get_children():
 		c.queue_free()
-	go_box.add_child(_title2("TU ES TOMBÉ"))
-	go_box.add_child(_label("Score : %d — enregistré !" % score, 18, GOLD, true))
+	go_box.add_child(_paper_title("★  VICTOIRE  ★" if last_won else "TU ES TOMBÉ", 480.0, 58.0, 26))
+	go_box.add_child(_label("Score : %d (%s) — enregistré !" % [score, VSScores.rank_name(VSScores.rank_for(score))], 17, GOLD, true))
 	go_box.add_child(_spacer(2))
 	_score_rows(go_box, scores, rank, 9)
 	go_box.add_child(_spacer(8))
@@ -640,12 +691,25 @@ func _score_rows(parent: Control, scores: Array, highlight: int, limit: int) -> 
 	var n := mini(scores.size(), limit)
 	for i in n:
 		var e: Dictionary = scores[i]
-		var txt := "%2d.  %-14s %6d    %s · Niv %d · %d tués" % [
-			i + 1, str(e.get("name", "?")), int(e.get("score", 0)),
-			str(e.get("time", "00:00")), int(e.get("level", 1)), int(e.get("kills", 0))]
+		var sc := int(e.get("score", 0))
+		var ridx := int(e.get("rank", VSScores.rank_for(sc)))
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 10)
+		var ric := TextureRect.new()
+		ric.texture = VSScores.rank_icon(ridx)
+		ric.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ric.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		ric.custom_minimum_size = Vector2(44, 22)
+		ric.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(ric)
+		var txt := "%2d.  %-14s %6d   %s · Niv %d · %d tués · %s" % [
+			i + 1, str(e.get("name", "?")), sc,
+			str(e.get("time", "00:00")), int(e.get("level", 1)), int(e.get("kills", 0)),
+			VSScores.rank_name(ridx)]
 		var col := GOLD if i == highlight else CREAM
-		var l := _label(txt, 15, col, true)
-		parent.add_child(l)
+		row.add_child(_label(txt, 14, col))
+		parent.add_child(row)
 
 func _full_control() -> Control:
 	var c := Control.new()
@@ -665,27 +729,18 @@ func _overlay(with_dim: bool) -> Control:
 	return c
 
 func _panel(w: float, h: float) -> Panel:
+	# Panneau sombre du pack RPG UI Elements (nine-patch)
 	var p := Panel.new()
 	_anchor(p, 0.5, 0.5, 0.5, 0.5, -w / 2.0, -h / 2.0, w / 2.0, h / 2.0)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.106, 0.082, 0.145, 0.97)
-	sb.set_corner_radius_all(10)
-	sb.set_content_margin_all(22)
-	sb.shadow_color = Color(0, 0, 0, 0.55)
-	sb.shadow_size = 18
+	var sb := StyleBoxTexture.new()
+	sb.texture = load("res://assets/ui/rpg/panel.png")
+	sb.texture_margin_left = 24
+	sb.texture_margin_right = 24
+	sb.texture_margin_top = 24
+	sb.texture_margin_bottom = 24
+	sb.modulate_color = Color(1.06, 1.02, 1.18, 0.985)
+	sb.set_content_margin_all(26)
 	p.add_theme_stylebox_override("panel", sb)
-	# Cadre fantasy Kenney (nine-patch) teinté or, par-dessus le fond sombre
-	var frame := NinePatchRect.new()
-	frame.texture = load("res://assets/ui/frame.png")
-	frame.patch_margin_left = 16
-	frame.patch_margin_right = 16
-	frame.patch_margin_top = 16
-	frame.patch_margin_bottom = 16
-	frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	frame.self_modulate = Color(1.0, 0.84, 0.46)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_anchor(frame, 0.0, 0.0, 1.0, 1.0, -5.0, -5.0, 5.0, 5.0)
-	p.add_child(frame)
 	return p
 
 func _vbox(parent: Control) -> VBoxContainer:
@@ -702,14 +757,18 @@ func _vbox(parent: Control) -> VBoxContainer:
 	return v
 
 func _title(text: String) -> Label:
-	var l := _label(text, 52, GOLD, true)
+	var l := _label(text, 54, GOLD, true)
+	if font_title:
+		l.add_theme_font_override("font", font_title)
 	l.add_theme_color_override("font_shadow_color", Color(0.48, 0.29, 0.08))
 	l.add_theme_constant_override("shadow_offset_x", 3)
 	l.add_theme_constant_override("shadow_offset_y", 3)
 	return l
 
 func _title2(text: String) -> Label:
-	var l := _label(text, 32, GOLD, true)
+	var l := _label(text, 34, GOLD, true)
+	if font_title:
+		l.add_theme_font_override("font", font_title)
 	l.add_theme_color_override("font_shadow_color", Color(0.48, 0.29, 0.08))
 	l.add_theme_constant_override("shadow_offset_x", 2)
 	l.add_theme_constant_override("shadow_offset_y", 2)
@@ -718,6 +777,27 @@ func _title2(text: String) -> Label:
 func _spacer(h: int) -> Control:
 	var c := Control.new()
 	c.custom_minimum_size = Vector2(0, h)
+	return c
+
+# Titre sur bannière parchemin (RPG UI Elements)
+func _paper_title(text: String, w: float = 520.0, h: float = 64.0, fsize: int = 30) -> Control:
+	var c := Control.new()
+	c.custom_minimum_size = Vector2(w, h)
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tr := TextureRect.new()
+	tr.texture = load("res://assets/ui/rpg/paper.png")
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_SCALE
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(tr, 0.5, 0.0, 0.5, 0.0, -w / 2.0, 0.0, w / 2.0, h)
+	c.add_child(tr)
+	var l := _label(text, fsize, Color(0.30, 0.20, 0.10), true)
+	if font_title:
+		l.add_theme_font_override("font", font_title)
+	_anchor(l, 0.5, 0.0, 0.5, 0.0, -w / 2.0, 0.0, w / 2.0, h)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	c.add_child(l)
+	c.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	return c
 
 # Séparateur décoratif Kenney (teinté or), centré sous les titres
@@ -734,6 +814,8 @@ func _divider() -> TextureRect:
 func _label(text: String, size: int, color: Color, center: bool = false) -> Label:
 	var l := Label.new()
 	l.text = text
+	if font_text:
+		l.add_theme_font_override("font", font_text)
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -747,29 +829,65 @@ func _slider(v: float) -> HSlider:
 	s.max_value = 1.0
 	s.step = 0.05
 	s.value = v
-	s.custom_minimum_size = Vector2(320, 24)
+	s.custom_minimum_size = Vector2(340, 30)
 	s.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# habillage RPG UI : piste en flèche + zone parcourue dorée + poignée diamant
+	var track := StyleBoxTexture.new()
+	track.texture = load("res://assets/ui/rpg/slider_frame.png")
+	track.texture_margin_left = 44
+	track.texture_margin_right = 44
+	track.texture_margin_top = 18
+	track.texture_margin_bottom = 18
+	track.content_margin_top = 9.0
+	track.content_margin_bottom = 9.0
+	s.add_theme_stylebox_override("slider", track)
+	var area := StyleBoxTexture.new()
+	area.texture = load("res://assets/ui/rpg/arrow_fill.png")
+	area.texture_margin_left = 44
+	area.texture_margin_right = 44
+	area.texture_margin_top = 16
+	area.texture_margin_bottom = 16
+	area.modulate_color = Color(1.0, 0.84, 0.42)
+	s.add_theme_stylebox_override("grabber_area", area)
+	s.add_theme_stylebox_override("grabber_area_highlight", area)
+	var hnd: Texture2D = load("res://assets/ui/rpg/handle.png")
+	s.add_theme_icon_override("grabber", hnd)
+	s.add_theme_icon_override("grabber_highlight", hnd)
+	s.add_theme_icon_override("grabber_disabled", hnd)
 	return s
 
 func _button(text: String) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.add_theme_font_size_override("font_size", 18)
-	b.custom_minimum_size = Vector2(300, 50)
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.196, 0.490, 0.819)
-	normal.set_corner_radius_all(10)
-	normal.set_content_margin_all(10)
-	var hover := normal.duplicate()
-	hover.bg_color = Color(0.290, 0.612, 0.886)
-	var pressed := normal.duplicate()
-	pressed.bg_color = Color(0.141, 0.353, 0.612)
+	b.add_theme_font_override("font", font_title)
+	b.add_theme_font_size_override("font_size", 20)
+	b.custom_minimum_size = Vector2(300, 52)
+	var tex: Texture2D = load("res://assets/ui/mmo/button.png")
+	var normal := _btn_box(tex, Color(0.34, 0.47, 0.78))
+	var hover := _btn_box(tex, Color(0.46, 0.62, 0.95))
+	var pressed := _btn_box(tex, Color(0.22, 0.30, 0.52))
 	b.add_theme_stylebox_override("normal", normal)
 	b.add_theme_stylebox_override("hover", hover)
 	b.add_theme_stylebox_override("pressed", pressed)
 	b.add_theme_stylebox_override("focus", hover)
-	b.add_theme_color_override("font_color", Color(1, 1, 1))
+	b.add_theme_color_override("font_color", Color(0.97, 0.95, 0.86))
+	b.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+	b.add_theme_color_override("font_pressed_color", Color(0.85, 0.82, 0.72))
 	return b
+
+func _btn_box(tex: Texture2D, mod: Color) -> StyleBoxTexture:
+	var sb := StyleBoxTexture.new()
+	sb.texture = tex
+	sb.texture_margin_left = 70
+	sb.texture_margin_right = 70
+	sb.texture_margin_top = 56
+	sb.texture_margin_bottom = 56
+	sb.modulate_color = mod
+	sb.content_margin_left = 14.0
+	sb.content_margin_right = 14.0
+	sb.content_margin_top = 8.0
+	sb.content_margin_bottom = 8.0
+	return sb
 
 func _anchor(c: Control, al: float, at: float, ar: float, ab: float, ol: float, ot: float, orr: float, ob: float) -> void:
 	c.anchor_left = al

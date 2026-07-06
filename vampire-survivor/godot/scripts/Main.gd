@@ -13,8 +13,29 @@ const ENEMY_DEF := {
 	"mushroom":  {"hp": 60.0,  "speed": 52.0, "dmg": 13.0, "xp": 3, "radius": 20.0, "scale": 0.60, "bar": false},
 	"skeleton":  {"hp": 160.0, "speed": 46.0, "dmg": 20.0, "xp": 7,  "radius": 22.0, "scale": 0.70, "bar": true},
 	"bat":       {"hp": 30.0,  "speed": 112.0,"dmg": 9.0,  "xp": 2,  "radius": 16.0, "scale": 0.85, "bar": false},
+	"demon":     {"hp": 240.0, "speed": 58.0, "dmg": 22.0, "xp": 10, "radius": 20.0, "scale": 0.62, "bar": true},
 	"boss":      {"hp": 600.0, "speed": 42.0, "dmg": 30.0, "xp": 30, "radius": 42.0, "scale": 1.70, "bar": true},
 	"bringer":   {"hp": 720.0, "speed": 38.0, "dmg": 34.0, "xp": 40, "radius": 46.0, "scale": 1.55, "bar": true},
+	"demon1":    {"hp": 780.0, "speed": 46.0, "dmg": 34.0, "xp": 45, "radius": 38.0, "scale": 1.5,  "bar": true},
+	"demon2":    {"hp": 820.0, "speed": 44.0, "dmg": 36.0, "xp": 45, "radius": 40.0, "scale": 1.5,  "bar": true},
+	"demon3":    {"hp": 860.0, "speed": 48.0, "dmg": 36.0, "xp": 50, "radius": 38.0, "scale": 1.55, "bar": true},
+	"dragon1":   {"hp": 980.0, "speed": 40.0, "dmg": 40.0, "xp": 55, "radius": 54.0, "scale": 1.30, "bar": true},
+	"dragon2":   {"hp": 1020.0,"speed": 40.0, "dmg": 42.0, "xp": 60, "radius": 54.0, "scale": 1.30, "bar": true},
+	"dragon3":   {"hp": 1060.0,"speed": 42.0, "dmg": 44.0, "xp": 65, "radius": 56.0, "scale": 1.35, "bar": true},
+	"megaboss":  {"hp": 850.0, "speed": 50.0, "dmg": 42.0, "xp": 150,"radius": 66.0, "scale": 1.9,  "bar": true},
+}
+
+# Rotation des gardiens (niveaux 10..90) : sprite + patterns + nom
+const BOSS_TIERS := {
+	1: {"tkey": "boss",    "kind": "night",   "title": "NIGHTBORNE"},
+	2: {"tkey": "bringer", "kind": "bringer", "title": "PORTEUR DE MORT"},
+	3: {"tkey": "demon1",  "kind": "demon",   "title": "L'ŒIL DÉVOREUR"},
+	4: {"tkey": "dragon1", "kind": "dragon",  "title": "DRAGON ÉCARLATE"},
+	5: {"tkey": "demon2",  "kind": "demon",   "title": "BRUTE DÉMONIAQUE"},
+	6: {"tkey": "bringer", "kind": "bringer", "title": "PORTEUR DE MORT"},
+	7: {"tkey": "demon3",  "kind": "demon",   "title": "OMBRE CORNUE"},
+	8: {"tkey": "dragon2", "kind": "dragon",  "title": "DRAGON D'IVOIRE"},
+	9: {"tkey": "dragon3", "kind": "dragon",  "title": "DRAGON DU CRÉPUSCULE"},
 }
 
 const UPGRADES := [
@@ -59,6 +80,13 @@ const HEROES := {
 		"skills": ["arc_wave", "blood_nova", "war_stomp", "frenzy", "whirl"], "ult": "primal_rage",
 		"crop": Rect2(48, 10, 56, 84),
 	},
+	"gladiator": {
+		"name": "Gladiateur", "style": "Champion d'arène — glaive & bouclier",
+		"frames": "gladiator", "scale": 1.0, "offset_y": -22.0, "shadow_y": 15.0, "shadow_r": 17.0,
+		"speed": 225.0, "maxhp": 150.0, "fire_interval": 0.6, "attack": "melee", "dmg": 27.0,
+		"skills": ["slash_sk", "war_stomp", "dash", "guard", "blade"], "ult": "arena_roar",
+		"crop": Rect2(40, 22, 48, 90),
+	},
 }
 
 # Capacités (nom, icône dans assets/spells/, recharge)
@@ -78,10 +106,11 @@ const SKILLS := {
 	"blood_nova": {"name": "Nova écarlate",     "icon": "bloodnova", "cd": 9.0},
 	"war_stomp":  {"name": "Piétinement",       "icon": "stomp",     "cd": 7.0},
 	"frenzy":     {"name": "Frénésie",          "icon": "frenzy",    "cd": 14.0},
-	"arcane_storm":  {"name": "Tempête arcanique", "icon": "ult_wizard",  "cd": 0.0},
-	"thousand_cuts": {"name": "Mille coupures",    "icon": "ult_samurai", "cd": 0.0},
-	"judgment":      {"name": "Jugement",          "icon": "judgment",    "cd": 0.0},
-	"primal_rage":   {"name": "Rage primordiale",  "icon": "rage",        "cd": 0.0},
+	"arcane_storm":  {"name": "Tempête arcanique",     "icon": "ult_wizard",  "cd": 0.0},
+	"thousand_cuts": {"name": "Mille coupures",        "icon": "ult_samurai", "cd": 0.0},
+	"judgment":      {"name": "Jugement",              "icon": "judgment",    "cd": 0.0},
+	"primal_rage":   {"name": "Rage primordiale",      "icon": "rage",        "cd": 0.0},
+	"arena_roar":    {"name": "Rugissement de l'arène","icon": "roar",        "cd": 0.0},
 }
 
 var state: int = State.MENU
@@ -135,7 +164,15 @@ func _ready() -> void:
 		"bat":       _enemy_sf("res://assets/monsters/bat/fly.png", 9, "res://assets/monsters/bat/death.png", 12, 64),
 		"boss":      _boss_sf(),
 		"bringer":   _bringer_sf(),
+		"demon1":    _enemy_sf("res://assets/monsters/demon1/walk.png", 5,  "res://assets/monsters/demon1/death.png", 3, 128),
+		"demon2":    _enemy_sf("res://assets/monsters/demon2/walk.png", 12, "res://assets/monsters/demon2/death.png", 3, 128),
+		"demon3":    _enemy_sf("res://assets/monsters/demon3/walk.png", 12, "res://assets/monsters/demon3/death.png", 5, 128),
+		"dragon1":   _enemy_sf("res://assets/boss/dragon1_walk.png", 12, "res://assets/boss/dragon1_death.png", 3, 256),
+		"dragon2":   _enemy_sf("res://assets/boss/dragon2_walk.png", 12, "res://assets/boss/dragon2_death.png", 3, 256),
+		"dragon3":   _enemy_sf("res://assets/boss/dragon3_walk.png", 12, "res://assets/boss/dragon3_death.png", 3, 256),
+		"megaboss":  _enemy_sf("res://assets/boss/megaboss_walk.png", 8, "res://assets/boss/megaboss_death.png", 8, 256),
 	}
+	enemy_frames["demon"] = enemy_frames["demon3"]   # le démon "de base" réutilise l'Ombre cornue
 	item_tex = {
 		"weapon": load("res://assets/items/weapon.png"),
 		"armor":  load("res://assets/items/armor.png"),
@@ -147,6 +184,7 @@ func _ready() -> void:
 		"samurai": _samurai_sf(),
 		"knight":  _knight_sf(),
 		"kobold":  _kobold_sf(),
+		"gladiator": _gladiator_sf(),
 	}
 	_build_spells(current_hero)
 
@@ -524,12 +562,20 @@ func _pick_type() -> String:
 		elif r < 0.5: return "bat"
 		elif r < 0.7: return "flyingeye"
 		else: return "mushroom"
-	else:
+	elif t < 240.0:
 		if r < 0.2: return "goblin"
 		elif r < 0.4: return "bat"
 		elif r < 0.58: return "flyingeye"
 		elif r < 0.78: return "mushroom"
 		else: return "skeleton"
+	else:
+		# tard dans la nuit : les démons rejoignent la horde
+		if r < 0.15: return "goblin"
+		elif r < 0.33: return "bat"
+		elif r < 0.48: return "flyingeye"
+		elif r < 0.65: return "mushroom"
+		elif r < 0.85: return "skeleton"
+		else: return "demon"
 
 # Les ennemis grossissent avec le temps ET avec le niveau du héros.
 func _hp_scale() -> float:
@@ -564,20 +610,17 @@ func _boss_spawn_pos(margin: float) -> Vector2:
 	return pos
 
 func _spawn_boss(tier: int) -> void:
-	var kind := "night" if tier % 2 == 1 else "bringer"
-	var tkey := "boss" if kind == "night" else "bringer"
+	var bt: Dictionary = BOSS_TIERS[tier]
+	var tkey: String = bt["tkey"]
 	var e := VSEnemy.new()
 	var hp_scale := _hp_scale() * (0.6 + 0.55 * tier)
 	e.setup(tkey, _boss_spawn_pos(40.0), hp_scale, enemy_frames[tkey], ENEMY_DEF[tkey])
 	e.is_boss = true
 	e.tier = tier
-	e.boss_kind = kind
+	e.boss_kind = bt["kind"]
 	e.dmg *= 1.0 + tier * 0.12
 	e.speed += tier * 2.0
-	if kind == "night":
-		e.boss_title = "NIGHTBORNE — GARDIEN DU NIVEAU %d" % (tier * 10)
-	else:
-		e.boss_title = "PORTEUR DE MORT — GARDIEN DU NIVEAU %d" % (tier * 10)
+	e.boss_title = "%s — GARDIEN DU NIVEAU %d" % [bt["title"], tier * 10]
 	world.add_child(e)
 	enemies.append(e)
 	_spawn_text(player.position + Vector2(0, -120), "BOSS !", Color(0.85, 0.35, 1.0))
@@ -585,17 +628,13 @@ func _spawn_boss(tier: int) -> void:
 
 func _spawn_final_boss() -> void:
 	var e := VSEnemy.new()
-	e.setup("bringer", _boss_spawn_pos(80.0), _hp_scale() * 9.0, enemy_frames["bringer"], ENEMY_DEF["bringer"])
+	e.setup("megaboss", _boss_spawn_pos(80.0), _hp_scale() * 9.0, enemy_frames["megaboss"], ENEMY_DEF["megaboss"])
 	e.is_boss = true
 	e.tier = 10
 	e.boss_kind = "final"
 	e.boss_title = "☠ SEIGNEUR DU CRÉPUSCULE ☠"
-	e.dmg *= 1.5
-	e.speed = 52.0
-	e.radius = 64.0
-	e.disp_scale = 2.6   # appliqué par _ready() à l'ajout dans l'arbre
+	e.dmg *= 1.4
 	world.add_child(e)
-	e.anim.modulate = Color(1.05, 0.72, 1.2)   # teinte violette du Seigneur
 	enemies.append(e)
 	_spawn_text(player.position + Vector2(0, -130), "LE SEIGNEUR DU CRÉPUSCULE !", Color(1.0, 0.3, 0.9))
 	sfx.play("buff", 1.0)
@@ -658,14 +697,33 @@ func _update_bosses(delta: float) -> void:
 				if e.pat_b <= 0.0:
 					e.pat_b = 8.0
 					_boss_summon(e, 3 + int(t / 2.0))
+			"demon":
+				# volées de tirs visés + invocations de la horde
+				if e.pat_a <= 0.0:
+					e.pat_a = maxf(1.8, 3.0 - 0.12 * t)
+					_boss_aimed(e, 4, 250.0 + 8.0 * t)
+				if e.pat_b <= 0.0:
+					e.pat_b = 9.0
+					_boss_summon(e, 2 + int(t / 3.0))
+			"dragon":
+				# souffle enflammé (éventail d'orbes lourds) + nappes de feu
+				if e.pat_a <= 0.0:
+					e.pat_a = maxf(2.4, 4.0 - 0.15 * t)
+					_boss_breath(e, 6, 200.0 + 6.0 * t)
+				if e.pat_b <= 0.0:
+					e.pat_b = 6.5
+					_boss_zones(e, 3, 85.0)
 			"final":
 				# tout à la fois, sans pitié
 				if e.pat_a <= 0.0:
 					e.pat_a = 3.0
-					if randf() < 0.5:
+					var pick := randi() % 3
+					if pick == 0:
 						_boss_ring(e, 22, 200.0)
-					else:
+					elif pick == 1:
 						_boss_zones(e, 4, 95.0)
+					else:
+						_boss_breath(e, 8, 240.0)
 				if e.pat_b <= 0.0:
 					e.pat_b = 2.6
 					_boss_aimed(e, 5, 300.0)
@@ -690,6 +748,18 @@ func _boss_aimed(e: VSEnemy, n: int, spd: float) -> void:
 		proj_layer.add_child(s)
 		enemy_shots.append(s)
 	sfx.play("lightning_cast", 0.2)
+
+# Souffle de dragon : éventail serré de gros orbes lents — à esquiver de côté.
+func _boss_breath(e: VSEnemy, n: int, spd: float) -> void:
+	var base_a := (player.position - e.position).angle()
+	var arc := 0.9
+	for i in n:
+		var a := base_a - arc / 2.0 + arc * float(i) / float(maxi(1, n - 1))
+		var s := VSEnemyShot.new()
+		s.setup(e.position, Vector2.from_angle(a), spd, e.dmg * 0.55, 14.0)
+		proj_layer.add_child(s)
+		enemy_shots.append(s)
+	sfx.play("fire_cast", 0.4)
 
 func _boss_zones(e: VSEnemy, k: int, r: float) -> void:
 	for i in k:
@@ -1238,6 +1308,28 @@ func _cast_ult() -> bool:
 			_burst(p.position, 160.0, Color(1.0, 0.4, 0.35), Color(0.95, 0.15, 0.2))
 			sfx.play("buff", 0.9)
 			sfx.play("slice", 0.6)
+		"arena_roar":
+			# rugissement de l'arène : choc géant, la foule est conquise
+			p.invuln = maxf(p.invuln, 1.5)
+			_burst(p.position, 150.0, Color(1.0, 0.9, 0.6), Color(1.0, 0.7, 0.3))
+			_burst(p.position, 300.0, Color(1.0, 0.85, 0.5), Color(0.9, 0.6, 0.2))
+			_burst(p.position, 440.0, Color(1.0, 0.8, 0.45), Color(0.85, 0.5, 0.15))
+			var rodmg := 130.0 + p.level * 5.0
+			for en in enemies:
+				if not is_instance_valid(en) or en.dead:
+					continue
+				var ro_to := en.position - p.position
+				var ro_d := ro_to.length()
+				if ro_d <= 440.0:
+					en.position += (ro_to / maxf(ro_d, 0.001)) * 140.0
+					en.slow_timer = maxf(en.slow_timer, 3.0)
+					en.hp -= rodmg
+					en.hitflash = 0.12
+					_spawn_text(en.position, str(int(rodmg)), Color(1, 0.9, 0.55))
+					if en.hp <= 0.0:
+						_kill_enemy(en)
+			sfx.play("buff", 0.9)
+			sfx.play("slice", 0.7)
 	power = 0.0
 	_spawn_text(p.position + Vector2(0, -60), "ULTIME !", Color(1.0, 0.82, 0.32))
 	hud.wheel.set_data(_wheel_data())
@@ -1392,21 +1484,23 @@ func _intro_slides() -> Array:
 		},
 		{
 			"texs": [enemy_frames["boss"].get_frame_texture("move", 0),
-					enemy_frames["bat"].get_frame_texture("move", 0),
-					enemy_frames["bringer"].get_frame_texture("move", 0)], "h": 150.0,
+					enemy_frames["demon2"].get_frame_texture("move", 0),
+					enemy_frames["bringer"].get_frame_texture("move", 0),
+					enemy_frames["dragon1"].get_frame_texture("move", 0)], "h": 150.0,
 			"title": "L'éveil du Seigneur",
-			"sub": "Sous la terre, le Seigneur du Crépuscule a rouvert les cavernes.\nSes hordes déferlent — et tous les 10 niveaux, un gardien les mène.",
+			"sub": "Sous la terre, le Seigneur du Crépuscule a rouvert les cavernes.\nDémons, dragons et morts-vivants déferlent — tous les 10 niveaux, un gardien les mène.",
 		},
 		{
 			"texs": [hero_frames["wizard"].get_frame_texture("idle", 0),
 					hero_frames["samurai"].get_frame_texture("idle", 0),
 					hero_frames["knight"].get_frame_texture("idle", 0),
-					hero_frames["kobold"].get_frame_texture("idle", 0)], "h": 150.0,
-			"title": "Quatre héros se lèvent",
-			"sub": "Sorcier, Samurai, Chevalier, Kobold.\nLeurs sorts sont notre dernier rempart.",
+					hero_frames["kobold"].get_frame_texture("idle", 0),
+					hero_frames["gladiator"].get_frame_texture("idle", 0)], "h": 150.0,
+			"title": "Cinq héros se lèvent",
+			"sub": "Sorcier, Samurai, Chevalier, Kobold, Gladiateur.\nLeurs sorts sont notre dernier rempart.",
 		},
 		{
-			"texs": [enemy_frames["bringer"].get_frame_texture("move", 0)], "h": 210.0,
+			"texs": [enemy_frames["megaboss"].get_frame_texture("move", 0)], "h": 230.0,
 			"title": "Ta quête",
 			"sub": "Survis aux vagues. Deviens plus fort. Atteins le NIVEAU 99.\nEt là, au bout de la nuit… affronte-le.",
 		},
@@ -1441,6 +1535,13 @@ func _kobold_sf() -> SpriteFrames:
 	_add_sheet(sf, "run", load("res://assets/kobold/run.png"), 8, 148, 13.0, true, 96)
 	# pas d'animation de mort dans le pack : on fige la 1re frame d'idle
 	_add_sheet(sf, "death", load("res://assets/kobold/idle.png"), 1, 148, 5.0, false, 96)
+	return sf
+
+func _gladiator_sf() -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	_add_sheet(sf, "idle", load("res://assets/gladiator/idle.png"), 7, 128, 8.0, true)
+	_add_sheet(sf, "run", load("res://assets/gladiator/run.png"), 10, 128, 13.0, true)
+	_add_sheet(sf, "death", load("res://assets/gladiator/death.png"), 5, 128, 8.0, false)
 	return sf
 
 func _enemy_sf(move_path: String, move_count: int, death_path: String, death_count: int, fsize: int = 150) -> SpriteFrames:

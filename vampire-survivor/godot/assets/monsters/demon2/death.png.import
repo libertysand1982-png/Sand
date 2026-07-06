@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dvojlnr4wwy0a"
-path="res://.godot/imported/slot_cd.png-5260ffe579d37fb2d1d085aa2966578e.ctex"
+uid="uid://xqxs6t2vrv"
+path="res://.godot/imported/death.png-e53e27b32c349570923d7ee27a6cbc01.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/spells/slot_cd.png"
-dest_files=["res://.godot/imported/slot_cd.png-5260ffe579d37fb2d1d085aa2966578e.ctex"]
+source_file="res://assets/monsters/demon2/death.png"
+dest_files=["res://.godot/imported/death.png-e53e27b32c349570923d7ee27a6cbc01.ctex"]
 
 [params]
 
