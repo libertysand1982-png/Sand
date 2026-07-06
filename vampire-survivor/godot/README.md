@@ -40,6 +40,17 @@ Nouveaux sorts marquants :
 
 ## Commandes
 
+### Manette (support complet)
+
+- **Stick gauche** : déplacement · **A / B / X / Y** : sorts 1-4 · **LB** : sort 5 ·
+  **RB** : ultime · **Start** : pause.
+- **Menus entièrement navigables à la manette** : stick/croix pour se déplacer,
+  **A** pour valider (le bouton en surbrillance dorée a le focus). Intro et
+  entrée du boss se passent avec n'importe quel bouton.
+- *(La saisie du nom au tableau des scores reste au clavier.)*
+
+### Commandes
+
 - **Déplacement :** WASD / ZQSD / flèches — ou **stick gauche** (manette).
 - **Attaque de base : automatique** (le Mage a des **boules de feu en orbite** ;
   les autres frappent au corps-à-corps).
@@ -77,8 +88,15 @@ s'engage (clic/touche pour l'écourter). C'est un **combat de raid en 3 phases**
 (barre de vie + « PHASE x/3 ») de plus en plus violent : volées visées, anneaux
 d'orbes, **spirales**, zones télégraphiées, **souffle** en phase finale — **et il
 te charge au corps-à-corps** : coups d'épée télégraphiés (**Fauchage**) et **bonds
-dévastateurs** avec onde de choc. À toi d'**esquiver**, de lever le **bouclier** et
-de te **soigner** au bon moment. Vaincs-le pour la **VICTOIRE** (+**10 000** au score) !
+dévastateurs** avec onde de choc. Dès la phase 2, il lance le **CATACLYSME** : une
+**immense zone violette** qui, si tu y restes, inflige des dégâts **quasi-mortels
+ignorant l'armure** — il FAUT en sortir, ou lever un **bouclier / esquive**
+(invincibilité), ou se **soigner** juste après. Vaincs-le pour la **VICTOIRE**
+(+**10 000** au score) !
+
+Le reste du jeu monte aussi en tension : les ennemis frappent **de plus en plus
+fort** avec ton niveau et le temps, les **yeux volants tirent des orbes** à
+distance, et l'**armure plafonne** — tu ne deviens jamais invincible.
 
 ## Intensité : vagues & élites
 

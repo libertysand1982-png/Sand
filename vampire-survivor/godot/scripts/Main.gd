@@ -467,15 +467,18 @@ func _to_menu() -> void:
 	hud.show_menu()
 	sfx.play_music("menu")
 
+func _advance_pressed(event: InputEvent) -> bool:
+	return (event is InputEventKey and event.pressed and not event.echo) \
+		or (event is InputEventMouseButton and event.pressed) \
+		or (event is InputEventJoypadButton and event.pressed)
+
 func _unhandled_input(event: InputEvent) -> void:
 	if hud.intro_active():
-		if (event is InputEventKey and event.pressed and not event.echo) \
-				or (event is InputEventMouseButton and event.pressed):
+		if _advance_pressed(event):
 			hud.intro_next()
 		return
 	if state == State.BOSSINTRO:
-		if (event is InputEventKey and event.pressed and not event.echo) \
-				or (event is InputEventMouseButton and event.pressed):
+		if _advance_pressed(event):
 			_end_boss_intro()
 		return
 	if event.is_action_pressed("vs_pause"):
@@ -758,10 +761,11 @@ func _pick_type() -> String:
 
 # Les ennemis grossissent avec le temps ET avec le niveau du héros.
 func _hp_scale() -> float:
-	return (1.0 + (elapsed / 60.0) * 0.22) * (1.0 + (player.level - 1) * 0.02)
+	return (1.0 + (elapsed / 60.0) * 0.28) * (1.0 + (player.level - 1) * 0.03)
 
 func _dmg_scale() -> float:
-	return 1.0 + (player.level - 1) * 0.01
+	# les ennemis frappent de plus en plus fort avec ton niveau ET le temps
+	return 1.0 + (player.level - 1) * 0.03 + elapsed * 0.005
 
 func _spawn_one() -> void:
 	var tkey := _pick_type()
@@ -905,7 +909,10 @@ func _spawn_final_boss() -> void:
 	e.pat_a = 1.5
 	e.pat_b = 3.0
 	e.pat_c = 2.5
+	e.pat_d = 8.0
 	e.speed = 72.0   # rapide et pressant : il vient te chercher
+	# dégâts qui montent avec le niveau (sinon le boss final ne menace plus)
+	e.dmg *= 1.0 + player.level * 0.02
 	world.add_child(e)
 	enemies.append(e)
 	sfx.play("buff", 1.0)
@@ -1079,6 +1086,12 @@ func _update_bosses(delta: float) -> void:
 				if tp > e.phase:
 					_final_phase_change(e, tp)
 				var ph := e.phase
+				# Cataclysme quasi-mortel dès la phase 2
+				if ph >= 2:
+					e.pat_d -= delta
+					if e.pat_d <= 0.0:
+						e.pat_d = maxf(6.5, 10.0 - 1.5 * ph)
+						_boss_cataclysm(e)
 				if e.pat_a <= 0.0:
 					e.pat_a = maxf(1.0, 2.2 - 0.4 * ph)
 					_boss_aimed(e, 2 + ph, 250.0 + 25.0 * ph)   # tirs visés (esquive)
@@ -1133,6 +1146,19 @@ func _boss_slam(pos: Vector2, r: float, delay: float, dmg: float) -> void:
 	z.setup(pos, r, delay, dmg)
 	fx_layer.add_child(z)
 	zones.append(z)
+
+# CATACLYSME : immense zone télégraphiée (2 s) centrée sur toi qui inflige des
+# dégâts quasi-mortels (ignore l'armure). Il FAUT en sortir, ou lever un
+# bouclier / esquiver (invincibilité), ou se soigner juste après.
+func _boss_cataclysm(e: VSEnemy) -> void:
+	var pos := player.position
+	var z := VSDangerZone.new()
+	z.setup(pos, 235.0, 2.0, player.maxhp * 1.15, true)
+	fx_layer.add_child(z)
+	zones.append(z)
+	_spawn_text(player.position + Vector2(0, -70), "CATACLYSME ! Sors du cercle !", Color(1.0, 0.45, 1.0))
+	_add_shake(4.0, 0.4)
+	sfx.play("lightning_cast", 0.7)
 
 # Fauchage : coup d'épée télégraphié devant le boss (esquive latérale).
 func _boss_cleave(e: VSEnemy) -> void:
@@ -1243,11 +1269,13 @@ func _update_zones(delta: float) -> void:
 			_spawn_spellfx(z.position)
 			sfx.play("fire_cast", 0.45)
 			if p.invuln <= 0.0 and p.position.distance_to(z.position) <= z.radius + p.radius:
-				var dmg := z.dmg * (1.0 - p.dmg_reduction)
+				# Cataclysme : ignore l'armure (quasi-mortel) ; sinon armure normale
+				var dmg := z.dmg if z.oneshot else z.dmg * (1.0 - p.dmg_reduction)
 				p.hp -= dmg
 				p.invuln = 0.7
 				sfx.play("hurt", 0.45)
-				_spawn_text(p.position + Vector2(0, -34), "-" + str(int(dmg)), Color(1, 0.42, 0.42))
+				var col := Color(1.0, 0.4, 1.0) if z.oneshot else Color(1, 0.42, 0.42)
+				_spawn_text(p.position + Vector2(0, -34), "-" + str(int(dmg)), col)
 			z.queue_free()
 			zones.remove_at(i)
 
@@ -1278,8 +1306,19 @@ func _update_enemies(delta: float) -> void:
 		else:
 			e.anim.self_modulate = Color(1, 1, 1)
 		e.anim.scale = Vector2(e.disp_scale * punch, e.disp_scale * punch)
-		if e.show_bar:
+		if e.show_bar or e.is_elite:
 			e.queue_redraw()
+
+		# Les yeux volants lancent des orbes à distance (plus de "sorts" ennemis).
+		if e.type_key == "flyingeye" and d < 620.0:
+			e.shoot_cd -= delta
+			if e.shoot_cd <= 0.0:
+				e.shoot_cd = randf_range(2.4, 3.8)
+				var s := VSEnemyShot.new()
+				s.setup(e.position, to / maxf(d, 0.001), 190.0, e.dmg * 0.8, 8.0)
+				proj_layer.add_child(s)
+				enemy_shots.append(s)
+				sfx.play("magic", 0.15)
 
 		if d < e.radius + p.radius and p.invuln <= 0.0:
 			var dmg := e.dmg * (1.0 - p.dmg_reduction)
@@ -1862,7 +1901,7 @@ func _apply_upgrade(id: String) -> void:
 		"hp":
 			p.maxhp += 30.0
 			p.hp = minf(p.maxhp, p.hp + 30.0)
-		"armor": p.dmg_reduction = minf(0.6, p.dmg_reduction + 0.08)
+		"armor": p.dmg_reduction = minf(0.45, p.dmg_reduction + 0.07)
 		"regen": p.regen += 1.5
 		"nova":
 			p.nova_radius_mul *= 1.3

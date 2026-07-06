@@ -540,11 +540,13 @@ func show_menu() -> void:
 	wheel.visible = false
 	menu_bg.visible = true
 	overlay_menu.visible = true
+	_focus_first_button(overlay_menu)
 
 func show_options() -> void:
 	hide_overlays()
 	menu_bg.visible = true
 	overlay_options.visible = true
+	_focus_first_button(overlay_options)
 
 func show_scoreboard() -> void:
 	hide_overlays()
@@ -562,6 +564,7 @@ func show_scoreboard() -> void:
 	back.pressed.connect(func(): show_menu())
 	box.add_child(back)
 	overlay_scores.visible = true
+	back.grab_focus()
 
 func _scores_box() -> VBoxContainer:
 	# le VBox a été ajouté au Panel dans _build_scores ; on le retrouve
@@ -598,6 +601,7 @@ func show_select(heroes: Array) -> void:
 	back.pressed.connect(func(): show_menu())
 	box.add_child(back)
 	overlay_select.visible = true
+	_focus_first_button(box)   # 1er "CHOISIR" (navigation manette)
 
 func _select_box() -> VBoxContainer:
 	for c in overlay_select.get_children():
@@ -674,6 +678,7 @@ func show_levelup(choices: Array) -> void:
 	for choice in choices:
 		cards_box.add_child(_levelup_card(choice))
 	overlay_levelup.visible = true
+	_focus_first_button(cards_box)   # 1re carte (navigation manette)
 
 # Carte de niveau : plaque cliquable avec icône + nom + description.
 func _levelup_card(choice: Dictionary) -> Control:
@@ -803,6 +808,7 @@ func show_gameover_result(scores: Array, rank: int, score: int) -> void:
 	m.pressed.connect(func(): to_menu_pressed.emit())
 	hb.add_child(m)
 	go_box.add_child(hb)
+	r.grab_focus()   # REJOUER par défaut (manette)
 
 func show_pause(b: bool) -> void:
 	overlay_pause.visible = b
@@ -994,11 +1000,27 @@ func _button(text: String) -> Button:
 	b.add_theme_stylebox_override("normal", normal)
 	b.add_theme_stylebox_override("hover", hover)
 	b.add_theme_stylebox_override("pressed", pressed)
-	b.add_theme_stylebox_override("focus", normal)
+	b.add_theme_stylebox_override("focus", hover)   # focus manette = surbrillance dorée
 	b.add_theme_color_override("font_color", GOLD)
 	b.add_theme_color_override("font_hover_color", Color(1, 0.97, 0.85))
+	b.add_theme_color_override("font_focus_color", Color(1, 0.97, 0.85))
 	b.add_theme_color_override("font_pressed_color", Color(0.8, 0.7, 0.45))
 	return b
+
+# Donne le focus au premier bouton (navigation manette).
+func _focus_first_button(root: Node) -> void:
+	var b := _find_button(root)
+	if b:
+		b.grab_focus()
+
+func _find_button(n: Node) -> Button:
+	for c in n.get_children():
+		if c is Button and (c as Control).visible:
+			return c
+		var r := _find_button(c)
+		if r:
+			return r
+	return null
 
 func _btn_box(tex: Texture2D, mod: Color) -> StyleBoxTexture:
 	var sb := StyleBoxTexture.new()
