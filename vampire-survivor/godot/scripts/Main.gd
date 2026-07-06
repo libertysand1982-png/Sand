@@ -61,6 +61,26 @@ const UPGRADES := [
 	{"id": "magnet",   "name": "Aimant",          "desc": "+35% rayon de ramassage",    "icon": "magnet",    "kind": ""},
 ]
 
+# Évolutions de sorts (façon Vampire Survivors) : monte le passif `buff` à `n`
+# stacks, ouvre un COFFRE, et le sort évolue → recharge -40% + explosion bonus.
+const EVOLUTIONS := {
+	"fire":       {"buff": "dmg",   "n": 4, "name": "Enfer déchaîné"},
+	"bolt":       {"buff": "crit",  "n": 3, "name": "Tempête foudroyante"},
+	"frost":      {"buff": "armor", "n": 3, "name": "Ère glaciaire"},
+	"heal":       {"buff": "regen", "n": 2, "name": "Lumière rédemptrice"},
+	"meteor":     {"buff": "heavy", "n": 3, "name": "Pluie de météores"},
+	"slash_sk":   {"buff": "dmg",   "n": 4, "name": "Lame-tempête"},
+	"dash":       {"buff": "speed", "n": 3, "name": "Fracture éclair"},
+	"whirl":      {"buff": "count", "n": 3, "name": "Cyclone éternel"},
+	"guard":      {"buff": "hp",    "n": 3, "name": "Rempart sacré"},
+	"blade":      {"buff": "count", "n": 3, "name": "Nuée de lames"},
+	"aegis":      {"buff": "armor", "n": 3, "name": "Sanctuaire divin"},
+	"arc_wave":   {"buff": "dmg",   "n": 4, "name": "Faux du carnage"},
+	"blood_nova": {"buff": "count", "n": 3, "name": "Éclipse écarlate"},
+	"war_stomp":  {"buff": "hp",    "n": 3, "name": "Séisme titanesque"},
+	"frenzy":     {"buff": "rate",  "n": 3, "name": "Furie sans fin"},
+}
+
 # Héros jouables (sélection au début)
 const HEROES := {
 	"wizard": {
@@ -152,6 +172,7 @@ var hero_frames: Dictionary = {}
 var current_hero := "wizard"
 var power := 0.0
 var buffs: Dictionary = {}   # id d'amélioration off/def -> nombre de stacks
+var evolved: Dictionary = {} # id de sort évolué -> true
 var final_fight := false      # duel contre le boss final (plus aucun mob ne spawn)
 
 # Boules de feu en orbite (attaque auto du Mage)
@@ -405,6 +426,7 @@ func start_game(hero_id := current_hero) -> void:
 	elite_timer = 22.0
 	power = 0.0
 	buffs.clear()
+	evolved.clear()
 	hud.set_buffs([])
 	player.set_frames(hero_frames[h["frames"]])
 	player.setup_hero(h["scale"], h["offset_y"], h["shadow_y"], h["shadow_r"])
@@ -968,10 +990,31 @@ func _apply_item(kind: String) -> void:
 			p.hp = p.maxhp
 			_spawn_text(p.position + Vector2(0, -46), "POTION ! PV au max", Color(0.55, 1.0, 0.55))
 		"chest":
-			# amélioration gratuite (ouvre un choix de carte au prochain tick)
-			level_queue += 1
-			_spawn_text(p.position + Vector2(0, -46), "COFFRE ! Amélioration", Color(1.0, 0.85, 0.35))
+			# priorité : faire ÉVOLUER un sort si un passif est au seuil ; sinon carte gratuite
+			if _try_evolve():
+				_spawn_text(p.position + Vector2(0, -46), "COFFRE : ÉVOLUTION !", Color(1.0, 0.85, 0.35))
+			else:
+				level_queue += 1
+				_spawn_text(p.position + Vector2(0, -46), "COFFRE ! Amélioration", Color(1.0, 0.85, 0.35))
 	sfx.play("blessing", 0.6)
+
+# Tente d'évoluer un sort du héros dont le passif requis est au seuil. Un par coffre.
+func _try_evolve() -> bool:
+	for sp in spells:
+		var id: String = sp["id"]
+		if evolved.has(id) or not EVOLUTIONS.has(id):
+			continue
+		var req: Dictionary = EVOLUTIONS[id]
+		if int(buffs.get(req["buff"], 0)) >= int(req["n"]):
+			evolved[id] = true
+			_spawn_text(player.position + Vector2(0, -78), "ÉVOLUTION : %s !" % req["name"], Color(1.0, 0.88, 0.35))
+			_burst(player.position, 230.0, Color(1.0, 0.92, 0.5), Color(1.0, 0.7, 0.2))
+			_add_shake(5.0, 0.45)
+			sfx.play("buff", 0.9)
+			sfx.play("blessing", 0.8)
+			hud.wheel.set_data(_wheel_data())
+			return true
+	return false
 
 # ----- Patterns des boss : à esquiver ! -----
 func _update_bosses(delta: float) -> void:
@@ -1379,6 +1422,7 @@ func _wheel_data() -> Dictionary:
 			"icon": sp["icon"], "key": sp["key"], "left": sp["left"],
 			"frac": (sp["left"] / sp["cd"]) if sp["cd"] > 0.0 else 0.0,
 			"ready": sp["left"] <= 0.0,
+			"evolved": evolved.has(sp["id"]),
 		})
 	return {
 		"slots": out, "power": power, "ult": {"icon": ult_icon, "key": "6"},
@@ -1391,8 +1435,28 @@ func _try_cast(i: int) -> void:
 	if sp["left"] > 0.0:
 		return
 	if _do_cast(sp["id"]):
-		sp["left"] = sp["cd"]
+		var cd: float = sp["cd"]
+		if evolved.has(sp["id"]):
+			cd *= 0.6                 # évolution : recharge fortement réduite
+			_evolution_burst()        # + explosion dorée surpuissante
+		sp["left"] = cd
 		hud.wheel.set_data(_wheel_data())
+
+# Explosion bonus des sorts évolués : grande onde dorée autour du héros.
+func _evolution_burst() -> void:
+	var p := player
+	_burst(p.position, 250.0, Color(1.0, 0.9, 0.5), Color(1.0, 0.65, 0.2))
+	var d := (115.0 + p.level * 7.0) * p.spell_mul
+	for en in enemies:
+		if not is_instance_valid(en) or en.dead:
+			continue
+		if en.position.distance_to(p.position) <= 250.0:
+			en.hp -= d
+			en.hitflash = 0.12
+			_spawn_text(en.position, str(int(d)), Color(1.0, 0.85, 0.4))
+			if en.hp <= 0.0:
+				_kill_enemy(en)
+	sfx.play("fire_cast", 0.5)
 
 func _do_cast(id: String) -> bool:
 	var p := player

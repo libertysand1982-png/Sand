@@ -91,16 +91,26 @@ func _draw_orb(c: Vector2, s: float, frac: float, tint: Color, font: Font, ready
 func _draw_slot(c: Vector2, r: float, s: Dictionary, font: Font) -> void:
 	var ready: bool = s.get("ready", true)
 	var fsz := r * 2.15
+	var evo: bool = s.get("evolved", false)
+	# lueur dorée sous les slots évolués
+	if evo:
+		draw_rect(Rect2(c - Vector2(fsz / 2.0 + 3.0, fsz / 2.0 + 3.0), Vector2(fsz + 6.0, fsz + 6.0)),
+				Color(1.0, 0.82, 0.3, 0.30))
 	# cadre-slot (fond sombre opaque) d'abord
 	if slot_tex:
-		draw_texture_rect(slot_tex, Rect2(c - Vector2(fsz / 2.0, fsz / 2.0), Vector2(fsz, fsz)), false,
-				Color(1, 1, 1) if ready else CD)
+		var frame_c := Color(1, 1, 1) if ready else CD
+		if evo:
+			frame_c = Color(1.0, 0.85, 0.45) if ready else Color(0.7, 0.6, 0.4)
+		draw_texture_rect(slot_tex, Rect2(c - Vector2(fsz / 2.0, fsz / 2.0), Vector2(fsz, fsz)), false, frame_c)
 	# icône par-dessus
 	var tex: Texture2D = s.get("icon", null)
 	if tex:
 		var isz := r * 1.72
 		var col := Color(1, 1, 1, 1.0) if ready else Color(1, 1, 1, 0.4)
 		draw_texture_rect(tex, Rect2(c - Vector2(isz / 2.0, isz / 2.0), Vector2(isz, isz)), false, col)
+	# étoile dorée d'évolution (coin haut-droit)
+	if evo and font:
+		draw_string(font, c + Vector2(r - 6.0, -r + 12.0), "★", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1.0, 0.88, 0.4))
 	# recharge (camembert + secondes)
 	if not ready and float(s.get("left", 0.0)) > 0.0:
 		_draw_pie(c, r * 0.94, clampf(float(s.get("frac", 0.0)), 0.0, 1.0), Color(0, 0, 0, 0.55))

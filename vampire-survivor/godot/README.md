@@ -86,7 +86,32 @@ Pour que ça ne ronronne jamais :
 - **Vagues de horde** (~toutes les 40 s) : un **mur d'ennemis** apparaît en cercle
   et se referme sur toi — annoncé par « UNE HORDE DÉFERLE ! ».
 - **Ennemis d'élite** (~toutes les 25 s) : versions **dorées, énormes et coriaces**
-  (aura brillante) qui lâchent un **coffre** à leur mort → **amélioration gratuite**.
+  (aura brillante) qui lâchent un **coffre** à leur mort.
+
+## Évolutions de sorts (façon Vampire Survivors)
+
+Le vrai frisson du « build qui explose » : monte le **passif requis** à fond, puis
+ouvre un **coffre** (lâché par les élites) → l'un de tes sorts **évolue** ! Un sort
+évolué **recharge 40% plus vite** et déclenche une **explosion dorée surpuissante**
+à chaque lancer. Le slot arbore une **bordure dorée + une étoile ★**.
+
+| Sort | Passif requis | Évolution |
+|------|---------------|-----------|
+| Boule de feu | Affûtage ×4 | Enfer déchaîné |
+| Éclair | Coups critiques ×3 | Tempête foudroyante |
+| Gel | Armure ×3 | Ère glaciaire |
+| Soin | Régénération ×2 | Lumière rédemptrice |
+| Météore | Projectile lourd ×3 | Pluie de météores |
+| Entaille | Affûtage ×4 | Lame-tempête |
+| Ruée | Célérité ×3 | Fracture éclair |
+| Tourbillon | Multi-tir ×3 | Cyclone éternel |
+| Garde | Vitalité ×3 | Rempart sacré |
+| Lame volante | Multi-tir ×3 | Nuée de lames |
+| Égide | Armure ×3 | Sanctuaire divin |
+| Croissant | Affûtage ×4 | Faux du carnage |
+| Nova écarlate | Multi-tir ×3 | Éclipse écarlate |
+| Piétinement | Vitalité ×3 | Séisme titanesque |
+| Frénésie | Cadence ×3 | Furie sans fin |
 
 ## Montée en puissance (des deux côtés)
 
